@@ -6,6 +6,9 @@ __pycache__/
 *.xlsx
 *.log
 
+# --- Claude Code project settings (local only) ---
+.claude/settings.local.json
+
 # --- Editor / tooling noise ---
 Scripts/
 .~lock.*#

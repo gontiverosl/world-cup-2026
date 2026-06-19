@@ -13,7 +13,7 @@ PRAGMA foreign_keys = ON;
 -- ============================================================
 -- TABLE: teams
 -- ============================================================
-DROP TABLE IF EXISTS broadcasts;
+DROP TABLE IF EXISTS player_stats;
 DROP TABLE IF EXISTS players;
 DROP TABLE IF EXISTS matches;
 DROP TABLE IF EXISTS teams;
@@ -28,7 +28,8 @@ CREATE TABLE teams (
     host           INTEGER DEFAULT 0,   -- 1 if co-host (MEX, USA, CAN)
     squad_size     INTEGER,             -- Transfermarkt snapshot 2026-06-16
     avg_age        REAL,                -- years
-    market_value_m REAL                 -- total squad market value, EUR millions
+    market_value_m REAL,                -- total squad market value, EUR millions
+    base_camp      TEXT                 -- base camp city, State/Province (Wikipedia, 2026-06-17)
 );
 
 -- ============================================================
@@ -51,8 +52,8 @@ CREATE TABLE players (
 CREATE TABLE matches (
     match_id      INTEGER PRIMARY KEY AUTOINCREMENT,
     fifa_match_no INTEGER UNIQUE,        -- FIFA official match number (1-104) — validation
-    team_home     TEXT NOT NULL REFERENCES teams(team_id),
-    team_away     TEXT NOT NULL REFERENCES teams(team_id),
+    team_home     TEXT REFERENCES teams(team_id),  -- NULL for unresolved knockout fixtures
+    team_away     TEXT REFERENCES teams(team_id),
     goals_home    INTEGER,               -- NULL = not yet played
     goals_away    INTEGER,
     stage         TEXT NOT NULL,         -- 'Group' / 'R32' / 'R16' / 'QF' / 'SF' / 'F'
@@ -63,13 +64,21 @@ CREATE TABLE matches (
 );
 
 -- ============================================================
--- TABLE: broadcasts (one row per match per broadcaster; backfilled from FIFA)
+-- TABLE: player_stats
 -- ============================================================
-CREATE TABLE broadcasts (
-    match_id    INTEGER NOT NULL REFERENCES matches(match_id),
-    broadcaster TEXT NOT NULL,
-    region      TEXT,                    -- e.g. 'MX', 'US'
-    PRIMARY KEY (match_id, broadcaster)
+CREATE TABLE player_stats (
+    stat_id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    player_id      INTEGER NOT NULL REFERENCES players(player_id),
+    match_id       INTEGER NOT NULL REFERENCES matches(match_id),
+    goals          INTEGER DEFAULT 0,
+    assists        INTEGER DEFAULT 0,
+    minutes_played INTEGER DEFAULT 0,
+    yellow_cards   INTEGER DEFAULT 0,
+    red_cards      INTEGER DEFAULT 0,
+    shots          INTEGER DEFAULT 0,
+    shots_on_goal  INTEGER DEFAULT 0,
+    fouls          INTEGER DEFAULT 0,
+    UNIQUE (player_id, match_id)
 );
 
 -- ============================================================
@@ -234,10 +243,10 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('MEX', 'Brian Gutiérrez',    'MF', 22, 'Guadalajara',         6, 2),
 ('MEX', 'Obed Vargas',        'MF', 20, 'Atlético Madrid',     6, 0),
 ('MEX', 'Álvaro Fidalgo',     'MF', 29, 'Real Betis',          3, 0),
-('MEX', 'Raúl Jiménez',       'FW', 35, 'Fulham',            123, 44),
+('MEX', 'Raúl Jiménez',       'FW', 35, 'Fulham FC',            123, 44),
 ('MEX', 'Alexis Vega',        'FW', 28, 'Toluca',             51, 7),
 ('MEX', 'Santiago Giménez',   'FW', 25, 'AC Milan',           47, 6),
-('MEX', 'César Huerta',       'FW', 25, 'Anderlecht',         26, 3),
+('MEX', 'César Huerta',       'FW', 25, 'RSC Anderlecht',         26, 3),
 ('MEX', 'Julián Quiñones',    'FW', 29, 'Al-Qadsiah',         21, 2),
 ('MEX', 'Guillermo Martínez', 'FW', 31, 'UNAM',               11, 3),
 ('MEX', 'Armando González',   'FW', 23, 'Guadalajara',         7, 1);
@@ -246,62 +255,62 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 -- ARGENTINA (Group J) — full 26
 -- ---------------------------
 INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUES
-('ARG', 'Emiliano Martínez',  'GK', 33, 'Aston Villa',        58, 0),
-('ARG', 'Gerónimo Rulli',     'GK', 33, 'Marseille',          34, 0),
+('ARG', 'Emiliano Martínez',  'GK', 33, 'Aston Villa FC',        58, 0),
+('ARG', 'Gerónimo Rulli',     'GK', 33, 'Olympique Marseille',          34, 0),
 ('ARG', 'Juan Musso',         'GK', 31, 'Atlético Madrid',    30, 0),
-('ARG', 'Cristian Romero',    'DF', 26, 'Tottenham',          56, 5),
-('ARG', 'Lisandro Martínez',  'DF', 26, 'Manchester United',  40, 3),
+('ARG', 'Cristian Romero',    'DF', 26, 'Tottenham Hotspur FC',          56, 5),
+('ARG', 'Lisandro Martínez',  'DF', 26, 'Manchester United FC',  40, 3),
 ('ARG', 'Nicolás Otamendi',   'DF', 37, 'Benfica',           119, 10),
 ('ARG', 'Nahuel Molina',      'DF', 26, 'Atlético Madrid',    54, 7),
-('ARG', 'Gonzalo Montiel',    'DF', 27, 'Nottingham Forest',  46, 4),
-('ARG', 'Nicolás Tagliafico', 'DF', 32, 'Lyon',               84, 3),
+('ARG', 'Gonzalo Montiel',    'DF', 27, 'Nottingham Forest FC',  46, 4),
+('ARG', 'Nicolás Tagliafico', 'DF', 32, 'Olympique Lyonnais',               84, 3),
 ('ARG', 'Germán Pezzella',    'DF', 33, 'Real Betis',         44, 2),
 ('ARG', 'Rodrigo De Paul',    'MF', 31, 'Atlético Madrid',    77, 12),
-('ARG', 'Enzo Fernández',     'MF', 25, 'Chelsea',            56, 6),
-('ARG', 'Alexis Mac Allister','MF', 25, 'Liverpool',          52, 8),
-('ARG', 'Leandro Paredes',    'MF', 31, 'Roma',               78, 9),
-('ARG', 'Giovani Lo Celso',   'MF', 28, 'Villarreal',         62, 8),
+('ARG', 'Enzo Fernández',     'MF', 25, 'Chelsea FC',            56, 6),
+('ARG', 'Alexis Mac Allister','MF', 25, 'Liverpool FC',          52, 8),
+('ARG', 'Leandro Paredes',    'MF', 31, 'AS Roma',               78, 9),
+('ARG', 'Giovani Lo Celso',   'MF', 28, 'Villarreal CF',         62, 8),
 ('ARG', 'Thiago Almada',      'MF', 23, 'Botafogo',           17, 2),
-('ARG', 'Exequiel Palacios',  'MF', 26, 'Bayer Leverkusen',   28, 3),
-('ARG', 'Lionel Messi',       'FW', 38, 'Inter Miami',       191, 112),
+('ARG', 'Exequiel Palacios',  'MF', 26, 'Bayer 04 Leverkusen',   28, 3),
+('ARG', 'Lionel Messi',       'FW', 38, 'Inter Miami CF',       191, 112),
 ('ARG', 'Lautaro Martínez',   'FW', 27, 'Inter Milan',        86, 33),
 ('ARG', 'Julián Álvarez',     'FW', 24, 'Atlético Madrid',    51, 20),
-('ARG', 'Paulo Dybala',       'FW', 32, 'Roma',               42, 9),
+('ARG', 'Paulo Dybala',       'FW', 32, 'AS Roma',               42, 9),
 ('ARG', 'Ángel Correa',       'FW', 30, 'Atlético Madrid',    52, 9),
-('ARG', 'Alejandro Garnacho', 'FW', 21, 'Manchester United',  20, 5),
+('ARG', 'Alejandro Garnacho', 'FW', 21, 'Manchester United FC',  20, 5),
 ('ARG', 'Valentín Castellanos','FW', 26, 'Lazio',             18, 3),
-('ARG', 'Nicolás González',   'FW', 27, 'Juventus',           30, 8),
-('ARG', 'Facundo Buonanotte', 'MF', 20, 'Leicester City',     10, 1);
+('ARG', 'Nicolás González',   'FW', 27, 'Juventus FC',           30, 8),
+('ARG', 'Facundo Buonanotte', 'MF', 20, 'Leicester City FC',     10, 1);
 
 -- ---------------------------
 -- BRAZIL (Group C) — full 26
 -- ---------------------------
 INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUES
-('BRA', 'Ederson',           'GK', 32, 'Manchester City',    57, 0),
-('BRA', 'Alisson',           'GK', 33, 'Liverpool',          87, 0),
+('BRA', 'Ederson',           'GK', 32, 'Manchester City FC',    57, 0),
+('BRA', 'Alisson',           'GK', 33, 'Liverpool FC',          87, 0),
 ('BRA', 'Bento',             'GK', 25, 'Al-Qadsiah',         20, 0),
-('BRA', 'Marquinhos',        'DF', 31, 'PSG',               108, 9),
-('BRA', 'Gabriel Magalhães', 'DF', 27, 'Arsenal',            43, 4),
+('BRA', 'Marquinhos',        'DF', 31, 'Paris Saint-Germain', 108, 9),
+('BRA', 'Gabriel Magalhães', 'DF', 27, 'Arsenal FC',            43, 4),
 ('BRA', 'Éder Militão',      'DF', 26, 'Real Madrid',        47, 4),
-('BRA', 'Danilo',            'DF', 33, 'Juventus',          102, 7),
+('BRA', 'Danilo',            'DF', 33, 'Juventus FC',          102, 7),
 ('BRA', 'Alex Sandro',       'DF', 33, 'São Paulo',          77, 3),
-('BRA', 'Vanderson',         'DF', 24, 'Monaco',             24, 1),
+('BRA', 'Vanderson',         'DF', 24, 'AS Monaco',             24, 1),
 ('BRA', 'Guilherme Arana',   'DF', 27, 'Atlético Mineiro',   27, 1),
-('BRA', 'Casemiro',          'MF', 34, 'Manchester United',  79, 9),
-('BRA', 'Bruno Guimarães',   'MF', 27, 'Newcastle United',   47, 5),
-('BRA', 'Lucas Paquetá',     'MF', 27, 'West Ham',           62, 11),
-('BRA', 'Gerson',            'MF', 27, 'Flamengo',           32, 3),
-('BRA', 'Andreas Pereira',   'MF', 29, 'Fulham',             22, 2),
+('BRA', 'Casemiro',          'MF', 34, 'Manchester United FC',  79, 9),
+('BRA', 'Bruno Guimarães',   'MF', 27, 'Newcastle United FC',   47, 5),
+('BRA', 'Lucas Paquetá',     'MF', 27, 'West Ham United FC',           62, 11),
+('BRA', 'Gerson',            'MF', 27, 'CR Flamengo',           32, 3),
+('BRA', 'Andreas Pereira',   'MF', 29, 'Fulham FC',             22, 2),
 ('BRA', 'Rodrygo',           'FW', 24, 'Real Madrid',        52, 16),
 ('BRA', 'Vinicius Jr.',      'FW', 25, 'Real Madrid',        72, 25),
 ('BRA', 'Neymar',            'FW', 34, 'Santos',            134, 79),
-('BRA', 'Raphinha',          'FW', 29, 'Barcelona',          60, 20),
-('BRA', 'Gabriel Martinelli','FW', 23, 'Arsenal',            28, 8),
+('BRA', 'Raphinha',          'FW', 29, 'FC Barcelona',          60, 20),
+('BRA', 'Gabriel Martinelli','FW', 23, 'Arsenal FC',            28, 8),
 ('BRA', 'Endrick',           'FW', 18, 'Real Madrid',        24, 6),
-('BRA', 'Gabriel Barbosa',   'FW', 29, 'Flamengo',           20, 7),
-('BRA', 'Savinho',           'FW', 21, 'Manchester City',    16, 3),
-('BRA', 'Yan Couto',         'DF', 23, 'Manchester City',    18, 1),
-('BRA', 'André',             'MF', 23, 'Wolverhampton',      14, 0),
+('BRA', 'Gabriel Barbosa',   'FW', 29, 'CR Flamengo',           20, 7),
+('BRA', 'Savinho',           'FW', 21, 'Manchester City FC',    16, 3),
+('BRA', 'Yan Couto',         'DF', 23, 'Manchester City FC',    18, 1),
+('BRA', 'André',             'MF', 23, 'Wolverhampton Wanderers FC',      14, 0),
 ('BRA', 'Igor Jesus',        'FW', 23, 'Botafogo',            9, 3);
 
 -- ---------------------------
@@ -309,30 +318,30 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 -- ---------------------------
 INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUES
 ('ESP', 'Unai Simón',        'GK', 27, 'Athletic Bilbao',    44, 0),
-('ESP', 'David Raya',        'GK', 29, 'Arsenal',            18, 0),
+('ESP', 'David Raya',        'GK', 29, 'Arsenal FC',            18, 0),
 ('ESP', 'Álex Remiro',       'GK', 30, 'Real Sociedad',      14, 0),
 ('ESP', 'Dani Carvajal',     'DF', 32, 'Real Madrid',        101, 4),
-('ESP', 'Alejandro Balde',   'DF', 21, 'Barcelona',           32, 3),
+('ESP', 'Alejandro Balde',   'DF', 21, 'FC Barcelona',           32, 3),
 ('ESP', 'Aymeric Laporte',   'DF', 30, 'Al-Nassr',            55, 3),
 ('ESP', 'Robin Le Normand',  'DF', 28, 'Atlético Madrid',     24, 2),
-('ESP', 'Pau Cubarsí',       'DF', 18, 'Barcelona',           14, 1),
-('ESP', 'Pedro Porro',       'DF', 25, 'Tottenham',           28, 3),
-('ESP', 'Marc Cucurella',    'DF', 26, 'Chelsea',             37, 1),
-('ESP', 'Rodri',             'MF', 29, 'Manchester City',     72, 8),
-('ESP', 'Pedri',             'MF', 23, 'Barcelona',           57, 8),
-('ESP', 'Fabian Ruiz',       'MF', 28, 'PSG',                 53, 10),
-('ESP', 'Dani Olmo',         'MF', 27, 'Barcelona',           46, 12),
-('ESP', 'Martín Zubimendi',  'MF', 26, 'Arsenal',             23, 0),
-('ESP', 'Mikel Merino',      'MF', 28, 'Arsenal',             42, 9),
-('ESP', 'Álex Baena',        'MF', 24, 'Villarreal',          18, 3),
-('ESP', 'Lamine Yamal',      'FW', 18, 'Barcelona',           37, 12),
+('ESP', 'Pau Cubarsí',       'DF', 18, 'FC Barcelona',           14, 1),
+('ESP', 'Pedro Porro',       'DF', 25, 'Tottenham Hotspur FC',           28, 3),
+('ESP', 'Marc Cucurella',    'DF', 26, 'Chelsea FC',             37, 1),
+('ESP', 'Rodri',             'MF', 29, 'Manchester City FC',     72, 8),
+('ESP', 'Pedri',             'MF', 23, 'FC Barcelona',           57, 8),
+('ESP', 'Fabian Ruiz',       'MF', 28, 'Paris Saint-Germain',  53, 10),
+('ESP', 'Dani Olmo',         'MF', 27, 'FC Barcelona',           46, 12),
+('ESP', 'Martín Zubimendi',  'MF', 26, 'Arsenal FC',             23, 0),
+('ESP', 'Mikel Merino',      'MF', 28, 'Arsenal FC',             42, 9),
+('ESP', 'Álex Baena',        'MF', 24, 'Villarreal CF',          18, 3),
+('ESP', 'Lamine Yamal',      'FW', 18, 'FC Barcelona',           37, 12),
 ('ESP', 'Álvaro Morata',     'FW', 32, 'AC Milan',           100, 38),
 ('ESP', 'Mikel Oyarzabal',   'FW', 27, 'Real Sociedad',       56, 22),
-('ESP', 'Ferran Torres',     'FW', 25, 'Barcelona',           54, 18),
+('ESP', 'Ferran Torres',     'FW', 25, 'FC Barcelona',           54, 18),
 ('ESP', 'Nico Williams',     'FW', 22, 'Athletic Bilbao',     29, 7),
 ('ESP', 'Bryan Gil',         'FW', 24, 'Sevilla',             20, 3),
-('ESP', 'Joselu',            'FW', 34, 'Espanyol',            17, 10),
-('ESP', 'Yeremy Pino',       'FW', 22, 'Villarreal',          19, 3),
+('ESP', 'Joselu',            'FW', 34, 'RCD Espanyol',            17, 10),
+('ESP', 'Yeremy Pino',       'FW', 22, 'Villarreal CF',          19, 3),
 ('ESP', 'Aitor Paredes',     'DF', 25, 'Athletic Bilbao',      8, 0);
 
 -- ---------------------------
@@ -340,28 +349,28 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 -- ---------------------------
 INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUES
 ('FRA', 'Mike Maignan',       'GK', 29, 'AC Milan',           32, 0),
-('FRA', 'Alphonse Areola',    'GK', 32, 'West Ham',           24, 0),
-('FRA', 'Brice Samba',        'GK', 30, 'Lens',               10, 0),
-('FRA', 'William Saliba',     'DF', 25, 'Arsenal',            33, 2),
-('FRA', 'Dayot Upamecano',    'DF', 26, 'Bayern Munich',      47, 2),
-('FRA', 'Ibrahima Konaté',    'DF', 26, 'Liverpool',          29, 0),
-('FRA', 'Jules Koundé',       'DF', 26, 'Barcelona',          44, 2),
+('FRA', 'Alphonse Areola',    'GK', 32, 'West Ham United FC',           24, 0),
+('FRA', 'Brice Samba',        'GK', 30, 'RC Lens',               10, 0),
+('FRA', 'William Saliba',     'DF', 25, 'Arsenal FC',            33, 2),
+('FRA', 'Dayot Upamecano',    'DF', 26, 'FC Bayern München',      47, 2),
+('FRA', 'Ibrahima Konaté',    'DF', 26, 'Liverpool FC',          29, 0),
+('FRA', 'Jules Koundé',       'DF', 26, 'FC Barcelona',          44, 2),
 ('FRA', 'Theo Hernández',     'DF', 27, 'AC Milan',           41, 6),
 ('FRA', 'Benjamin Pavard',    'DF', 29, 'Inter Milan',        62, 6),
-('FRA', 'Lucas Hernandez',    'DF', 28, 'PSG',                56, 0),
+('FRA', 'Lucas Hernandez',    'DF', 28, 'Paris Saint-Germain', 56, 0),
 ('FRA', 'N''Golo Kanté',      'MF', 35, 'Al-Ittihad',         63, 2),
 ('FRA', 'Aurélien Tchouaméni','MF', 25, 'Real Madrid',        42, 3),
-('FRA', 'Adrien Rabiot',      'MF', 31, 'Marseille',          54, 12),
+('FRA', 'Adrien Rabiot',      'MF', 31, 'Olympique Marseille',          54, 12),
 ('FRA', 'Eduardo Camavinga',  'MF', 23, 'Real Madrid',        28, 3),
-('FRA', 'Warren Zaïre-Emery', 'MF', 19, 'PSG',               17, 2),
-('FRA', 'Ousmane Dembélé',    'FW', 27, 'PSG',               73, 16),
+('FRA', 'Warren Zaïre-Emery', 'MF', 19, 'Paris Saint-Germain', 17, 2),
+('FRA', 'Ousmane Dembélé',    'FW', 27, 'Paris Saint-Germain', 73, 16),
 ('FRA', 'Kylian Mbappé',      'FW', 27, 'Real Madrid',       100, 54),
 ('FRA', 'Antoine Griezmann',  'FW', 35, 'Atlético Madrid',   142, 55),
 ('FRA', 'Marcus Thuram',      'FW', 27, 'Inter Milan',        43, 16),
-('FRA', 'Randal Kolo Muani',  'FW', 26, 'PSG',               38, 8),
-('FRA', 'Bradley Barcola',    'FW', 22, 'PSG',               18, 5),
-('FRA', 'Kingsley Coman',     'FW', 29, 'Bayern Munich',      72, 14),
-('FRA', 'Christopher Nkunku', 'FW', 27, 'Chelsea',            23, 6),
+('FRA', 'Randal Kolo Muani',  'FW', 26, 'Paris Saint-Germain', 38, 8),
+('FRA', 'Bradley Barcola',    'FW', 22, 'Paris Saint-Germain', 18, 5),
+('FRA', 'Kingsley Coman',     'FW', 29, 'FC Bayern München',      72, 14),
+('FRA', 'Christopher Nkunku', 'FW', 27, 'Chelsea FC',            23, 6),
 ('FRA', 'Youssouf Fofana',    'MF', 26, 'AC Milan',           24, 3),
 ('FRA', 'Matteo Guendouzi',   'MF', 26, 'Lazio',              26, 2),
 ('FRA', 'Jonathan Clauss',    'DF', 33, 'Nice',               21, 2);
@@ -371,31 +380,31 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 -- ---------------------------
 INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUES
 ('MAR', 'Yassine Bounou',     'GK', 33, 'Al-Hilal',           63, 0),
-('MAR', 'Munir Mohamedi',     'GK', 34, 'Villarreal',         28, 0),
+('MAR', 'Munir Mohamedi',     'GK', 34, 'Villarreal CF',         28, 0),
 ('MAR', 'Ahmed Reda Tagnaouti','GK',29, 'Wydad AC',           20, 0),
-('MAR', 'Achraf Hakimi',      'DF', 27, 'PSG',                89, 16),
-('MAR', 'Nayef Aguerd',       'DF', 28, 'West Ham',           49, 5),
-('MAR', 'Romain Saiss',       'DF', 34, 'Besiktas',           98, 6),
+('MAR', 'Achraf Hakimi',      'DF', 27, 'Paris Saint-Germain', 89, 16),
+('MAR', 'Nayef Aguerd',       'DF', 28, 'West Ham United FC',           49, 5),
+('MAR', 'Romain Saiss',       'DF', 34, 'Beşiktaş JK',           98, 6),
 ('MAR', 'Jawad El Yamiq',     'DF', 31, 'Real Valladolid',    30, 3),
-('MAR', 'Noussair Mazraoui',  'DF', 27, 'Manchester United',  42, 3),
+('MAR', 'Noussair Mazraoui',  'DF', 27, 'Manchester United FC',  42, 3),
 ('MAR', 'Adam Masina',        'DF', 30, 'Udinese',            30, 1),
 ('MAR', 'Yahia Attiyat Allah','DF', 29, 'Wydad AC',           29, 2),
-('MAR', 'Sofiane Boufal',     'MF', 31, 'Southampton',        65, 8),
+('MAR', 'Sofiane Boufal',     'MF', 31, 'Southampton FC',        65, 8),
 ('MAR', 'Selim Amallah',      'MF', 28, 'Standard Liège',     35, 5),
-('MAR', 'Azzedine Ounahi',    'MF', 24, 'Marseille',          37, 2),
-('MAR', 'Bilal El Khannous',  'MF', 21, 'Genk',              29, 3),
+('MAR', 'Azzedine Ounahi',    'MF', 24, 'Olympique Marseille',          37, 2),
+('MAR', 'Bilal El Khannous',  'MF', 21, 'KRC Genk',              29, 3),
 ('MAR', 'Abdessamad Ezzalzouli','MF',24,'Barcelona B',        18, 4),
 ('MAR', 'Ilias Chair',        'MF', 27, 'QPR',               22, 3),
 ('MAR', 'Hamza Mendyl',       'DF', 27, 'Kasimpasa',         14, 0),
 ('MAR', 'Youssef En-Nesyri',  'FW', 27, 'Fenerbahçe',        66, 22),
 ('MAR', 'Sofiane Chakib Ahannach','FW',26,'Moroccan',         12, 3),
-('MAR', 'Hakim Ziyech',       'FW', 33, 'Galatasaray',        75, 27),
+('MAR', 'Hakim Ziyech',       'FW', 33, 'Galatasaray SK',        75, 27),
 ('MAR', 'Munir El Haddadi',   'FW', 29, 'Angers',            28, 8),
 ('MAR', 'Zakaria Aboukhlal',  'FW', 24, 'Toulouse',          31, 6),
 ('MAR', 'Ibrahim Salah Ezzaki','FW', 22,'Raja Casablanca',    8, 2),
-('MAR', 'Ryan Mmaee',         'FW', 27, 'Sparta Prague',     22, 4),
+('MAR', 'Ryan Mmaee',         'FW', 27, 'AC Sparta Praha',     22, 4),
 ('MAR', 'Walid Cheddira',     'FW', 26, 'Parma',             21, 6),
-('MAR', 'Amine Harit',        'MF', 27, 'Marseille',         34, 5);
+('MAR', 'Amine Harit',        'MF', 27, 'Olympique Marseille',         34, 5);
 
 
 -- ============================================================
@@ -444,7 +453,7 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('BIH', 'Tarik Muharemovic', 'DF', 23, 'US Sassuolo', 15, 1),
 ('BIH', 'Sead Kolasinac', 'DF', 32, 'Atalanta Bergamo', 66, 0),
 ('BIH', 'Benjamin Tahirovic', 'MF', 23, 'Brøndby IF', 29, 2),
-('BIH', 'Amar Dedic', 'DF', 23, 'SL Benca', 29, 1),
+('BIH', 'Amar Dedic', 'DF', 23, 'Benfica', 29, 1),
 ('BIH', 'Armin Gigovic', 'MF', 24, 'BSC Young Boys', 21, 1),
 ('BIH', 'Samed Bazdar', 'FW', 22, 'Jagiellonia Białystok', 14, 1),
 ('BIH', 'Ermedin Demirovic', 'FW', 28, 'VfB Stuttgart', 41, 4),
@@ -508,7 +517,7 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('HAI', 'Carl Sainte', 'MF', 23, 'El Paso Locomotive FC', 26, 0),
 ('HAI', 'Derrick Etienne', 'FW', 29, 'Toronto FC', 50, 8),
 ('HAI', 'Martin Experience', 'DF', 27, 'AS Nancy', 22, 0),
-('HAI', 'Duckens Nazon', 'FW', 32, 'Esteghlal Tehran FC', 83, 44),
+('HAI', 'Duckens Nazon', 'FW', 32, 'Esteghlal', 83, 44),
 ('HAI', 'Jean-Ricner Bellegarde', 'MF', 27, 'Wolverhampton Wanderers FC', 11, 0),
 ('HAI', 'Louicius Deedson', 'FW', 25, 'FC Dallas', 33, 10),
 ('HAI', 'Alexandre Pierre', 'GK', 25, 'FC Sochaux-Montbéliard', 17, 0),
@@ -569,8 +578,8 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('CIV', 'Wilfried Singo', 'DF', 25, 'Galatasaray SK', 36, 1),
 ('CIV', 'Seko Fofana', 'MF', 31, 'FC Porto', 33, 7),
 ('CIV', 'Odilon Kossounou', 'DF', 25, 'Atalanta Bergamo', 37, 0),
-('CIV', 'Franck Kessie', 'MF', 29, 'Al Ahli FC', 105, 15),
-('CIV', 'Ange-Yoan Bonny', 'FW', 22, 'FC Internazionale Milano', 2, 0),
+('CIV', 'Franck Kessie', 'MF', 29, 'Al Ahli', 105, 15),
+('CIV', 'Ange-Yoan Bonny', 'FW', 22, 'Inter Milan', 2, 0),
 ('CIV', 'Simon Adingra', 'FW', 24, 'AS Monaco', 29, 5),
 ('CIV', 'Yan Diomande', 'FW', 19, 'RB Leipzig', 11, 3),
 ('CIV', 'Elye Wahi', 'FW', 23, 'OGC Nice', 3, 0),
@@ -656,7 +665,7 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 -- ---------------------------
 INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUES
 ('GER', 'Manuel Neuer', 'GK', 40, 'FC Bayern München', 125, 0),
-('GER', 'Antonio Ruediger', 'DF', 33, 'Real Madrid C. F.', 83, 3),
+('GER', 'Antonio Ruediger', 'DF', 33, 'Real Madrid', 83, 3),
 ('GER', 'Waldemar Anton', 'DF', 29, 'Borussia Dortmund', 14, 0),
 ('GER', 'Jonathan Tah', 'DF', 30, 'FC Bayern München', 48, 1),
 ('GER', 'Aleksandar Pavlovic', 'MF', 22, 'FC Bayern München', 12, 1),
@@ -686,7 +695,7 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 -- Belgium (Group G) - 26 players (FIFA official)
 -- ---------------------------
 INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUES
-('BEL', 'Thibaut Courtois', 'GK', 34, 'Real Madrid C. F.', 109, 0),
+('BEL', 'Thibaut Courtois', 'GK', 34, 'Real Madrid', 109, 0),
 ('BEL', 'Zeno Debast', 'DF', 22, 'Sporting CP', 26, 1),
 ('BEL', 'Arthur Theate', 'DF', 26, 'Eintracht Frankfurt', 33, 1),
 ('BEL', 'Brandon Mechele', 'DF', 33, 'Club Brugge', 9, 1),
@@ -699,7 +708,7 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('BEL', 'Jeremy Doku', 'FW', 24, 'Manchester City FC', 43, 7),
 ('BEL', 'Senne Lammens', 'GK', 23, 'Manchester United FC', 2, 0),
 ('BEL', 'Mike Penders', 'GK', 20, 'RC Strasbourg', 0, 0),
-('BEL', 'Dodi Lukebakio', 'FW', 28, 'SL Benca', 30, 6),
+('BEL', 'Dodi Lukebakio', 'FW', 28, 'Benfica', 30, 6),
 ('BEL', 'Thomas Meunier', 'DF', 34, 'Lille OSC', 80, 10),
 ('BEL', 'Koni De Winter', 'DF', 23, 'AC Milan', 8, 0),
 ('BEL', 'Charles De Ketelaere', 'FW', 25, 'Atalanta Bergamo', 30, 6),
@@ -721,7 +730,7 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('EGY', 'Yasser Yasser Ibrahim', 'DF', 33, 'Al Ahly FC', 18, 1),
 ('EGY', 'Mohamed Mohamed Hany', 'DF', 30, 'Al Ahly FC', 43, 0),
 ('EGY', 'Hossam Hossam Abdelmaguid', 'DF', 25, 'Zamalek SC', 13, 0),
-('EGY', 'Ramy Ramy Rabia', 'DF', 33, 'Al Ain FC', 47, 6),
+('EGY', 'Ramy Ramy Rabia', 'DF', 33, 'Al-Ain', 47, 6),
 ('EGY', 'Mohamed Mohamed Abdelmoneim', 'DF', 27, 'OGC Nice', 36, 3),
 ('EGY', 'Mahmoud Trezeguet', 'FW', 31, 'Al Ahly FC', 96, 23),
 ('EGY', 'Emam Emam Ashour', 'MF', 28, 'Al Ahly FC', 29, 0),
@@ -730,7 +739,7 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('EGY', 'Mostafa Mostafa Zico', 'MF', 29, 'Pyramids FC', 2, 2),
 ('EGY', 'Haissem Haissem Hassan', 'FW', 24, 'Real Oviedo', 4, 0),
 ('EGY', 'Ahmed Ahmed Fatouh', 'DF', 28, 'Zamalek SC', 39, 1),
-('EGY', 'Hamdy Hamdy Fathy', 'MF', 31, 'Al Wakrah SC', 64, 4),
+('EGY', 'Hamdy Hamdy Fathy', 'MF', 31, 'Al-Wakrah', 64, 4),
 ('EGY', 'Karim Karim Hafez', 'DF', 30, 'Pyramids FC', 9, 0),
 ('EGY', 'Mahdy Mahdy Soliman', 'GK', 39, 'Zamalek SC', 0, 0),
 ('EGY', 'Mohanad Mohanad Lashin', 'MF', 30, 'Pyramids FC', 23, 0),
@@ -750,7 +759,7 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUES
 ('CPV', 'Josimar Vozinha', 'GK', 40, 'GD Chaves', 90, 0),
 ('CPV', 'Ianique Stopira', 'DF', 38, 'SCU Torreense', 61, 4),
-('CPV', 'Edilson Diney Borges', 'DF', 31, 'Al Bataeh Club', 32, 2),
+('CPV', 'Edilson Diney Borges', 'DF', 31, 'Al Bataeh', 32, 2),
 ('CPV', 'Roberto Pico Lopes', 'DF', 33, 'Shamrock Rovers FC', 45, 0),
 ('CPV', 'Logan Logan Costa', 'DF', 25, 'Villarreal CF', 28, 0),
 ('CPV', 'Kevin Kevin Pina', 'MF', 29, 'FC Krasnodar', 31, 3),
@@ -760,7 +769,7 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('CPV', 'Jamiro Jamiro Monteiro', 'MF', 32, 'PEC Zwolle', 55, 5),
 ('CPV', 'Garry Garry Rodrigues', 'MF', 35, 'Apollon Limassol', 61, 10),
 ('CPV', 'Márcio Marcio Rosa', 'GK', 29, 'PFC Montana', 11, 0),
-('CPV', 'Sidny Sidny Lopes Cabral', 'DF', 23, 'SL Benca', 11, 3),
+('CPV', 'Sidny Sidny Lopes Cabral', 'DF', 23, 'Benfica', 11, 3),
 ('CPV', 'Deroy Deroy Duarte', 'MF', 26, 'PFC Ludogorets Razgrad', 33, 0),
 ('CPV', 'Laros Laros Duarte', 'MF', 29, 'Puskás Akadémia FC', 20, 1),
 ('CPV', 'Jair Yannick Semedo', 'MF', 30, 'SC Farense', 11, 1),
@@ -782,10 +791,10 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('ALG', 'Melvin Mastil', 'GK', 26, 'FC Stade Nyonnais', 2, 0),
 ('ALG', 'Aissa Mandi', 'DF', 34, 'Lille OSC', 119, 8),
 ('ALG', 'Achref Abada', 'DF', 26, 'USM Alger', 10, 1),
-('ALG', 'Mohamed Tougai', 'DF', 26, 'Espérance De Tunisie', 30, 2),
+('ALG', 'Mohamed Tougai', 'DF', 26, 'Espérance de Tunis', 30, 2),
 ('ALG', 'Zineddine Belaid', 'DF', 27, 'JS Kabylie', 18, 1),
 ('ALG', 'Ramiz Zerrouki', 'MF', 28, 'FC Twente', 53, 3),
-('ALG', 'Riyad Mahrez', 'FW', 35, 'Al Ahli FC', 116, 38),
+('ALG', 'Riyad Mahrez', 'FW', 35, 'Al Ahli', 116, 38),
 ('ALG', 'Houssem Aouar', 'MF', 27, 'Al Ittihad', 23, 6),
 ('ALG', 'Amine Gouiri', 'FW', 26, 'Olympique Marseille', 23, 10),
 ('ALG', 'Fares Chaibi', 'MF', 23, 'Eintracht Frankfurt', 31, 3),
@@ -798,7 +807,7 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('ALG', 'Rak Belghali', 'DF', 24, 'Hellas Verona FC', 13, 1),
 ('ALG', 'Mohamed Amoura', 'FW', 26, 'VfL Wolfsburg', 47, 19),
 ('ALG', 'Nabil Bentaleb', 'MF', 31, 'Lille OSC', 60, 6),
-('ALG', 'Adil Boulbina', 'FW', 23, 'Al Duhail SC', 11, 5),
+('ALG', 'Adil Boulbina', 'FW', 23, 'Al-Duhail', 11, 5),
 ('ALG', 'Ramy Bensebaini', 'DF', 31, 'Borussia Dortmund', 82, 9),
 ('ALG', 'Ibrahim Maza', 'MF', 20, 'Bayer 04 Leverkusen', 17, 2),
 ('ALG', 'Luca Zidane', 'GK', 28, 'Granada CF', 7, 0),
@@ -817,7 +826,7 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('AUT', 'Stefan Posch', 'DF', 29, '1. FSV Mainz 05', 52, 5),
 ('AUT', 'Nicolas Seiwald', 'MF', 25, 'RB Leipzig', 47, 1),
 ('AUT', 'Marko Arnautovic', 'FW', 37, 'FK Crvena Zvezda', 133, 47),
-('AUT', 'David Alaba', 'DF', 33, 'Real Madrid C. F.', 113, 15),
+('AUT', 'David Alaba', 'DF', 33, 'Real Madrid', 113, 15),
 ('AUT', 'Marcel Sabitzer', 'MF', 32, 'Borussia Dortmund', 98, 26),
 ('AUT', 'Florian Grillitsch', 'MF', 30, 'SC Braga', 59, 1),
 ('AUT', 'Michael Gregoritsch', 'FW', 32, 'FC Augsburg', 75, 24),
@@ -877,7 +886,7 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('COL', 'Jhon Lucumi', 'DF', 27, 'Bologna FC', 37, 1),
 ('COL', 'Santiago Arias', 'DF', 34, 'CA Independiente', 68, 0),
 ('COL', 'Kevin Castano', 'MF', 25, 'CA River Plate', 25, 0),
-('COL', 'Richard Rios', 'MF', 26, 'SL Benca', 32, 2),
+('COL', 'Richard Rios', 'MF', 26, 'Benfica', 32, 2),
 ('COL', 'Luis Diaz', 'FW', 29, 'FC Bayern München', 74, 22),
 ('COL', 'Jorge Carrascal', 'MF', 28, 'CR Flamengo', 25, 2),
 ('COL', 'Jhon Cordoba', 'FW', 33, 'FC Krasnodar', 21, 6),
@@ -889,7 +898,7 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('COL', 'Juan Portilla', 'MF', 27, 'Athletico Paranaense', 10, 0),
 ('COL', 'Jefferson Lerma', 'MF', 31, 'Crystal Palace FC', 65, 5),
 ('COL', 'Johan Mojica', 'DF', 33, 'RCD Mallorca', 45, 1),
-('COL', 'Willer Ditta', 'DF', 28, 'CF Cruz Azul', 5, 0),
+('COL', 'Willer Ditta', 'DF', 28, 'Cruz Azul', 5, 0),
 ('COL', 'Cucho Hernandez', 'FW', 27, 'Real Betis', 9, 2),
 ('COL', 'Juan Quintero', 'MF', 33, 'CA River Plate', 49, 6),
 ('COL', 'Jaminton Campaz', 'FW', 26, 'CA Rosario Central', 10, 1),
@@ -919,7 +928,7 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('CRO', 'Ivan Perisic', 'FW', 37, 'PSV Eindhoven', 154, 38),
 ('CRO', 'Mario Pasalic', 'MF', 31, 'Atalanta Bergamo', 85, 12),
 ('CRO', 'Martin Baturina', 'MF', 23, 'Como', 19, 1),
-('CRO', 'Petar Sucic', 'MF', 22, 'FC Internazionale Milano', 17, 1),
+('CRO', 'Petar Sucic', 'MF', 22, 'Inter Milan', 17, 1),
 ('CRO', 'Kristijan Jakic', 'DF', 29, 'FC Augsburg', 17, 2),
 ('CRO', 'Toni Fruk', 'MF', 25, 'HNK Rijeka', 7, 1),
 ('CRO', 'Igor Matanovic', 'FW', 23, 'SC Freiburg', 9, 2),
@@ -943,7 +952,7 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('ENG', 'Bukayo Saka', 'FW', 24, 'Arsenal FC', 49, 14),
 ('ENG', 'Elliot Anderson', 'MF', 23, 'Nottingham Forest FC', 9, 0),
 ('ENG', 'Harry Kane', 'FW', 32, 'FC Bayern München', 114, 79),
-('ENG', 'Jude Bellingham', 'MF', 22, 'Real Madrid C. F.', 48, 6),
+('ENG', 'Jude Bellingham', 'MF', 22, 'Real Madrid', 48, 6),
 ('ENG', 'Marcus Rashford', 'FW', 28, 'FC Barcelona', 72, 18),
 ('ENG', 'Tino Livramento', 'DF', 23, 'Newcastle United FC', 6, 0),
 ('ENG', 'Dean Henderson', 'GK', 29, 'Crystal Palace FC', 4, 0),
@@ -955,7 +964,7 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('ENG', 'Ollie Watkins', 'FW', 30, 'Aston Villa FC', 22, 7),
 ('ENG', 'Noni Madueke', 'FW', 24, 'Arsenal FC', 11, 1),
 ('ENG', 'Eberechi Eze', 'MF', 27, 'Arsenal FC', 17, 3),
-('ENG', 'Ivan Toney', 'FW', 30, 'Al Ahli FC', 8, 1),
+('ENG', 'Ivan Toney', 'FW', 30, 'Al Ahli', 8, 1),
 ('ENG', 'James Trafford', 'GK', 23, 'Manchester City FC', 2, 0),
 ('ENG', 'Reece James', 'DF', 26, 'Chelsea FC', 24, 1),
 ('ENG', 'Djed Spence', 'DF', 25, 'Tottenham Hotspur FC', 6, 0),
@@ -977,7 +986,7 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('GHA', 'Brandon Thomas-asante', 'FW', 27, 'Coventry City FC', 8, 1),
 ('GHA', 'Antoine Semenyo', 'MF', 26, 'Manchester City FC', 34, 3),
 ('GHA', 'Joseph Anang', 'GK', 26, 'St Patrick''s Athletic FC', 1, 0),
-('GHA', 'Christopher Bonsu Baah', 'FW', 21, 'Al Qadsiah FC', 9, 0),
+('GHA', 'Christopher Bonsu Baah', 'FW', 21, 'Al-Qadsiah', 9, 0),
 ('GHA', 'Gideon Mensah', 'DF', 27, 'AJ Auxerre', 40, 0),
 ('GHA', 'Elisha Owusu', 'MF', 28, 'AJ Auxerre', 20, 0),
 ('GHA', 'Benjamin Asare', 'GK', 33, 'Hearts Of Oak SC', 13, 0),
@@ -1000,29 +1009,29 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('KOR', 'Kim Seung-gyu', 'GK', 35, 'FC Tokyo', 86, 0),
 ('KOR', 'Jo Hyeon-woo', 'GK', 34, 'Ulsan HD', 48, 0),
 ('KOR', 'Song Bum-keun', 'GK', 28, 'Jeonbuk Hyundai Motors', 2, 0),
-('KOR', 'Kim Min-jae', 'DF', 29, 'Bayern Munich', 78, 4),
+('KOR', 'Kim Min-jae', 'DF', 29, 'FC Bayern München', 78, 4),
 ('KOR', 'Kim Moon-hwan', 'DF', 30, 'Daejeon Hana Citizen', 35, 0),
 ('KOR', 'Seol Young-woo', 'DF', 27, 'Red Star Belgrade', 33, 0),
 ('KOR', 'Lee Tae-seok', 'DF', 23, 'Austria Wien', 14, 1),
 ('KOR', 'Park Jin-seob', 'DF', 30, 'Zhejiang', 13, 1),
 ('KOR', 'Kim Tae-hyeon', 'DF', 25, 'Kashima Antlers', 7, 0),
-('KOR', 'Lee Han-beom', 'DF', 23, 'Midtjylland', 7, 0),
+('KOR', 'Lee Han-beom', 'DF', 23, 'FC Midtjylland', 7, 0),
 ('KOR', 'Jens Castrop', 'DF', 22, 'Borussia Mönchengladbach', 6, 0),
 ('KOR', 'Lee Ki-hyuk', 'DF', 25, 'Gangwon FC', 2, 0),
 ('KOR', 'Cho Wi-je', 'DF', 24, 'Jeonbuk Hyundai Motors', 0, 0),
 ('KOR', 'Lee Jae-sung', 'MF', 33, 'Mainz 05', 104, 15),
-('KOR', 'Hwang Hee-chan', 'MF', 30, 'Wolverhampton Wanderers', 78, 17),
+('KOR', 'Hwang Hee-chan', 'MF', 30, 'Wolverhampton Wanderers FC', 78, 17),
 ('KOR', 'Hwang In-beom', 'MF', 29, 'Feyenoord', 72, 6),
 ('KOR', 'Lee Kang-in', 'MF', 25, 'Paris Saint-Germain', 46, 11),
 ('KOR', 'Paik Seung-ho', 'MF', 29, 'Birmingham City', 26, 3),
 ('KOR', 'Kim Jin-gyu', 'MF', 29, 'Jeonbuk Hyundai Motors', 21, 3),
 ('KOR', 'Lee Dong-gyeong', 'MF', 28, 'Ulsan HD', 17, 3),
 ('KOR', 'Bae Jun-ho', 'MF', 22, 'Stoke City', 13, 2),
-('KOR', 'Eom Ji-sung', 'MF', 24, 'Swansea City', 9, 2),
-('KOR', 'Yang Hyun-jun', 'MF', 24, 'Celtic', 8, 0),
-('KOR', 'Son Heung-min', 'FW', 33, 'Los Angeles FC', 143, 56),
-('KOR', 'Cho Gue-sung', 'FW', 28, 'Midtjylland', 43, 12),
-('KOR', 'Oh Hyeon-gyu', 'FW', 25, 'Beşiktaş', 26, 6);
+('KOR', 'Eom Ji-sung', 'MF', 24, 'Swansea City AFC', 9, 2),
+('KOR', 'Yang Hyun-jun', 'MF', 24, 'Celtic FC', 8, 0),
+('KOR', 'Son Heung-min', 'FW', 33, 'LAFC', 143, 56),
+('KOR', 'Cho Gue-sung', 'FW', 28, 'FC Midtjylland', 43, 12),
+('KOR', 'Oh Hyeon-gyu', 'FW', 25, 'Beşiktaş JK', 26, 6);
 
 -- ---------------------------
 -- South Africa (Group A) - 26 players
@@ -1047,7 +1056,7 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('RSA', 'Thalente Mbatha', 'MF', 26, 'Orlando Pirates', 14, 3),
 ('RSA', 'Jayden Adams', 'MF', 25, 'Mamelodi Sundowns', 4, 0),
 ('RSA', 'Themba Zwane', 'FW', 36, 'Mamelodi Sundowns', 53, 12),
-('RSA', 'Lyle Foster', 'FW', 26, 'Burnley', 26, 10),
+('RSA', 'Lyle Foster', 'FW', 26, 'Burnley FC', 26, 10),
 ('RSA', 'Evidence Makgopa', 'FW', 26, 'Orlando Pirates', 26, 6),
 ('RSA', 'Oswin Appollis', 'FW', 24, 'Orlando Pirates', 25, 8),
 ('RSA', 'Iqraam Rayners', 'FW', 30, 'Mamelodi Sundowns', 13, 4),
@@ -1095,24 +1104,24 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('SUI', 'Silvan Widmer', 'DF', 33, 'Mainz 05', 59, 5),
 ('SUI', 'Nico Elvedi', 'DF', 29, 'Borussia Mönchengladbach', 66, 3),
 ('SUI', 'Manuel Akanji', 'DF', 30, 'Inter Milan', 80, 4),
-('SUI', 'Denis Zakaria', 'MF', 29, 'Monaco', 64, 3),
+('SUI', 'Denis Zakaria', 'MF', 29, 'AS Monaco', 64, 3),
 ('SUI', 'Breel Embolo', 'FW', 29, 'Rennes', 86, 24),
-('SUI', 'Remo Freuler', 'MF', 34, 'Bologna', 87, 11),
+('SUI', 'Remo Freuler', 'MF', 34, 'Bologna FC', 87, 11),
 ('SUI', 'Johan Manzambi', 'MF', 20, 'SC Freiburg', 11, 3),
-('SUI', 'Granit Xhaka', 'MF', 33, 'Sunderland', 145, 17),
-('SUI', 'Dan Ndoye', 'FW', 25, 'Nottingham Forest', 30, 7),
+('SUI', 'Granit Xhaka', 'MF', 33, 'Sunderland AFC', 145, 17),
+('SUI', 'Dan Ndoye', 'FW', 25, 'Nottingham Forest FC', 30, 7),
 ('SUI', 'Yvon Mvogo', 'GK', 32, 'Lorient', 13, 0),
 ('SUI', 'Ricardo Rodriguez', 'DF', 33, 'Real Betis', 137, 9),
-('SUI', 'Ardon Jashari', 'MF', 23, 'Milan', 7, 0),
+('SUI', 'Ardon Jashari', 'MF', 23, 'AC Milan', 7, 0),
 ('SUI', 'Djibril Sow', 'MF', 29, 'Sevilla', 51, 0),
-('SUI', 'Christian Fassnacht', 'MF', 32, 'Young Boys', 22, 5),
+('SUI', 'Christian Fassnacht', 'MF', 32, 'BSC Young Boys', 22, 5),
 ('SUI', 'Rubén Vargas', 'FW', 27, 'Sevilla', 61, 11),
 ('SUI', 'Eray Cömert', 'DF', 28, 'Valencia', 21, 0),
 ('SUI', 'Noah Okafor', 'FW', 26, 'Leeds United', 24, 2),
 ('SUI', 'Michel Aebischer', 'MF', 29, 'Pisa', 39, 2),
-('SUI', 'Marvin Keller', 'GK', 23, 'Young Boys', 1, 0),
+('SUI', 'Marvin Keller', 'GK', 23, 'BSC Young Boys', 1, 0),
 ('SUI', 'Fabian Rieder', 'MF', 24, 'FC Augsburg', 27, 1),
-('SUI', 'Zeki Amdouni', 'FW', 25, 'Burnley', 28, 11),
+('SUI', 'Zeki Amdouni', 'FW', 25, 'Burnley FC', 28, 11),
 ('SUI', 'Aurèle Amenda', 'DF', 22, 'Eintracht Frankfurt', 6, 0),
 ('SUI', 'Luca Jaquez', 'DF', 23, 'VfB Stuttgart', 3, 0),
 ('SUI', 'Cedric Itten', 'FW', 29, 'Fortuna Düsseldorf', 14, 5);
@@ -1121,32 +1130,32 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 -- Scotland (Group C) - 26 players
 -- ---------------------------
 INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUES
-('SCO', 'Craig Gordon', 'GK', 43, 'Heart of Midlothian', 84, 0),
-('SCO', 'Angus Gunn', 'GK', 30, 'Nottingham Forest', 21, 0),
-('SCO', 'Liam Kelly', 'GK', 30, 'Rangers', 3, 0),
-('SCO', 'Andy Robertson', 'DF', 32, 'Liverpool', 93, 4),
+('SCO', 'Craig Gordon', 'GK', 43, 'Heart Of Midlothian FC', 84, 0),
+('SCO', 'Angus Gunn', 'GK', 30, 'Nottingham Forest FC', 21, 0),
+('SCO', 'Liam Kelly', 'GK', 30, 'Rangers FC', 3, 0),
+('SCO', 'Andy Robertson', 'DF', 32, 'Liverpool FC', 93, 4),
 ('SCO', 'Grant Hanley', 'DF', 34, 'Hibernian', 67, 2),
-('SCO', 'Kieran Tierney', 'DF', 29, 'Celtic', 55, 2),
-('SCO', 'Scott McKenna', 'DF', 29, 'Dinamo Zagreb', 50, 1),
+('SCO', 'Kieran Tierney', 'DF', 29, 'Celtic FC', 55, 2),
+('SCO', 'Scott McKenna', 'DF', 29, 'GNK Dinamo Zagreb', 50, 1),
 ('SCO', 'Jack Hendry', 'DF', 31, 'Al-Ettifaq', 37, 3),
-('SCO', 'Nathan Patterson', 'DF', 24, 'Everton', 26, 1),
-('SCO', 'Anthony Ralston', 'DF', 27, 'Celtic', 26, 1),
-('SCO', 'John Souttar', 'DF', 29, 'Rangers', 23, 2),
-('SCO', 'Aaron Hickey', 'DF', 24, 'Brentford', 20, 0),
-('SCO', 'Dominic Hyam', 'DF', 30, 'Wrexham', 3, 0),
-('SCO', 'John McGinn', 'MF', 31, 'Aston Villa', 85, 20),
-('SCO', 'Scott McTominay', 'MF', 29, 'Napoli', 69, 14),
+('SCO', 'Nathan Patterson', 'DF', 24, 'Everton FC', 26, 1),
+('SCO', 'Anthony Ralston', 'DF', 27, 'Celtic FC', 26, 1),
+('SCO', 'John Souttar', 'DF', 29, 'Rangers FC', 23, 2),
+('SCO', 'Aaron Hickey', 'DF', 24, 'Brentford FC', 20, 0),
+('SCO', 'Dominic Hyam', 'DF', 30, 'Wrexham AFC', 3, 0),
+('SCO', 'John McGinn', 'MF', 31, 'Aston Villa FC', 85, 20),
+('SCO', 'Scott McTominay', 'MF', 29, 'SSC Napoli', 69, 14),
 ('SCO', 'Ryan Christie', 'MF', 31, 'Bournemouth', 67, 10),
-('SCO', 'Kenny McLean', 'MF', 34, 'Norwich City', 57, 3),
-('SCO', 'Lewis Ferguson', 'MF', 26, 'Bologna', 23, 1),
+('SCO', 'Kenny McLean', 'MF', 34, 'Norwich City FC', 57, 3),
+('SCO', 'Lewis Ferguson', 'MF', 26, 'Bologna FC', 23, 1),
 ('SCO', 'Ben Gannon-Doak', 'MF', 20, 'Bournemouth', 13, 1),
-('SCO', 'Findlay Curtis', 'MF', 20, 'Kilmarnock', 2, 1),
-('SCO', 'Tyler Fletcher', 'MF', 19, 'Manchester United', 1, 0),
+('SCO', 'Findlay Curtis', 'MF', 20, 'Kilmarnock FC', 2, 1),
+('SCO', 'Tyler Fletcher', 'MF', 19, 'Manchester United FC', 1, 0),
 ('SCO', 'Lyndon Dykes', 'FW', 30, 'Charlton Athletic', 51, 10),
-('SCO', 'Ché Adams', 'FW', 29, 'Torino', 46, 11),
-('SCO', 'Lawrence Shankland', 'FW', 30, 'Heart of Midlothian', 19, 6),
+('SCO', 'Ché Adams', 'FW', 29, 'Torino FC', 46, 11),
+('SCO', 'Lawrence Shankland', 'FW', 30, 'Heart Of Midlothian FC', 19, 6),
 ('SCO', 'George Hirst', 'FW', 27, 'Ipswich Town', 9, 1),
-('SCO', 'Ross Stewart', 'FW', 29, 'Southampton', 2, 0);
+('SCO', 'Ross Stewart', 'FW', 29, 'Southampton FC', 2, 0);
 
 -- ---------------------------
 -- Paraguay (Group D) - 26 players
@@ -1155,10 +1164,10 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('PAR', 'Gatito Fernández', 'GK', 38, 'Cerro Porteño', 30, 0),
 ('PAR', 'Orlando Gill', 'GK', 26, 'San Lorenzo', 5, 0),
 ('PAR', 'Gastón Olveira', 'GK', 33, 'Olimpia', 1, 0),
-('PAR', 'Gustavo Gómez', 'DF', 33, 'Palmeiras', 88, 4),
+('PAR', 'Gustavo Gómez', 'DF', 33, 'SE Palmeiras', 88, 4),
 ('PAR', 'Júnior Alonso', 'DF', 33, 'Atlético Mineiro', 70, 3),
 ('PAR', 'Fabián Balbuena', 'DF', 34, 'Grêmio', 47, 2),
-('PAR', 'Omar Alderete', 'DF', 29, 'Sunderland', 35, 3),
+('PAR', 'Omar Alderete', 'DF', 29, 'Sunderland AFC', 35, 3),
 ('PAR', 'Juan José Cáceres', 'DF', 26, 'Dynamo Moscow', 16, 0),
 ('PAR', 'Gustavo Velázquez', 'DF', 35, 'Cerro Porteño', 12, 1),
 ('PAR', 'José Canale', 'DF', 29, 'Lanús', 1, 0),
@@ -1166,14 +1175,14 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('PAR', 'Miguel Almirón', 'MF', 32, 'Atlanta United FC', 75, 9),
 ('PAR', 'Kaku', 'MF', 31, 'Al-Ain', 32, 5),
 ('PAR', 'Andrés Cubas', 'MF', 30, 'Vancouver Whitecaps FC', 32, 0),
-('PAR', 'Ramón Sosa', 'MF', 26, 'Palmeiras', 28, 1),
-('PAR', 'Diego Gómez', 'MF', 23, 'Brighton & Hove Albion', 23, 3),
+('PAR', 'Ramón Sosa', 'MF', 26, 'SE Palmeiras', 28, 1),
+('PAR', 'Diego Gómez', 'MF', 23, 'Brighton & Hove Albion FC', 23, 3),
 ('PAR', 'Damián Bobadilla', 'MF', 24, 'São Paulo', 19, 1),
 ('PAR', 'Braian Ojeda', 'MF', 25, 'Orlando City SC', 16, 0),
 ('PAR', 'Matías Galarza', 'MF', 24, 'Atlanta United FC', 14, 2),
-('PAR', 'Maurício', 'MF', 24, 'Palmeiras', 2, 0),
+('PAR', 'Maurício', 'MF', 24, 'SE Palmeiras', 2, 0),
 ('PAR', 'Antonio Sanabria', 'FW', 30, 'Cremonese', 47, 7),
-('PAR', 'Julio Enciso', 'FW', 22, 'Strasbourg', 31, 4),
+('PAR', 'Julio Enciso', 'FW', 22, 'RC Strasbourg', 31, 4),
 ('PAR', 'Gabriel Ávalos', 'FW', 34, 'Independiente', 22, 2),
 ('PAR', 'Álex Arce', 'FW', 30, 'Independiente Rivadavia', 14, 1),
 ('PAR', 'Isidro Pitta', 'FW', 26, 'Red Bull Bragantino', 5, 0),
@@ -1185,25 +1194,25 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUES
 ('USA', 'Matt Turner', 'GK', 31, 'New England Revolution', 54, 0),
 ('USA', 'Sergiño Dest', 'DF', 25, 'PSV Eindhoven', 38, 3),
-('USA', 'Chris Richards', 'DF', 26, 'Crystal Palace', 36, 3),
+('USA', 'Chris Richards', 'DF', 26, 'Crystal Palace FC', 36, 3),
 ('USA', 'Tyler Adams', 'MF', 27, 'Bournemouth', 53, 2),
-('USA', 'Antonee Robinson', 'DF', 28, 'Fulham', 53, 4),
-('USA', 'Auston Trusty', 'DF', 27, 'Celtic', 7, 0),
+('USA', 'Antonee Robinson', 'DF', 28, 'Fulham FC', 53, 4),
+('USA', 'Auston Trusty', 'DF', 27, 'Celtic FC', 7, 0),
 ('USA', 'Giovanni Reyna', 'MF', 23, 'Borussia Mönchengladbach', 37, 9),
-('USA', 'Weston McKennie', 'MF', 27, 'Juventus', 65, 12),
+('USA', 'Weston McKennie', 'MF', 27, 'Juventus FC', 65, 12),
 ('USA', 'Ricardo Pepi', 'FW', 23, 'PSV Eindhoven', 36, 13),
-('USA', 'Christian Pulisic', 'FW', 27, 'Milan', 85, 33),
+('USA', 'Christian Pulisic', 'FW', 27, 'AC Milan', 85, 33),
 ('USA', 'Brenden Aaronson', 'FW', 25, 'Leeds United', 57, 9),
 ('USA', 'Miles Robinson', 'DF', 29, 'FC Cincinnati', 39, 3),
 ('USA', 'Tim Ream', 'DF', 38, 'Charlotte FC', 81, 1),
 ('USA', 'Sebastian Berhalter', 'MF', 25, 'Vancouver Whitecaps FC', 12, 1),
 ('USA', 'Cristian Roldan', 'MF', 31, 'Seattle Sounders FC', 46, 0),
-('USA', 'Alex Freeman', 'DF', 21, 'Villarreal', 16, 2),
-('USA', 'Malik Tillman', 'MF', 24, 'Bayer Leverkusen', 29, 3),
+('USA', 'Alex Freeman', 'DF', 21, 'Villarreal CF', 16, 2),
+('USA', 'Malik Tillman', 'MF', 24, 'Bayer 04 Leverkusen', 29, 3),
 ('USA', 'Maximilian Arfsten', 'DF', 25, 'Columbus Crew', 19, 1),
-('USA', 'Haji Wright', 'FW', 28, 'Coventry City', 20, 7),
-('USA', 'Folarin Balogun', 'FW', 24, 'Monaco', 26, 9),
-('USA', 'Timothy Weah', 'FW', 26, 'Marseille', 50, 7),
+('USA', 'Haji Wright', 'FW', 28, 'Coventry City FC', 20, 7),
+('USA', 'Folarin Balogun', 'FW', 24, 'AS Monaco', 26, 9),
+('USA', 'Timothy Weah', 'FW', 26, 'Olympique Marseille', 50, 7),
 ('USA', 'Mark McKenzie', 'DF', 27, 'Toulouse', 28, 0),
 ('USA', 'Joe Scally', 'DF', 23, 'Borussia Mönchengladbach', 25, 0),
 ('USA', 'Matt Freese', 'GK', 27, 'New York City FC', 14, 0),
@@ -1215,27 +1224,27 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 -- ---------------------------
 INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUES
 ('JPN', 'Zion Suzuki', 'GK', 23, 'Parma', 24, 0),
-('JPN', 'Yukinari Sugawara', 'DF', 25, 'Werder Bremen', 21, 2),
+('JPN', 'Yukinari Sugawara', 'DF', 25, 'SV Werder Bremen', 21, 2),
 ('JPN', 'Shōgo Taniguchi', 'DF', 34, 'Sint-Truiden', 38, 1),
-('JPN', 'Kō Itakura', 'DF', 29, 'Ajax', 40, 2),
+('JPN', 'Kō Itakura', 'DF', 29, 'AFC Ajax', 40, 2),
 ('JPN', 'Yūto Nagatomo', 'DF', 39, 'FC Tokyo', 145, 4),
-('JPN', 'Wataru Endo', 'MF', 33, 'Liverpool', 73, 4),
+('JPN', 'Wataru Endo', 'MF', 33, 'Liverpool FC', 73, 4),
 ('JPN', 'Ao Tanaka', 'MF', 27, 'Leeds United', 38, 8),
 ('JPN', 'Takefusa Kubo', 'MF', 25, 'Real Sociedad', 49, 7),
 ('JPN', 'Keisuke Gotō', 'FW', 21, 'Sint-Truiden', 4, 0),
 ('JPN', 'Ritsu Dōan', 'MF', 27, 'Eintracht Frankfurt', 65, 11),
-('JPN', 'Daizen Maeda', 'FW', 28, 'Celtic', 27, 4),
+('JPN', 'Daizen Maeda', 'FW', 28, 'Celtic FC', 27, 4),
 ('JPN', 'Keisuke Ōsako', 'GK', 26, 'Sanfrecce Hiroshima', 11, 0),
 ('JPN', 'Keito Nakamura', 'MF', 25, 'Reims', 25, 10),
-('JPN', 'Junya Itō', 'MF', 33, 'Genk', 69, 15),
-('JPN', 'Daichi Kamada', 'MF', 29, 'Crystal Palace', 49, 12),
+('JPN', 'Junya Itō', 'MF', 33, 'KRC Genk', 69, 15),
+('JPN', 'Daichi Kamada', 'MF', 29, 'Crystal Palace FC', 49, 12),
 ('JPN', 'Tsuyoshi Watanabe', 'DF', 29, 'Feyenoord', 11, 0),
 ('JPN', 'Yuito Suzuki', 'FW', 24, 'SC Freiburg', 6, 0),
 ('JPN', 'Ayase Ueda', 'FW', 27, 'Feyenoord', 39, 16),
 ('JPN', 'Kōki Ogawa', 'FW', 28, 'NEC', 15, 11),
-('JPN', 'Ayumu Seko', 'DF', 26, 'Le Havre', 14, 0),
-('JPN', 'Hiroki Itō', 'DF', 27, 'Bayern Munich', 24, 1),
-('JPN', 'Takehiro Tomiyasu', 'DF', 27, 'Ajax', 43, 1),
+('JPN', 'Ayumu Seko', 'DF', 26, 'Le Havre AC', 14, 0),
+('JPN', 'Hiroki Itō', 'DF', 27, 'FC Bayern München', 24, 1),
+('JPN', 'Takehiro Tomiyasu', 'DF', 27, 'AFC Ajax', 43, 1),
 ('JPN', 'Tomoki Hayakawa', 'GK', 27, 'Kashima Antlers', 4, 0),
 ('JPN', 'Kaishū Sano', 'MF', 25, 'Mainz 05', 13, 0),
 ('JPN', 'Junnosuke Suzuki', 'DF', 22, 'Copenhagen', 6, 0),
@@ -1245,55 +1254,55 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 -- Netherlands (Group F) - 26 players
 -- ---------------------------
 INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUES
-('NED', 'Bart Verbruggen', 'GK', 23, 'Brighton & Hove Albion', 27, 0),
-('NED', 'Mark Flekken', 'GK', 32, 'Bayer Leverkusen', 11, 0),
-('NED', 'Robin Roefs', 'GK', 23, 'Sunderland', 0, 0),
-('NED', 'Virgil van Dijk', 'DF', 34, 'Liverpool', 90, 12),
+('NED', 'Bart Verbruggen', 'GK', 23, 'Brighton & Hove Albion FC', 27, 0),
+('NED', 'Mark Flekken', 'GK', 32, 'Bayer 04 Leverkusen', 11, 0),
+('NED', 'Robin Roefs', 'GK', 23, 'Sunderland AFC', 0, 0),
+('NED', 'Virgil van Dijk', 'DF', 34, 'Liverpool FC', 90, 12),
 ('NED', 'Denzel Dumfries', 'DF', 30, 'Inter Milan', 71, 11),
-('NED', 'Nathan Aké', 'DF', 31, 'Manchester City', 58, 5),
-('NED', 'Jurriën Timber', 'DF', 24, 'Arsenal', 23, 0),
-('NED', 'Micky van de Ven', 'DF', 25, 'Tottenham Hotspur', 19, 1),
-('NED', 'Mats Wieffer', 'DF', 26, 'Brighton & Hove Albion', 14, 1),
-('NED', 'Jan Paul van Hecke', 'DF', 26, 'Brighton & Hove Albion', 10, 0),
-('NED', 'Jorrel Hato', 'DF', 20, 'Chelsea', 7, 0),
-('NED', 'Frenkie de Jong', 'MF', 29, 'Barcelona', 64, 2),
+('NED', 'Nathan Aké', 'DF', 31, 'Manchester City FC', 58, 5),
+('NED', 'Jurriën Timber', 'DF', 24, 'Arsenal FC', 23, 0),
+('NED', 'Micky van de Ven', 'DF', 25, 'Tottenham Hotspur FC', 19, 1),
+('NED', 'Mats Wieffer', 'DF', 26, 'Brighton & Hove Albion FC', 14, 1),
+('NED', 'Jan Paul van Hecke', 'DF', 26, 'Brighton & Hove Albion FC', 10, 0),
+('NED', 'Jorrel Hato', 'DF', 20, 'Chelsea FC', 7, 0),
+('NED', 'Frenkie de Jong', 'MF', 29, 'FC Barcelona', 64, 2),
 ('NED', 'Marten de Roon', 'MF', 35, 'Atalanta', 42, 1),
-('NED', 'Tijjani Reijnders', 'MF', 27, 'Manchester City', 30, 7),
-('NED', 'Teun Koopmeiners', 'MF', 28, 'Juventus', 27, 3),
-('NED', 'Ryan Gravenberch', 'MF', 24, 'Liverpool', 25, 1),
+('NED', 'Tijjani Reijnders', 'MF', 27, 'Manchester City FC', 30, 7),
+('NED', 'Teun Koopmeiners', 'MF', 28, 'Juventus FC', 27, 3),
+('NED', 'Ryan Gravenberch', 'MF', 24, 'Liverpool FC', 25, 1),
 ('NED', 'Justin Kluivert', 'MF', 27, 'Bournemouth', 11, 0),
-('NED', 'Quinten Timber', 'MF', 24, 'Marseille', 10, 1),
+('NED', 'Quinten Timber', 'MF', 24, 'Olympique Marseille', 10, 1),
 ('NED', 'Guus Til', 'MF', 28, 'PSV Eindhoven', 6, 1),
 ('NED', 'Memphis Depay', 'FW', 32, 'Corinthians', 108, 55),
-('NED', 'Wout Weghorst', 'FW', 33, 'Ajax', 51, 14),
-('NED', 'Donyell Malen', 'FW', 27, 'Roma', 51, 13),
-('NED', 'Cody Gakpo', 'FW', 27, 'Liverpool', 48, 19),
-('NED', 'Noa Lang', 'FW', 26, 'Galatasaray', 15, 3),
-('NED', 'Brian Brobbey', 'FW', 24, 'Sunderland', 10, 1),
-('NED', 'Crysencio Summerville', 'FW', 24, 'West Ham United', 0, 0);
+('NED', 'Wout Weghorst', 'FW', 33, 'AFC Ajax', 51, 14),
+('NED', 'Donyell Malen', 'FW', 27, 'AS Roma', 51, 13),
+('NED', 'Cody Gakpo', 'FW', 27, 'Liverpool FC', 48, 19),
+('NED', 'Noa Lang', 'FW', 26, 'Galatasaray SK', 15, 3),
+('NED', 'Brian Brobbey', 'FW', 24, 'Sunderland AFC', 10, 1),
+('NED', 'Crysencio Summerville', 'FW', 24, 'West Ham United FC', 0, 0);
 
 -- ---------------------------
 -- Sweden (Group F) - 26 players
 -- ---------------------------
 INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUES
 ('SWE', 'Jacob Widell Zetterström', 'GK', 27, 'Derby County', 3, 0),
-('SWE', 'Gustaf Lagerbielke', 'DF', 26, 'Braga', 10, 2),
-('SWE', 'Victor Lindelöf', 'DF', 31, 'Aston Villa', 76, 3),
+('SWE', 'Gustaf Lagerbielke', 'DF', 26, 'SC Braga', 10, 2),
+('SWE', 'Victor Lindelöf', 'DF', 31, 'Aston Villa FC', 76, 3),
 ('SWE', 'Isak Hien', 'DF', 27, 'Atalanta', 28, 0),
 ('SWE', 'Gabriel Gudmundsson', 'DF', 27, 'Leeds United', 23, 0),
 ('SWE', 'Herman Johansson', 'DF', 28, 'FC Dallas', 3, 0),
-('SWE', 'Lucas Bergvall', 'MF', 20, 'Tottenham Hotspur', 9, 0),
+('SWE', 'Lucas Bergvall', 'MF', 20, 'Tottenham Hotspur FC', 9, 0),
 ('SWE', 'Daniel Svensson', 'DF', 24, 'Borussia Dortmund', 12, 0),
-('SWE', 'Alexander Isak', 'FW', 26, 'Liverpool', 57, 17),
-('SWE', 'Benjamin Nygren', 'FW', 24, 'Celtic', 10, 3),
-('SWE', 'Anthony Elanga', 'FW', 24, 'Newcastle United', 29, 6),
+('SWE', 'Alexander Isak', 'FW', 26, 'Liverpool FC', 57, 17),
+('SWE', 'Benjamin Nygren', 'FW', 24, 'Celtic FC', 10, 3),
+('SWE', 'Anthony Elanga', 'FW', 24, 'Newcastle United FC', 29, 6),
 ('SWE', 'Viktor Johansson', 'GK', 27, 'Stoke City', 12, 0),
-('SWE', 'Ken Sema', 'FW', 32, 'Pafos', 33, 5),
-('SWE', 'Hjalmar Ekdal', 'DF', 27, 'Burnley', 12, 0),
+('SWE', 'Ken Sema', 'FW', 32, 'Pafos FC', 33, 5),
+('SWE', 'Hjalmar Ekdal', 'DF', 27, 'Burnley FC', 12, 0),
 ('SWE', 'Carl Starfelt', 'DF', 31, 'Celta Vigo', 17, 0),
 ('SWE', 'Jesper Karlström', 'MF', 30, 'Udinese', 24, 0),
-('SWE', 'Viktor Gyökeres', 'FW', 28, 'Arsenal', 32, 19),
-('SWE', 'Yasin Ayari', 'MF', 22, 'Brighton & Hove Albion', 20, 3),
+('SWE', 'Viktor Gyökeres', 'FW', 28, 'Arsenal FC', 32, 19),
+('SWE', 'Yasin Ayari', 'MF', 22, 'Brighton & Hove Albion FC', 20, 3),
 ('SWE', 'Mattias Svanberg', 'MF', 27, 'VfL Wolfsburg', 40, 2),
 ('SWE', 'Eric Smith', 'DF', 29, 'FC St. Pauli', 1, 0),
 ('SWE', 'Alexander Bernhardsson', 'FW', 27, 'Holstein Kiel', 10, 0),
@@ -1313,24 +1322,24 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('TUN', 'Montassar Talbi', 'DF', 28, 'Lorient', 62, 4),
 ('TUN', 'Dylan Bronn', 'DF', 30, 'Servette', 52, 2),
 ('TUN', 'Ali Abdi', 'DF', 32, 'Nice', 45, 7),
-('TUN', 'Yan Valery', 'DF', 27, 'Young Boys', 21, 0),
+('TUN', 'Yan Valery', 'DF', 27, 'BSC Young Boys', 21, 0),
 ('TUN', 'Mohamed Amine Ben Hamida', 'DF', 30, 'Espérance de Tunis', 12, 0),
 ('TUN', 'Moutaz Neffati', 'DF', 21, 'IFK Norrköping', 5, 0),
-('TUN', 'Omar Rekik', 'DF', 24, 'Maribor', 4, 0),
+('TUN', 'Omar Rekik', 'DF', 24, 'NK Maribor', 4, 0),
 ('TUN', 'Adem Arous', 'DF', 21, 'Kasımpaşa', 1, 0),
 ('TUN', 'Raed Chikhaoui', 'DF', 22, 'US Monastir', 0, 0),
 ('TUN', 'Ellyes Skhiri', 'MF', 31, 'Eintracht Frankfurt', 81, 4),
-('TUN', 'Hannibal Mejbri', 'MF', 23, 'Burnley', 44, 1),
-('TUN', 'Anis Ben Slimane', 'MF', 25, 'Norwich City', 39, 4),
+('TUN', 'Hannibal Mejbri', 'MF', 23, 'Burnley FC', 44, 1),
+('TUN', 'Anis Ben Slimane', 'MF', 25, 'Norwich City FC', 39, 4),
 ('TUN', 'Mortadha Ben Ouanes', 'MF', 31, 'Kasımpaşa', 17, 0),
 ('TUN', 'Ismaël Gharbi', 'MF', 22, 'FC Augsburg', 15, 2),
-('TUN', 'Hadj Mahmoud', 'MF', 26, 'Lugano', 7, 0),
+('TUN', 'Hadj Mahmoud', 'MF', 26, 'FC Lugano', 7, 0),
 ('TUN', 'Rani Khedira', 'MF', 32, 'Union Berlin', 2, 0),
 ('TUN', 'Elias Achouri', 'FW', 27, 'Copenhagen', 29, 4),
 ('TUN', 'Firas Chaouat', 'FW', 30, 'Club Africain', 28, 6),
 ('TUN', 'Hazem Mastouri', 'FW', 28, 'Dynamo Makhachkala', 18, 4),
 ('TUN', 'Elias Saad', 'FW', 26, 'Hannover 96', 14, 4),
-('TUN', 'Sebastian Tounekti', 'FW', 23, 'Celtic', 10, 1),
+('TUN', 'Sebastian Tounekti', 'FW', 23, 'Celtic FC', 10, 1),
 ('TUN', 'Khalil Ayari', 'FW', 21, 'Paris Saint-Germain', 2, 0),
 ('TUN', 'Rayan Elloumi', 'FW', 18, 'Vancouver Whitecaps FC', 2, 0);
 
@@ -1357,7 +1366,7 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('IRN', 'Mehdi Torabi', 'MF', 31, 'Tractor', 52, 7),
 ('IRN', 'Rouzbeh Cheshmi', 'MF', 32, 'Esteghlal', 40, 3),
 ('IRN', 'Mohammad Mohebi', 'MF', 27, 'Rostov', 36, 14),
-('IRN', 'Mehdi Ghayedi', 'MF', 27, 'Al Nasr', 29, 10),
+('IRN', 'Mehdi Ghayedi', 'MF', 27, 'Al-Nassr', 29, 10),
 ('IRN', 'Mohammad Ghorbani', 'MF', 25, 'Al Wahda', 15, 0),
 ('IRN', 'Aria Yousefi', 'MF', 24, 'Sepahan', 13, 1),
 ('IRN', 'Amirmohammad Razzaghinia', 'MF', 20, 'Esteghlal', 3, 0),
@@ -1374,8 +1383,8 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('NZL', 'Michael Woud', 'GK', 27, 'Auckland FC', 6, 0),
 ('NZL', 'Tim Payne', 'DF', 31, 'Wellington Phoenix', 50, 3),
 ('NZL', 'Francis De Vries', 'DF', 33, 'Auckland FC', 18, 1),
-('NZL', 'Tyler Bindon', 'DF', 21, 'Nottingham Forest', 23, 3),
-('NZL', 'Michael Boxall', 'DF', 37, 'Minnesota United', 61, 1),
+('NZL', 'Tyler Bindon', 'DF', 21, 'Nottingham Forest FC', 23, 3),
+('NZL', 'Michael Boxall', 'DF', 37, 'Minnesota United FC', 61, 1),
 ('NZL', 'Liberato Cacace', 'DF', 25, 'Wrexham AFC', 35, 1),
 ('NZL', 'Nando Pijnaker', 'DF', 26, 'Auckland FC', 23, 0),
 ('NZL', 'Finn Surman', 'DF', 23, 'Portland Timbers', 17, 2),
@@ -1384,70 +1393,70 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('NZL', 'Lachlan Bayliss', 'MF', 23, 'Newcastle Jets', 2, 0),
 ('NZL', 'Joe Bell', 'MF', 27, 'Viking FK', 31, 1),
 ('NZL', 'Matt Garbett', 'MF', 24, 'Peterborough United', 36, 5),
-('NZL', 'Ben Old', 'MF', 23, 'Saint-Etienne', 22, 2),
+('NZL', 'Ben Old', 'MF', 23, 'AS Saint-Etienne', 22, 2),
 ('NZL', 'Alex Rufer', 'MF', 29, 'Wellington Phoenix', 24, 0),
 ('NZL', 'Sarpreet Singh', 'MF', 27, 'Wellington Phoenix', 26, 3),
-('NZL', 'Marko Stamenic', 'MF', 24, 'Swansea City', 37, 3),
+('NZL', 'Marko Stamenic', 'MF', 24, 'Swansea City AFC', 37, 3),
 ('NZL', 'Ryan Thomas', 'MF', 31, 'PEC Zwolle', 25, 3),
 ('NZL', 'Kosta Barbarouses', 'FW', 36, 'Western Sydney Wanderers', 74, 10),
 ('NZL', 'Eli Just', 'FW', 25, 'Motherwell', 42, 9),
 ('NZL', 'Callum McCowatt', 'FW', 26, 'Silkeborg', 30, 4),
 ('NZL', 'Jesse Randall', 'FW', 25, 'Auckland FC', 9, 2),
 ('NZL', 'Ben Waine', 'FW', 24, 'Port Vale', 30, 9),
-('NZL', 'Chris Wood', 'FW', 34, 'Nottingham Forest', 88, 45);
+('NZL', 'Chris Wood', 'FW', 34, 'Nottingham Forest FC', 88, 45);
 
 -- Saudi Arabia (Group H) - 26 players (worldcuppass.com)
 INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUES
 ('KSA', 'Mohammed Al Owais', 'GK', 34, 'Al Ula', 0, 0),
-('KSA', 'Nawaf Al Aqidi', 'GK', 26, 'Al Nassr', 0, 0),
-('KSA', 'Ahmed Al Kassar', 'GK', 35, 'Al Qadsiah', 0, 0),
-('KSA', 'Abdulelah Al Amri', 'DF', 29, 'Al Nassr', 0, 0),
-('KSA', 'Hassan Tambakti', 'DF', 27, 'Al Hilal', 0, 0),
-('KSA', 'Jehad Thikri', 'DF', 24, 'Al Qadsiah', 0, 0),
-('KSA', 'Ali Lajami', 'DF', 30, 'Al Hilal', 0, 0),
+('KSA', 'Nawaf Al Aqidi', 'GK', 26, 'Al-Nassr', 0, 0),
+('KSA', 'Ahmed Al Kassar', 'GK', 35, 'Al-Qadsiah', 0, 0),
+('KSA', 'Abdulelah Al Amri', 'DF', 29, 'Al-Nassr', 0, 0),
+('KSA', 'Hassan Tambakti', 'DF', 27, 'Al-Hilal', 0, 0),
+('KSA', 'Jehad Thikri', 'DF', 24, 'Al-Qadsiah', 0, 0),
+('KSA', 'Ali Lajami', 'DF', 30, 'Al-Hilal', 0, 0),
 ('KSA', 'Hassan Kadesh', 'DF', 33, 'Al Ittihad', 0, 0),
 ('KSA', 'Saud Abdulhamid', 'DF', 26, 'RC Lens', 0, 0),
-('KSA', 'Mohammed Abu Al Shamat', 'DF', 23, 'Al Qadsiah', 0, 0),
+('KSA', 'Mohammed Abu Al Shamat', 'DF', 23, 'Al-Qadsiah', 0, 0),
 ('KSA', 'Ali Majrashi', 'DF', 26, 'Al Ahli', 0, 0),
-('KSA', 'Moteb Al Harbi', 'DF', 26, 'Al Hilal', 0, 0),
-('KSA', 'Nawaf Boushal', 'DF', 26, 'Al Nassr', 0, 0),
-('KSA', 'Mohammed Kanno', 'MF', 31, 'Al Hilal', 0, 0),
-('KSA', 'Abdullah Al Khaibari', 'MF', 29, 'Al Nassr', 0, 0),
+('KSA', 'Moteb Al Harbi', 'DF', 26, 'Al-Hilal', 0, 0),
+('KSA', 'Nawaf Boushal', 'DF', 26, 'Al-Nassr', 0, 0),
+('KSA', 'Mohammed Kanno', 'MF', 31, 'Al-Hilal', 0, 0),
+('KSA', 'Abdullah Al Khaibari', 'MF', 29, 'Al-Nassr', 0, 0),
 ('KSA', 'Ziyad Al Johani', 'MF', 24, 'Al Ahli', 0, 0),
-('KSA', 'Nasser Al Dawsari', 'MF', 27, 'Al Hilal', 0, 0),
-('KSA', 'Musab Al Juwayr', 'MF', 22, 'Al Qadsiah', 0, 0),
-('KSA', 'Sultan Mandash', 'MF', 31, 'Al Hilal', 0, 0),
+('KSA', 'Nasser Al Dawsari', 'MF', 27, 'Al-Hilal', 0, 0),
+('KSA', 'Musab Al Juwayr', 'MF', 22, 'Al-Qadsiah', 0, 0),
+('KSA', 'Sultan Mandash', 'MF', 31, 'Al-Hilal', 0, 0),
 ('KSA', 'Alaa Al Hajji', 'MF', 30, 'Neom SC', 0, 0),
-('KSA', 'Salem Al-Dawsari', 'FW', 34, 'Al Hilal', 0, 0),
+('KSA', 'Salem Al-Dawsari', 'FW', 34, 'Al-Hilal', 0, 0),
 ('KSA', 'Firas Al-Buraikan', 'FW', 26, 'Al Ahli', 0, 0),
 ('KSA', 'Saleh Al Shehri', 'FW', 32, 'Al Ittihad', 0, 0),
-('KSA', 'Abdullah Al Hamdan', 'FW', 26, 'Al Nassr', 0, 0),
-('KSA', 'Khalid Al Ghannam', 'FW', 25, 'Al Ettifaq', 0, 0),
-('KSA', 'Ayman Yahya', 'FW', 25, 'Al Nassr', 0, 0);
+('KSA', 'Abdullah Al Hamdan', 'FW', 26, 'Al-Nassr', 0, 0),
+('KSA', 'Khalid Al Ghannam', 'FW', 25, 'Al-Ettifaq', 0, 0),
+('KSA', 'Ayman Yahya', 'FW', 25, 'Al-Nassr', 0, 0);
 
 -- Uruguay (Group H) - 26 players (worldcuppass.com)
 INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUES
-('URU', 'Sergio Rochet', 'GK', 33, 'Internacional', 0, 0),
+('URU', 'Sergio Rochet', 'GK', 33, 'SC Internacional', 0, 0),
 ('URU', 'Fernando Muslera', 'GK', 39, 'Estudiantes', 0, 0),
 ('URU', 'Santiago Mele', 'GK', 28, 'Monterrey', 0, 0),
-('URU', 'Guillermo Varela', 'DF', 33, 'Flamengo', 0, 0),
-('URU', 'Ronald Araujo', 'DF', 27, 'Barcelona', 0, 0),
-('URU', 'Jose Maria Gimenez', 'DF', 31, 'Atletico Madrid', 0, 0),
-('URU', 'Santiago Bueno', 'DF', 27, 'Wolverhampton Wanderers', 0, 0),
+('URU', 'Guillermo Varela', 'DF', 33, 'CR Flamengo', 0, 0),
+('URU', 'Ronald Araujo', 'DF', 27, 'FC Barcelona', 0, 0),
+('URU', 'Jose Maria Gimenez', 'DF', 31, 'Atlético Madrid', 0, 0),
+('URU', 'Santiago Bueno', 'DF', 27, 'Wolverhampton Wanderers FC', 0, 0),
 ('URU', 'Sebastian Caceres', 'DF', 26, 'Club America', 0, 0),
-('URU', 'Mathias Olivera', 'DF', 28, 'Napoli', 0, 0),
+('URU', 'Mathias Olivera', 'DF', 28, 'SSC Napoli', 0, 0),
 ('URU', 'Matias Vina', 'DF', 28, 'River Plate', 0, 0),
-('URU', 'Joaquin Piquerez', 'DF', 27, 'Palmeiras', 0, 0),
-('URU', 'Manuel Ugarte', 'MF', 24, 'Manchester United', 0, 0),
-('URU', 'Emiliano Martinez', 'MF', 26, 'Palmeiras', 0, 0),
-('URU', 'Rodrigo Bentancur', 'MF', 28, 'Tottenham Hotspur', 0, 0),
+('URU', 'Joaquin Piquerez', 'DF', 27, 'SE Palmeiras', 0, 0),
+('URU', 'Manuel Ugarte', 'MF', 24, 'Manchester United FC', 0, 0),
+('URU', 'Emiliano Martinez', 'MF', 26, 'SE Palmeiras', 0, 0),
+('URU', 'Rodrigo Bentancur', 'MF', 28, 'Tottenham Hotspur FC', 0, 0),
 ('URU', 'Federico Valverde', 'MF', 27, 'Real Madrid', 0, 0),
 ('URU', 'Agustin Canobbio', 'MF', 26, 'Fluminense', 0, 0),
 ('URU', 'Juan Manuel Sanabria', 'MF', 26, 'Real Salt Lake', 0, 0),
-('URU', 'Giorgian de Arrascaeta', 'MF', 32, 'Flamengo', 0, 0),
-('URU', 'Nicolas de la Cruz', 'MF', 29, 'Flamengo', 0, 0),
-('URU', 'Rodrigo Zalazar', 'MF', 26, 'Braga', 0, 0),
-('URU', 'Facundo Pellistri', 'MF', 24, 'Panathinaikos', 0, 0),
+('URU', 'Giorgian de Arrascaeta', 'MF', 32, 'CR Flamengo', 0, 0),
+('URU', 'Nicolas de la Cruz', 'MF', 29, 'CR Flamengo', 0, 0),
+('URU', 'Rodrigo Zalazar', 'MF', 26, 'SC Braga', 0, 0),
+('URU', 'Facundo Pellistri', 'MF', 24, 'Panathinaikos FC', 0, 0),
 ('URU', 'Maximiliano Araujo', 'MF', 26, 'Sporting CP', 0, 0),
 ('URU', 'Brian Rodriguez', 'MF', 25, 'Club America', 0, 0),
 ('URU', 'Rodrigo Aguirre', 'FW', 31, 'Tigres UANL', 0, 0),
@@ -1456,28 +1465,28 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 
 -- Senegal (Group I) - 26 players (worldcuppass.com)
 INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUES
-('SEN', 'Edouard Mendy', 'GK', 34, 'Al-Ahli', 56, 0),
-('SEN', 'Mory Diaw', 'GK', 32, 'Le Havre', 5, 0),
+('SEN', 'Edouard Mendy', 'GK', 34, 'Al Ahli', 56, 0),
+('SEN', 'Mory Diaw', 'GK', 32, 'Le Havre AC', 5, 0),
 ('SEN', 'Yehvann Diouf', 'GK', 26, 'Nice', 2, 0),
 ('SEN', 'Kalidou Koulibaly', 'DF', 34, 'Al-Hilal', 102, 2),
-('SEN', 'Krepin Diatta', 'DF', 27, 'Monaco', 60, 2),
-('SEN', 'Moussa Niakhate', 'DF', 30, 'Lyon', 30, 0),
-('SEN', 'Ismail Jakobs', 'DF', 26, 'Galatasaray', 29, 0),
-('SEN', 'Abdoulaye Seck', 'DF', 34, 'Maccabi Haifa', 22, 4),
-('SEN', 'El Hadji Malick Diouf', 'DF', 21, 'West Ham United', 19, 1),
-('SEN', 'Mamadou Sarr', 'DF', 20, 'Chelsea', 7, 0),
+('SEN', 'Krepin Diatta', 'DF', 27, 'AS Monaco', 60, 2),
+('SEN', 'Moussa Niakhate', 'DF', 30, 'Olympique Lyonnais', 30, 0),
+('SEN', 'Ismail Jakobs', 'DF', 26, 'Galatasaray SK', 29, 0),
+('SEN', 'Abdoulaye Seck', 'DF', 34, 'Maccabi Haifa FC', 22, 4),
+('SEN', 'El Hadji Malick Diouf', 'DF', 21, 'West Ham United FC', 19, 1),
+('SEN', 'Mamadou Sarr', 'DF', 20, 'Chelsea FC', 7, 0),
 ('SEN', 'Antoine Mendy', 'DF', 22, 'Nice', 6, 0),
-('SEN', 'Idrissa Gana Gueye', 'MF', 36, 'Everton', 130, 7),
-('SEN', 'Pape Gueye', 'MF', 27, 'Villarreal', 41, 5),
-('SEN', 'Pape Matar Sarr', 'MF', 23, 'Tottenham Hotspur', 39, 4),
-('SEN', 'Lamine Camara', 'MF', 22, 'Monaco', 32, 7),
+('SEN', 'Idrissa Gana Gueye', 'MF', 36, 'Everton FC', 130, 7),
+('SEN', 'Pape Gueye', 'MF', 27, 'Villarreal CF', 41, 5),
+('SEN', 'Pape Matar Sarr', 'MF', 23, 'Tottenham Hotspur FC', 39, 4),
+('SEN', 'Lamine Camara', 'MF', 22, 'AS Monaco', 32, 7),
 ('SEN', 'Pathe Ciss', 'MF', 32, 'Rayo Vallecano', 29, 0),
-('SEN', 'Habib Diarra', 'MF', 22, 'Sunderland', 20, 4),
-('SEN', 'Bara Ndiaye', 'MF', 18, 'Bayern Munich', 1, 0),
+('SEN', 'Habib Diarra', 'MF', 22, 'Sunderland AFC', 20, 4),
+('SEN', 'Bara Ndiaye', 'MF', 18, 'FC Bayern München', 1, 0),
 ('SEN', 'Sadio Mane', 'FW', 34, 'Al-Nassr', 127, 55),
-('SEN', 'Ismaila Sarr', 'FW', 28, 'Crystal Palace', 82, 19),
-('SEN', 'Iliman Ndiaye', 'FW', 26, 'Everton', 39, 4),
-('SEN', 'Nicolas Jackson', 'FW', 24, 'Bayern Munich', 32, 8),
+('SEN', 'Ismaila Sarr', 'FW', 28, 'Crystal Palace FC', 82, 19),
+('SEN', 'Iliman Ndiaye', 'FW', 26, 'Everton FC', 39, 4),
+('SEN', 'Nicolas Jackson', 'FW', 24, 'FC Bayern München', 32, 8),
 ('SEN', 'Bamba Dieng', 'FW', 26, 'Lorient', 22, 2),
 ('SEN', 'Cherif Ndiaye', 'FW', 30, 'Samsunspor', 18, 4),
 ('SEN', 'Ibrahim Mbaye', 'FW', 18, 'Paris Saint-Germain', 10, 3),
@@ -1493,7 +1502,7 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('IRQ', 'Zaid Tahseen', 'DF', 25, 'Pakhtakor', 0, 0),
 ('IRQ', 'Rebin Sulaka', 'DF', 33, 'Port FC', 0, 0),
 ('IRQ', 'Akam Hashem', 'DF', 27, 'Al-Zawraa', 0, 0),
-('IRQ', 'Merchas Doski', 'DF', 26, 'Viktoria Plzen', 0, 0),
+('IRQ', 'Merchas Doski', 'DF', 26, 'FC Viktoria Plzeň', 0, 0),
 ('IRQ', 'Ahmed Yahya', 'DF', 30, 'Al-Shorta', 0, 0),
 ('IRQ', 'Zaid Ismail', 'DF', 24, 'Al-Talaba', 0, 0),
 ('IRQ', 'Frans Putros', 'DF', 32, 'Persib', 0, 0),
@@ -1505,7 +1514,7 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('IRQ', 'Ibrahim Bayesh', 'MF', 25, 'Al-Dhafra', 0, 0),
 ('IRQ', 'Ahmed Qasim', 'MF', 22, 'Nashville SC', 0, 0),
 ('IRQ', 'Youssef Amyn', 'MF', 22, 'AEK Larnaca', 0, 0),
-('IRQ', 'Marko Farji', 'MF', 22, 'Venezia', 0, 0),
+('IRQ', 'Marko Farji', 'MF', 22, 'Venezia FC', 0, 0),
 ('IRQ', 'Ali Jassim', 'FW', 22, 'Al-Najma', 0, 0),
 ('IRQ', 'Ali Al-Hamadi', 'FW', 24, 'Luton Town', 0, 0),
 ('IRQ', 'Ali Yousef', 'FW', 30, 'Al-Talaba', 0, 0),
@@ -1515,31 +1524,31 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 -- Norway (Group I) - 26 players (worldcuppass.com)
 INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUES
 ('NOR', 'Orjan Nyland', 'GK', 35, 'Sevilla', 0, 0),
-('NOR', 'Egil Selvik', 'GK', 28, 'Watford', 0, 0),
+('NOR', 'Egil Selvik', 'GK', 28, 'Watford FC', 0, 0),
 ('NOR', 'Sander Tangvik', 'GK', 23, 'Hamburger SV', 0, 0),
-('NOR', 'Kristoffer Ajer', 'DF', 28, 'Brentford', 0, 0),
+('NOR', 'Kristoffer Ajer', 'DF', 28, 'Brentford FC', 0, 0),
 ('NOR', 'Julian Ryerson', 'DF', 28, 'Borussia Dortmund', 0, 0),
 ('NOR', 'Leo Ostigard', 'DF', 26, 'Genoa', 0, 0),
-('NOR', 'Marcus Holmgren Pedersen', 'DF', 27, 'Torino', 0, 0),
-('NOR', 'David Moller Wolfe', 'DF', 25, 'Wolverhampton Wanderers', 0, 0),
+('NOR', 'Marcus Holmgren Pedersen', 'DF', 27, 'Torino FC', 0, 0),
+('NOR', 'David Moller Wolfe', 'DF', 25, 'Wolverhampton Wanderers FC', 0, 0),
 ('NOR', 'Fredrik Bjorkan', 'DF', 26, 'Bodo/Glimt', 0, 0),
-('NOR', 'Torbjorn Heggem', 'DF', 27, 'Bologna', 0, 0),
+('NOR', 'Torbjorn Heggem', 'DF', 27, 'Bologna FC', 0, 0),
 ('NOR', 'Sondre Langas', 'DF', 25, 'Derby County', 0, 0),
-('NOR', 'Henrik Falchener', 'DF', 23, 'Viking', 0, 0),
-('NOR', 'Martin Odegaard', 'MF', 27, 'Arsenal', 0, 0),
-('NOR', 'Sander Berge', 'MF', 28, 'Fulham', 0, 0),
+('NOR', 'Henrik Falchener', 'DF', 23, 'Viking FK', 0, 0),
+('NOR', 'Martin Odegaard', 'MF', 27, 'Arsenal FC', 0, 0),
+('NOR', 'Sander Berge', 'MF', 28, 'Fulham FC', 0, 0),
 ('NOR', 'Patrick Berg', 'MF', 28, 'Bodo/Glimt', 0, 0),
-('NOR', 'Kristian Thorstvedt', 'MF', 27, 'Sassuolo', 0, 0),
+('NOR', 'Kristian Thorstvedt', 'MF', 27, 'US Sassuolo', 0, 0),
 ('NOR', 'Morten Thorsby', 'MF', 30, 'Cremonese', 0, 0),
 ('NOR', 'Antonio Nusa', 'MF', 21, 'RB Leipzig', 0, 0),
 ('NOR', 'Fredrik Aursnes', 'MF', 30, 'Benfica', 0, 0),
-('NOR', 'Oscar Bobb', 'MF', 22, 'Fulham', 0, 0),
+('NOR', 'Oscar Bobb', 'MF', 22, 'Fulham FC', 0, 0),
 ('NOR', 'Jens Petter Hauge', 'MF', 27, 'Bodo/Glimt', 0, 0),
 ('NOR', 'Andreas Schjelderup', 'MF', 22, 'Benfica', 0, 0),
-('NOR', 'Thelo Aasgaard', 'MF', 23, 'Rangers', 0, 0),
-('NOR', 'Alexander Sorloth', 'FW', 30, 'Atletico Madrid', 0, 0),
-('NOR', 'Erling Haaland', 'FW', 25, 'Manchester City', 0, 0),
-('NOR', 'Jorgen Strand Larsen', 'FW', 26, 'Crystal Palace', 0, 0);
+('NOR', 'Thelo Aasgaard', 'MF', 23, 'Rangers FC', 0, 0),
+('NOR', 'Alexander Sorloth', 'FW', 30, 'Atlético Madrid', 0, 0),
+('NOR', 'Erling Haaland', 'FW', 25, 'Manchester City FC', 0, 0),
+('NOR', 'Jorgen Strand Larsen', 'FW', 26, 'Crystal Palace FC', 0, 0);
 
 -- Jordan (Group J) - 26 players (worldcuppass.com)
 INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUES
@@ -1563,7 +1572,7 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('JOR', 'Amer Jamous', 'MF', 23, 'Al-Zawraa', 18, 1),
 ('JOR', 'Mohammad Al-Dawoud', 'MF', 33, 'Al-Wehdat', 11, 1),
 ('JOR', 'Mahmoud Al-Mardi', 'FW', 32, 'Al-Hussein', 87, 9),
-('JOR', 'Odeh Al-Fakhouri', 'FW', 20, 'Pyramids', 8, 0),
+('JOR', 'Odeh Al-Fakhouri', 'FW', 20, 'Pyramids FC', 8, 0),
 ('JOR', 'Musa Al-Tamari', 'FW', 29, 'Rennes', 90, 24),
 ('JOR', 'Mohammad Abu Zrayq', 'FW', 28, 'Raja Casablanca', 39, 5),
 ('JOR', 'Ali Azaizeh', 'FW', 22, 'Al-Shabab', 2, 0),
@@ -1572,39 +1581,39 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 
 -- Portugal (Group K) - 26 players (worldcuppass.com)
 INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUES
-('POR', 'Diogo Costa', 'GK', 26, 'Porto', 0, 0),
-('POR', 'Jose Sa', 'GK', 33, 'Wolverhampton Wanderers', 0, 0),
+('POR', 'Diogo Costa', 'GK', 26, 'FC Porto', 0, 0),
+('POR', 'Jose Sa', 'GK', 33, 'Wolverhampton Wanderers FC', 0, 0),
 ('POR', 'Rui Silva', 'GK', 32, 'Sporting CP', 0, 0),
-('POR', 'Ruben Dias', 'DF', 29, 'Manchester City', 0, 0),
-('POR', 'Joao Cancelo', 'DF', 32, 'Barcelona', 0, 0),
-('POR', 'Nelson Semedo', 'DF', 32, 'Fenerbahce', 0, 0),
+('POR', 'Ruben Dias', 'DF', 29, 'Manchester City FC', 0, 0),
+('POR', 'Joao Cancelo', 'DF', 32, 'FC Barcelona', 0, 0),
+('POR', 'Nelson Semedo', 'DF', 32, 'Fenerbahçe', 0, 0),
 ('POR', 'Nuno Mendes', 'DF', 23, 'Paris Saint-Germain', 0, 0),
-('POR', 'Diogo Dalot', 'DF', 27, 'Manchester United', 0, 0),
+('POR', 'Diogo Dalot', 'DF', 27, 'Manchester United FC', 0, 0),
 ('POR', 'Goncalo Inacio', 'DF', 24, 'Sporting CP', 0, 0),
-('POR', 'Renato Veiga', 'DF', 22, 'Villarreal', 0, 0),
+('POR', 'Renato Veiga', 'DF', 22, 'Villarreal CF', 0, 0),
 ('POR', 'Tomas Araujo', 'DF', 24, 'Benfica', 0, 0),
-('POR', 'Bernardo Silva', 'MF', 31, 'Manchester City', 0, 0),
-('POR', 'Bruno Fernandes', 'MF', 31, 'Manchester United', 0, 0),
+('POR', 'Bernardo Silva', 'MF', 31, 'Manchester City FC', 0, 0),
+('POR', 'Bruno Fernandes', 'MF', 31, 'Manchester United FC', 0, 0),
 ('POR', 'Ruben Neves', 'MF', 29, 'Al-Hilal', 0, 0),
 ('POR', 'Vitinha', 'MF', 26, 'Paris Saint-Germain', 0, 0),
 ('POR', 'Joao Neves', 'MF', 21, 'Paris Saint-Germain', 0, 0),
-('POR', 'Matheus Nunes', 'MF', 27, 'Manchester City', 0, 0),
-('POR', 'Samu Costa', 'MF', 25, 'Mallorca', 0, 0),
+('POR', 'Matheus Nunes', 'MF', 27, 'Manchester City FC', 0, 0),
+('POR', 'Samu Costa', 'MF', 25, 'RCD Mallorca', 0, 0),
 ('POR', 'Cristiano Ronaldo', 'FW', 41, 'Al-Nassr', 0, 0),
 ('POR', 'Francisco Trincao', 'FW', 26, 'Sporting CP', 0, 0),
 ('POR', 'Joao Felix', 'FW', 26, 'Al-Nassr', 0, 0),
 ('POR', 'Rafael Leao', 'FW', 27, 'AC Milan', 0, 0),
 ('POR', 'Goncalo Guedes', 'FW', 29, 'Real Sociedad', 0, 0),
 ('POR', 'Goncalo Ramos', 'FW', 24, 'Paris Saint-Germain', 0, 0),
-('POR', 'Pedro Neto', 'FW', 26, 'Chelsea', 0, 0),
-('POR', 'Francisco Conceicao', 'FW', 23, 'Juventus', 0, 0);
+('POR', 'Pedro Neto', 'FW', 26, 'Chelsea FC', 0, 0),
+('POR', 'Francisco Conceicao', 'FW', 23, 'Juventus FC', 0, 0);
 
 -- Uzbekistan (Group K) - 26 players (worldcuppass.com)
 INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUES
 ('UZB', 'Utkir Yusupov', 'GK', 35, 'Navbahor', 39, 0),
 ('UZB', 'Abduvohid Nematov', 'GK', 25, 'Nasaf', 13, 0),
 ('UZB', 'Botirali Ergashev', 'GK', 30, 'Neftchi', 3, 0),
-('UZB', 'Abdukodir Khusanov', 'DF', 22, 'Manchester City', 25, 0),
+('UZB', 'Abdukodir Khusanov', 'DF', 22, 'Manchester City FC', 25, 0),
 ('UZB', 'Khojiakbar Alijonov', 'DF', 29, 'Pakhtakor', 51, 3),
 ('UZB', 'Farrukh Sayfiev', 'DF', 35, 'Neftchi', 64, 1),
 ('UZB', 'Rustam Ashurmatov', 'DF', 29, 'Esteghlal', 47, 1),
@@ -1612,7 +1621,7 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('UZB', 'Sherzod Nasrullaev', 'DF', 27, 'Pakhtakor', 35, 2),
 ('UZB', 'Abdulla Abdullaev', 'DF', 28, 'Dibba', 27, 0),
 ('UZB', 'Avazbek Ulmasaliev', 'DF', 26, 'AGMK', 0, 0),
-('UZB', 'Jakhongir Urozov', 'DF', 22, 'Dinamo', 2, 1),
+('UZB', 'Jakhongir Urozov', 'DF', 22, 'Dinamo Tashkent', 2, 1),
 ('UZB', 'Behruz Karimov', 'DF', 18, 'Surkhon', 2, 0),
 ('UZB', 'Akmal Mozgovoy', 'MF', 26, 'Pakhtakor', 23, 1),
 ('UZB', 'Otabek Shukurov', 'MF', 29, 'Baniyas', 86, 9),
@@ -1622,21 +1631,21 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('UZB', 'Oston Urunov', 'MF', 25, 'Persepolis', 42, 10),
 ('UZB', 'Dostonbek Khamdamov', 'MF', 29, 'Pakhtakor', 35, 5),
 ('UZB', 'Azizjon Ganiev', 'MF', 28, 'Al Bataeh', 22, 0),
-('UZB', 'Abbosbek Fayzullayev', 'MF', 22, 'Istanbul Basaksehir', 30, 8),
+('UZB', 'Abbosbek Fayzullayev', 'MF', 22, 'Başakşehir FK', 30, 8),
 ('UZB', 'Sherzod Esanov', 'MF', 23, 'Bukhara', 0, 0),
-('UZB', 'Eldor Shomurodov', 'FW', 30, 'Istanbul Basaksehir', 90, 44),
+('UZB', 'Eldor Shomurodov', 'FW', 30, 'Başakşehir FK', 90, 44),
 ('UZB', 'Igor Sergeev', 'FW', 33, 'Persepolis', 81, 24),
-('UZB', 'Azizbek Amonov', 'FW', 28, 'Dinamo', 11, 2);
+('UZB', 'Azizbek Amonov', 'FW', 28, 'Dinamo Tashkent', 11, 2);
 
 -- Panama (Group L) - 26 players (worldcuppass.com)
 INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUES
 ('PAN', 'Luis Mejia', 'GK', 35, 'Nacional', 0, 0),
 ('PAN', 'Orlando Mosquera', 'GK', 31, 'Al-Fayha', 0, 0),
 ('PAN', 'Cesar Samudio', 'GK', 32, 'Marathon', 0, 0),
-('PAN', 'Amir Murillo', 'DF', 30, 'Besiktas', 0, 0),
-('PAN', 'Jose Cordoba', 'DF', 25, 'Norwich City', 0, 0),
+('PAN', 'Amir Murillo', 'DF', 30, 'Beşiktaş JK', 0, 0),
+('PAN', 'Jose Cordoba', 'DF', 25, 'Norwich City FC', 0, 0),
 ('PAN', 'Cesar Blackman', 'DF', 28, 'Slovan Bratislava', 0, 0),
-('PAN', 'Andres Andrade', 'DF', 27, 'LASK', 0, 0),
+('PAN', 'Andres Andrade', 'DF', 27, 'LASK Linz', 0, 0),
 ('PAN', 'Eric Davis', 'DF', 35, 'Plaza Amador', 0, 0),
 ('PAN', 'Roderick Miller', 'DF', 34, 'Turan Tovuz', 0, 0),
 ('PAN', 'Jiovany Ramos', 'DF', 29, 'Puerto Cabello', 0, 0),
@@ -1646,7 +1655,7 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 ('PAN', 'Anibal Godoy', 'MF', 36, 'San Diego FC', 0, 0),
 ('PAN', 'Adalberto Carrasquilla', 'MF', 27, 'UNAM', 0, 0),
 ('PAN', 'Cristian Martinez', 'MF', 29, 'Ironi Kiryat Shmona', 0, 0),
-('PAN', 'Carlos Harvey', 'MF', 26, 'Minnesota United', 0, 0),
+('PAN', 'Carlos Harvey', 'MF', 26, 'Minnesota United FC', 0, 0),
 ('PAN', 'Jose Luis Rodriguez', 'MF', 27, 'Juarez', 0, 0),
 ('PAN', 'Cesar Yanis', 'MF', 30, 'Cobresal', 0, 0),
 ('PAN', 'Yoel Barcenas', 'MF', 32, 'Unattached', 0, 0),
@@ -1660,108 +1669,257 @@ INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUE
 
 -- Turkey (Group D) - 26 players (worldcuppass.com)
 INSERT INTO players (team_id, name, position, age, club, caps, intl_goals) VALUES
-('TUR', 'Ugurcan Cakir', 'GK', 30, 'Galatasaray', 0, 0),
-('TUR', 'Mert Gunok', 'GK', 37, 'Besiktas', 0, 0),
-('TUR', 'Altay Bayindir', 'GK', 28, 'Manchester United', 0, 0),
-('TUR', 'Zeki Celik', 'DF', 29, 'Roma', 0, 0),
-('TUR', 'Merih Demiral', 'DF', 28, 'Al-Ahli', 0, 0),
-('TUR', 'Caglar Soyuncu', 'DF', 30, 'Fenerbahce', 0, 0),
-('TUR', 'Ozan Kabak', 'DF', 26, 'Hoffenheim', 0, 0),
-('TUR', 'Abdulkerim Bardakci', 'DF', 31, 'Galatasaray', 0, 0),
-('TUR', 'Mert Muldur', 'DF', 27, 'Fenerbahce', 0, 0),
-('TUR', 'Ferdi Kadioglu', 'DF', 26, 'Brighton & Hove Albion', 0, 0),
-('TUR', 'Eren Elmali', 'DF', 25, 'Galatasaray', 0, 0),
-('TUR', 'Samet Akaydin', 'DF', 32, 'Caykur Rizespor', 0, 0),
+('TUR', 'Ugurcan Cakir', 'GK', 30, 'Galatasaray SK', 0, 0),
+('TUR', 'Mert Gunok', 'GK', 37, 'Beşiktaş JK', 0, 0),
+('TUR', 'Altay Bayindir', 'GK', 28, 'Manchester United FC', 0, 0),
+('TUR', 'Zeki Celik', 'DF', 29, 'AS Roma', 0, 0),
+('TUR', 'Merih Demiral', 'DF', 28, 'Al Ahli', 0, 0),
+('TUR', 'Caglar Soyuncu', 'DF', 30, 'Fenerbahçe', 0, 0),
+('TUR', 'Ozan Kabak', 'DF', 26, 'TSG Hoffenheim', 0, 0),
+('TUR', 'Abdulkerim Bardakci', 'DF', 31, 'Galatasaray SK', 0, 0),
+('TUR', 'Mert Muldur', 'DF', 27, 'Fenerbahçe', 0, 0),
+('TUR', 'Ferdi Kadioglu', 'DF', 26, 'Brighton & Hove Albion FC', 0, 0),
+('TUR', 'Eren Elmali', 'DF', 25, 'Galatasaray SK', 0, 0),
+('TUR', 'Samet Akaydin', 'DF', 32, 'Çaykur Rizespor', 0, 0),
 ('TUR', 'Hakan Calhanoglu', 'MF', 32, 'Inter Milan', 0, 0),
-('TUR', 'Kaan Ayhan', 'MF', 31, 'Galatasaray', 0, 0),
+('TUR', 'Kaan Ayhan', 'MF', 31, 'Galatasaray SK', 0, 0),
 ('TUR', 'Salih Ozcan', 'MF', 28, 'Borussia Dortmund', 0, 0),
-('TUR', 'Ismail Yuksek', 'MF', 27, 'Fenerbahce', 0, 0),
-('TUR', 'Orkun Kokcu', 'MF', 25, 'Besiktas', 0, 0),
+('TUR', 'Ismail Yuksek', 'MF', 27, 'Fenerbahçe', 0, 0),
+('TUR', 'Orkun Kokcu', 'MF', 25, 'Beşiktaş JK', 0, 0),
 ('TUR', 'Arda Guler', 'FW', 21, 'Real Madrid', 0, 0),
-('TUR', 'Kenan Yildiz', 'FW', 21, 'Juventus', 0, 0),
-('TUR', 'Kerem Akturkoglu', 'FW', 27, 'Fenerbahce', 0, 0),
-('TUR', 'Baris Alper Yilmaz', 'FW', 26, 'Galatasaray', 0, 0),
-('TUR', 'Irfan Can Kahveci', 'FW', 30, 'Fenerbahce', 0, 0),
-('TUR', 'Yunus Akgun', 'FW', 25, 'Galatasaray', 0, 0),
-('TUR', 'Oguz Aydin', 'FW', 25, 'Fenerbahce', 0, 0),
+('TUR', 'Kenan Yildiz', 'FW', 21, 'Juventus FC', 0, 0),
+('TUR', 'Kerem Akturkoglu', 'FW', 27, 'Fenerbahçe', 0, 0),
+('TUR', 'Baris Alper Yilmaz', 'FW', 26, 'Galatasaray SK', 0, 0),
+('TUR', 'Irfan Can Kahveci', 'FW', 30, 'Fenerbahçe', 0, 0),
+('TUR', 'Yunus Akgun', 'FW', 25, 'Galatasaray SK', 0, 0),
+('TUR', 'Oguz Aydin', 'FW', 25, 'Fenerbahçe', 0, 0),
 ('TUR', 'Can Uzun', 'FW', 20, 'Eintracht Frankfurt', 0, 0),
-('TUR', 'Deniz Gul', 'FW', 21, 'Porto', 0, 0);
+('TUR', 'Deniz Gul', 'FW', 21, 'FC Porto', 0, 0);
 
 
 -- ============================================================
 -- GROUP STAGE MATCHES (72 total, goals NULL until played)
+-- Dates verified against Wikipedia schedule 2026-06-17
+-- MD1: A→Jun11 | B→Jun12/13 | C→Jun13 | D→Jun12/13 | E/F→Jun14 | G/H→Jun15 | I/J→Jun16 | K/L→Jun17
+-- MD2: A/B→Jun18 | C/D→Jun19 | E/F→Jun20 | G/H→Jun21 | I/J→Jun22 | K/L→Jun23
+-- MD3: A/B/C→Jun24 | D/E/F→Jun25 | G/H/I→Jun26 | J/K/L→Jun27 (simultaneous per group)
 -- ============================================================
 INSERT INTO matches (match_id, fifa_match_no, team_home, team_away, goals_home, goals_away, stage, group_name, match_date, stadium, city) VALUES
-(1, 1, 'MEX', 'RSA', NULL, NULL, 'group', 'A', '2026-06-11', 'Estadio Azteca', 'Mexico City'),
-(2, 2, 'KOR', 'CZE', NULL, NULL, 'group', 'A', '2026-06-11', 'Estadio Akron', 'Guadalajara'),
-(3, 28, 'MEX', 'KOR', NULL, NULL, 'group', 'A', '2026-06-17', 'Estadio Akron', 'Guadalajara'),
-(4, 25, 'RSA', 'CZE', NULL, NULL, 'group', 'A', '2026-06-17', 'Mercedes-Benz Stadium', 'Atlanta'),
-(5, 53, 'MEX', 'CZE', NULL, NULL, 'group', 'A', '2026-06-25', 'Estadio Azteca', 'Mexico City'),
-(6, 54, 'RSA', 'KOR', NULL, NULL, 'group', 'A', '2026-06-25', 'Estadio BBVA', 'Monterrey'),
-(7, 3, 'CAN', 'BIH', NULL, NULL, 'group', 'B', '2026-06-11', 'BMO Field', 'Toronto'),
-(8, 5, 'QAT', 'SUI', NULL, NULL, 'group', 'B', '2026-06-11', 'Levi's Stadium', 'San Francisco Bay Area'),
-(9, 27, 'CAN', 'QAT', NULL, NULL, 'group', 'B', '2026-06-17', 'BC Place', 'Vancouver'),
-(10, 26, 'BIH', 'SUI', NULL, NULL, 'group', 'B', '2026-06-17', 'SoFi Stadium', 'Los Angeles'),
-(11, 49, 'CAN', 'SUI', NULL, NULL, 'group', 'B', '2026-06-25', 'BC Place', 'Vancouver'),
-(12, 50, 'BIH', 'QAT', NULL, NULL, 'group', 'B', '2026-06-25', 'Lumen Field', 'Seattle'),
-(13, 6, 'BRA', 'MAR', NULL, NULL, 'group', 'C', '2026-06-12', 'MetLife Stadium', 'New York/New Jersey'),
-(14, 7, 'HAI', 'SCO', NULL, NULL, 'group', 'C', '2026-06-12', 'Gillette Stadium', 'Boston'),
-(15, 31, 'BRA', 'HAI', NULL, NULL, 'group', 'C', '2026-06-18', 'Lincoln Financial Field', 'Philadelphia'),
-(16, 30, 'MAR', 'SCO', NULL, NULL, 'group', 'C', '2026-06-18', 'Gillette Stadium', 'Boston'),
-(17, 51, 'BRA', 'SCO', NULL, NULL, 'group', 'C', '2026-06-26', 'Hard Rock Stadium', 'Miami'),
-(18, 52, 'MAR', 'HAI', NULL, NULL, 'group', 'C', '2026-06-26', 'Mercedes-Benz Stadium', 'Atlanta'),
-(19, 4, 'USA', 'PAR', NULL, NULL, 'group', 'D', '2026-06-12', 'SoFi Stadium', 'Los Angeles'),
-(20, 8, 'AUS', 'TUR', NULL, NULL, 'group', 'D', '2026-06-12', 'BC Place', 'Vancouver'),
-(21, 29, 'USA', 'AUS', NULL, NULL, 'group', 'D', '2026-06-18', 'Lumen Field', 'Seattle'),
-(22, 32, 'PAR', 'TUR', NULL, NULL, 'group', 'D', '2026-06-18', 'Levi's Stadium', 'San Francisco Bay Area'),
-(23, 59, 'USA', 'TUR', NULL, NULL, 'group', 'D', '2026-06-26', 'SoFi Stadium', 'Los Angeles'),
-(24, 60, 'PAR', 'AUS', NULL, NULL, 'group', 'D', '2026-06-26', 'Levi's Stadium', 'San Francisco Bay Area'),
-(25, 9, 'GER', 'CUW', NULL, NULL, 'group', 'E', '2026-06-13', 'NRG Stadium', 'Houston'),
-(26, 11, 'CIV', 'ECU', NULL, NULL, 'group', 'E', '2026-06-13', 'Lincoln Financial Field', 'Philadelphia'),
-(27, 34, 'GER', 'CIV', NULL, NULL, 'group', 'E', '2026-06-19', 'BMO Field', 'Toronto'),
-(28, 35, 'CUW', 'ECU', NULL, NULL, 'group', 'E', '2026-06-19', 'Arrowhead Stadium', 'Kansas City'),
-(29, 56, 'GER', 'ECU', NULL, NULL, 'group', 'E', '2026-06-27', 'MetLife Stadium', 'New York/New Jersey'),
-(30, 55, 'CUW', 'CIV', NULL, NULL, 'group', 'E', '2026-06-27', 'Lincoln Financial Field', 'Philadelphia'),
-(31, 10, 'NED', 'JPN', NULL, NULL, 'group', 'F', '2026-06-13', 'AT&T Stadium', 'Dallas'),
-(32, 12, 'SWE', 'TUN', NULL, NULL, 'group', 'F', '2026-06-13', 'Estadio BBVA', 'Monterrey'),
-(33, 33, 'NED', 'SWE', NULL, NULL, 'group', 'F', '2026-06-19', 'NRG Stadium', 'Houston'),
-(34, 36, 'JPN', 'TUN', NULL, NULL, 'group', 'F', '2026-06-19', 'Estadio BBVA', 'Monterrey'),
-(35, 58, 'NED', 'TUN', NULL, NULL, 'group', 'F', '2026-06-27', 'Arrowhead Stadium', 'Kansas City'),
-(36, 57, 'JPN', 'SWE', NULL, NULL, 'group', 'F', '2026-06-27', 'AT&T Stadium', 'Dallas'),
-(37, 14, 'BEL', 'EGY', NULL, NULL, 'group', 'G', '2026-06-14', 'Lumen Field', 'Seattle'),
-(38, 16, 'IRN', 'NZL', NULL, NULL, 'group', 'G', '2026-06-14', 'SoFi Stadium', 'Los Angeles'),
-(39, 38, 'BEL', 'IRN', NULL, NULL, 'group', 'G', '2026-06-20', 'SoFi Stadium', 'Los Angeles'),
-(40, 40, 'EGY', 'NZL', NULL, NULL, 'group', 'G', '2026-06-20', 'BC Place', 'Vancouver'),
-(41, 66, 'BEL', 'NZL', NULL, NULL, 'group', 'G', '2026-06-28', 'BC Place', 'Vancouver'),
-(42, 65, 'EGY', 'IRN', NULL, NULL, 'group', 'G', '2026-06-28', 'Lumen Field', 'Seattle'),
-(43, 13, 'ESP', 'CPV', NULL, NULL, 'group', 'H', '2026-06-14', 'Mercedes-Benz Stadium', 'Atlanta'),
-(44, 15, 'KSA', 'URU', NULL, NULL, 'group', 'H', '2026-06-14', 'Hard Rock Stadium', 'Miami'),
-(45, 37, 'ESP', 'KSA', NULL, NULL, 'group', 'H', '2026-06-20', 'Mercedes-Benz Stadium', 'Atlanta'),
-(46, 39, 'CPV', 'URU', NULL, NULL, 'group', 'H', '2026-06-20', 'Hard Rock Stadium', 'Miami'),
-(47, 64, 'ESP', 'URU', NULL, NULL, 'group', 'H', '2026-06-28', 'Estadio Akron', 'Guadalajara'),
-(48, 63, 'CPV', 'KSA', NULL, NULL, 'group', 'H', '2026-06-28', 'NRG Stadium', 'Houston'),
-(49, 17, 'FRA', 'SEN', NULL, NULL, 'group', 'I', '2026-06-15', 'MetLife Stadium', 'New York/New Jersey'),
-(50, 18, 'IRQ', 'NOR', NULL, NULL, 'group', 'I', '2026-06-15', 'Gillette Stadium', 'Boston'),
-(51, 42, 'FRA', 'IRQ', NULL, NULL, 'group', 'I', '2026-06-21', 'Lincoln Financial Field', 'Philadelphia'),
-(52, 43, 'SEN', 'NOR', NULL, NULL, 'group', 'I', '2026-06-21', 'MetLife Stadium', 'New York/New Jersey'),
-(53, 61, 'FRA', 'NOR', NULL, NULL, 'group', 'I', '2026-06-29', 'Gillette Stadium', 'Boston'),
-(54, 62, 'SEN', 'IRQ', NULL, NULL, 'group', 'I', '2026-06-29', 'BMO Field', 'Toronto'),
-(55, 19, 'ARG', 'ALG', NULL, NULL, 'group', 'J', '2026-06-15', 'Arrowhead Stadium', 'Kansas City'),
-(56, 20, 'AUT', 'JOR', NULL, NULL, 'group', 'J', '2026-06-15', 'Levi's Stadium', 'San Francisco Bay Area'),
-(57, 41, 'ARG', 'AUT', NULL, NULL, 'group', 'J', '2026-06-21', 'AT&T Stadium', 'Dallas'),
-(58, 44, 'ALG', 'JOR', NULL, NULL, 'group', 'J', '2026-06-21', 'Levi's Stadium', 'San Francisco Bay Area'),
-(59, 72, 'ARG', 'JOR', NULL, NULL, 'group', 'J', '2026-06-29', 'AT&T Stadium', 'Dallas'),
-(60, 71, 'ALG', 'AUT', NULL, NULL, 'group', 'J', '2026-06-29', 'Arrowhead Stadium', 'Kansas City'),
-(61, 21, 'POR', 'COD', NULL, NULL, 'group', 'K', '2026-06-16', 'NRG Stadium', 'Houston'),
-(62, 24, 'UZB', 'COL', NULL, NULL, 'group', 'K', '2026-06-16', 'Estadio Azteca', 'Mexico City'),
-(63, 45, 'POR', 'UZB', NULL, NULL, 'group', 'K', '2026-06-22', 'NRG Stadium', 'Houston'),
-(64, 48, 'COD', 'COL', NULL, NULL, 'group', 'K', '2026-06-22', 'Estadio Akron', 'Guadalajara'),
-(65, 69, 'POR', 'COL', NULL, NULL, 'group', 'K', '2026-06-30', 'Hard Rock Stadium', 'Miami'),
-(66, 70, 'COD', 'UZB', NULL, NULL, 'group', 'K', '2026-06-30', 'Mercedes-Benz Stadium', 'Atlanta'),
-(67, 22, 'ENG', 'CRO', NULL, NULL, 'group', 'L', '2026-06-16', 'AT&T Stadium', 'Dallas'),
-(68, 23, 'GHA', 'PAN', NULL, NULL, 'group', 'L', '2026-06-16', 'BMO Field', 'Toronto'),
-(69, 46, 'ENG', 'GHA', NULL, NULL, 'group', 'L', '2026-06-22', 'Gillette Stadium', 'Boston'),
-(70, 47, 'CRO', 'PAN', NULL, NULL, 'group', 'L', '2026-06-22', 'BMO Field', 'Toronto'),
-(71, 67, 'ENG', 'PAN', NULL, NULL, 'group', 'L', '2026-06-30', 'MetLife Stadium', 'New York/New Jersey'),
-(72, 68, 'CRO', 'GHA', NULL, NULL, 'group', 'L', '2026-06-30', 'Lincoln Financial Field', 'Philadelphia');
+-- Group A: MD1 Jun 11 | MD2 Jun 18 | MD3 Jun 24
+(1,  1,  'MEX', 'RSA', NULL, NULL, 'group', 'A', '2026-06-11', 'Estadio Azteca',       'Mexico City'),
+(2,  2,  'KOR', 'CZE', NULL, NULL, 'group', 'A', '2026-06-11', 'Estadio Akron',        'Guadalajara'),
+(3,  28, 'MEX', 'KOR', NULL, NULL, 'group', 'A', '2026-06-18', 'Estadio Akron',        'Guadalajara'),
+(4,  25, 'RSA', 'CZE', NULL, NULL, 'group', 'A', '2026-06-18', 'Mercedes-Benz Stadium','Atlanta'),
+(5,  53, 'MEX', 'CZE', NULL, NULL, 'group', 'A', '2026-06-24', 'Estadio Azteca',       'Mexico City'),
+(6,  54, 'RSA', 'KOR', NULL, NULL, 'group', 'A', '2026-06-24', 'Estadio BBVA',         'Monterrey'),
+-- Group B: MD1 Jun 12 (CAN) / Jun 13 (QAT) | MD2 Jun 18 | MD3 Jun 24
+(7,  3,  'CAN', 'BIH', NULL, NULL, 'group', 'B', '2026-06-12', 'BMO Field',            'Toronto'),
+(8,  5,  'QAT', 'SUI', NULL, NULL, 'group', 'B', '2026-06-13', 'Levi''s Stadium',      'San Francisco Bay Area'),
+(9,  27, 'CAN', 'QAT', NULL, NULL, 'group', 'B', '2026-06-18', 'BC Place',             'Vancouver'),
+(10, 26, 'BIH', 'SUI', NULL, NULL, 'group', 'B', '2026-06-18', 'SoFi Stadium',         'Los Angeles'),
+(11, 49, 'CAN', 'SUI', NULL, NULL, 'group', 'B', '2026-06-24', 'BC Place',             'Vancouver'),
+(12, 50, 'BIH', 'QAT', NULL, NULL, 'group', 'B', '2026-06-24', 'Lumen Field',          'Seattle'),
+-- Group C: MD1 Jun 13 | MD2 Jun 19 | MD3 Jun 24
+(13, 6,  'BRA', 'MAR', NULL, NULL, 'group', 'C', '2026-06-13', 'MetLife Stadium',      'New York/New Jersey'),
+(14, 7,  'HAI', 'SCO', NULL, NULL, 'group', 'C', '2026-06-13', 'Gillette Stadium',     'Boston'),
+(15, 31, 'BRA', 'HAI', NULL, NULL, 'group', 'C', '2026-06-19', 'Lincoln Financial Field','Philadelphia'),
+(16, 30, 'MAR', 'SCO', NULL, NULL, 'group', 'C', '2026-06-19', 'Gillette Stadium',     'Boston'),
+(17, 51, 'BRA', 'SCO', NULL, NULL, 'group', 'C', '2026-06-24', 'Hard Rock Stadium',    'Miami'),
+(18, 52, 'MAR', 'HAI', NULL, NULL, 'group', 'C', '2026-06-24', 'Mercedes-Benz Stadium','Atlanta'),
+-- Group D: MD1 Jun 12 (USA) / Jun 13 (AUS) | MD2 Jun 19 | MD3 Jun 25
+(19, 4,  'USA', 'PAR', NULL, NULL, 'group', 'D', '2026-06-12', 'SoFi Stadium',         'Los Angeles'),
+(20, 8,  'AUS', 'TUR', NULL, NULL, 'group', 'D', '2026-06-13', 'BC Place',             'Vancouver'),
+(21, 29, 'USA', 'AUS', NULL, NULL, 'group', 'D', '2026-06-19', 'Lumen Field',          'Seattle'),
+(22, 32, 'PAR', 'TUR', NULL, NULL, 'group', 'D', '2026-06-19', 'Levi''s Stadium',      'San Francisco Bay Area'),
+(23, 59, 'USA', 'TUR', NULL, NULL, 'group', 'D', '2026-06-25', 'SoFi Stadium',         'Los Angeles'),
+(24, 60, 'PAR', 'AUS', NULL, NULL, 'group', 'D', '2026-06-25', 'Levi''s Stadium',      'San Francisco Bay Area'),
+-- Group E: MD1 Jun 14 | MD2 Jun 20 | MD3 Jun 25
+(25, 9,  'GER', 'CUW', NULL, NULL, 'group', 'E', '2026-06-14', 'NRG Stadium',          'Houston'),
+(26, 11, 'CIV', 'ECU', NULL, NULL, 'group', 'E', '2026-06-14', 'Lincoln Financial Field','Philadelphia'),
+(27, 34, 'GER', 'CIV', NULL, NULL, 'group', 'E', '2026-06-20', 'BMO Field',            'Toronto'),
+(28, 35, 'CUW', 'ECU', NULL, NULL, 'group', 'E', '2026-06-20', 'Arrowhead Stadium',    'Kansas City'),
+(29, 56, 'GER', 'ECU', NULL, NULL, 'group', 'E', '2026-06-25', 'MetLife Stadium',      'New York/New Jersey'),
+(30, 55, 'CUW', 'CIV', NULL, NULL, 'group', 'E', '2026-06-25', 'Lincoln Financial Field','Philadelphia'),
+-- Group F: MD1 Jun 14 | MD2 Jun 20 | MD3 Jun 25
+(31, 10, 'NED', 'JPN', NULL, NULL, 'group', 'F', '2026-06-14', 'AT&T Stadium',         'Dallas'),
+(32, 12, 'SWE', 'TUN', NULL, NULL, 'group', 'F', '2026-06-14', 'Estadio BBVA',         'Monterrey'),
+(33, 33, 'NED', 'SWE', NULL, NULL, 'group', 'F', '2026-06-20', 'NRG Stadium',          'Houston'),
+(34, 36, 'JPN', 'TUN', NULL, NULL, 'group', 'F', '2026-06-20', 'Estadio BBVA',         'Monterrey'),
+(35, 58, 'NED', 'TUN', NULL, NULL, 'group', 'F', '2026-06-25', 'Arrowhead Stadium',    'Kansas City'),
+(36, 57, 'JPN', 'SWE', NULL, NULL, 'group', 'F', '2026-06-25', 'AT&T Stadium',         'Dallas'),
+-- Group G: MD1 Jun 15 | MD2 Jun 21 | MD3 Jun 26
+(37, 14, 'BEL', 'EGY', NULL, NULL, 'group', 'G', '2026-06-15', 'Lumen Field',          'Seattle'),
+(38, 16, 'IRN', 'NZL', NULL, NULL, 'group', 'G', '2026-06-15', 'SoFi Stadium',         'Los Angeles'),
+(39, 38, 'BEL', 'IRN', NULL, NULL, 'group', 'G', '2026-06-21', 'SoFi Stadium',         'Los Angeles'),
+(40, 40, 'EGY', 'NZL', NULL, NULL, 'group', 'G', '2026-06-21', 'BC Place',             'Vancouver'),
+(41, 66, 'BEL', 'NZL', NULL, NULL, 'group', 'G', '2026-06-26', 'BC Place',             'Vancouver'),
+(42, 65, 'EGY', 'IRN', NULL, NULL, 'group', 'G', '2026-06-26', 'Lumen Field',          'Seattle'),
+-- Group H: MD1 Jun 15 | MD2 Jun 21 | MD3 Jun 26
+(43, 13, 'ESP', 'CPV', NULL, NULL, 'group', 'H', '2026-06-15', 'Mercedes-Benz Stadium','Atlanta'),
+(44, 15, 'KSA', 'URU', NULL, NULL, 'group', 'H', '2026-06-15', 'Hard Rock Stadium',    'Miami'),
+(45, 37, 'ESP', 'KSA', NULL, NULL, 'group', 'H', '2026-06-21', 'Mercedes-Benz Stadium','Atlanta'),
+(46, 39, 'CPV', 'URU', NULL, NULL, 'group', 'H', '2026-06-21', 'Hard Rock Stadium',    'Miami'),
+(47, 64, 'ESP', 'URU', NULL, NULL, 'group', 'H', '2026-06-26', 'Estadio Akron',        'Guadalajara'),
+(48, 63, 'CPV', 'KSA', NULL, NULL, 'group', 'H', '2026-06-26', 'NRG Stadium',          'Houston'),
+-- Group I: MD1 Jun 16 | MD2 Jun 22 | MD3 Jun 26
+(49, 17, 'FRA', 'SEN', NULL, NULL, 'group', 'I', '2026-06-16', 'MetLife Stadium',      'New York/New Jersey'),
+(50, 18, 'IRQ', 'NOR', NULL, NULL, 'group', 'I', '2026-06-16', 'Gillette Stadium',     'Boston'),
+(51, 42, 'FRA', 'IRQ', NULL, NULL, 'group', 'I', '2026-06-22', 'Lincoln Financial Field','Philadelphia'),
+(52, 43, 'SEN', 'NOR', NULL, NULL, 'group', 'I', '2026-06-22', 'MetLife Stadium',      'New York/New Jersey'),
+(53, 61, 'FRA', 'NOR', NULL, NULL, 'group', 'I', '2026-06-26', 'Gillette Stadium',     'Boston'),
+(54, 62, 'SEN', 'IRQ', NULL, NULL, 'group', 'I', '2026-06-26', 'BMO Field',            'Toronto'),
+-- Group J: MD1 Jun 16 | MD2 Jun 22 | MD3 Jun 27
+(55, 19, 'ARG', 'ALG', NULL, NULL, 'group', 'J', '2026-06-16', 'Arrowhead Stadium',    'Kansas City'),
+(56, 20, 'AUT', 'JOR', NULL, NULL, 'group', 'J', '2026-06-16', 'Levi''s Stadium',      'San Francisco Bay Area'),
+(57, 41, 'ARG', 'AUT', NULL, NULL, 'group', 'J', '2026-06-22', 'AT&T Stadium',         'Dallas'),
+(58, 44, 'ALG', 'JOR', NULL, NULL, 'group', 'J', '2026-06-22', 'Levi''s Stadium',      'San Francisco Bay Area'),
+(59, 72, 'ARG', 'JOR', NULL, NULL, 'group', 'J', '2026-06-27', 'AT&T Stadium',         'Dallas'),
+(60, 71, 'ALG', 'AUT', NULL, NULL, 'group', 'J', '2026-06-27', 'Arrowhead Stadium',    'Kansas City'),
+-- Group K: MD1 Jun 17 | MD2 Jun 23 | MD3 Jun 27
+(61, 21, 'POR', 'COD', NULL, NULL, 'group', 'K', '2026-06-17', 'NRG Stadium',          'Houston'),
+(62, 24, 'UZB', 'COL', NULL, NULL, 'group', 'K', '2026-06-17', 'Estadio Azteca',       'Mexico City'),
+(63, 45, 'POR', 'UZB', NULL, NULL, 'group', 'K', '2026-06-23', 'NRG Stadium',          'Houston'),
+(64, 48, 'COD', 'COL', NULL, NULL, 'group', 'K', '2026-06-23', 'Estadio Akron',        'Guadalajara'),
+(65, 69, 'POR', 'COL', NULL, NULL, 'group', 'K', '2026-06-27', 'Hard Rock Stadium',    'Miami'),
+(66, 70, 'COD', 'UZB', NULL, NULL, 'group', 'K', '2026-06-27', 'Mercedes-Benz Stadium','Atlanta'),
+-- Group L: MD1 Jun 17 | MD2 Jun 23 | MD3 Jun 27
+(67, 22, 'ENG', 'CRO', NULL, NULL, 'group', 'L', '2026-06-17', 'AT&T Stadium',         'Dallas'),
+(68, 23, 'GHA', 'PAN', NULL, NULL, 'group', 'L', '2026-06-17', 'BMO Field',            'Toronto'),
+(69, 46, 'ENG', 'GHA', NULL, NULL, 'group', 'L', '2026-06-23', 'Gillette Stadium',     'Boston'),
+(70, 47, 'CRO', 'PAN', NULL, NULL, 'group', 'L', '2026-06-23', 'BMO Field',            'Toronto'),
+(71, 67, 'ENG', 'PAN', NULL, NULL, 'group', 'L', '2026-06-27', 'MetLife Stadium',      'New York/New Jersey'),
+(72, 68, 'CRO', 'GHA', NULL, NULL, 'group', 'L', '2026-06-27', 'Lincoln Financial Field','Philadelphia');
 
+-- ============================================================
+-- KNOCKOUT STAGE (matches 73-104)
+-- team_home / team_away NULL until group stage settles.
+-- Bracket per FIFA official draw; dates/venues TBD for R32-SF.
+-- Source: Wikipedia 2026 FIFA World Cup knockout stage
+-- ============================================================
+
+-- ROUND OF 32 (Jun 28 – Jul 3)
+-- Bracket positions (bracket label → feeds into R16 match):
+--   73: RU-A vs RU-B   → feeds 90
+--   74: W-E  vs B3-ABCDF → feeds 89
+--   75: W-F  vs RU-C   → feeds 90
+--   76: W-C  vs RU-F   → feeds 91
+--   77: W-I  vs B3-CDFGH → feeds 89
+--   78: RU-E vs RU-I   → feeds 91
+--   79: W-A  vs B3-CEFHI → feeds 92
+--   80: W-L  vs B3-EHIJK → feeds 92
+--   81: W-D  vs B3-BEFIJ → feeds 94
+--   82: W-G  vs B3-AEHIJ → feeds 94
+--   83: RU-K vs RU-L   → feeds 93
+--   84: W-H  vs RU-J   → feeds 93
+--   85: W-B  vs B3-EFGIJ → feeds 96
+--   86: W-J  vs RU-H   → feeds 95
+--   87: W-K  vs B3-DEIJL → feeds 96
+--   88: RU-D vs RU-G   → feeds 95
+INSERT INTO matches (match_id, fifa_match_no, team_home, team_away, goals_home, goals_away, stage, group_name, match_date, stadium, city) VALUES
+(73,  73,  NULL, NULL, NULL, NULL, 'r32', NULL, NULL, NULL, NULL),
+(74,  74,  NULL, NULL, NULL, NULL, 'r32', NULL, NULL, NULL, NULL),
+(75,  75,  NULL, NULL, NULL, NULL, 'r32', NULL, NULL, NULL, NULL),
+(76,  76,  NULL, NULL, NULL, NULL, 'r32', NULL, NULL, NULL, NULL),
+(77,  77,  NULL, NULL, NULL, NULL, 'r32', NULL, NULL, NULL, NULL),
+(78,  78,  NULL, NULL, NULL, NULL, 'r32', NULL, NULL, NULL, NULL),
+(79,  79,  NULL, NULL, NULL, NULL, 'r32', NULL, NULL, NULL, NULL),
+(80,  80,  NULL, NULL, NULL, NULL, 'r32', NULL, NULL, NULL, NULL),
+(81,  81,  NULL, NULL, NULL, NULL, 'r32', NULL, NULL, NULL, NULL),
+(82,  82,  NULL, NULL, NULL, NULL, 'r32', NULL, NULL, NULL, NULL),
+(83,  83,  NULL, NULL, NULL, NULL, 'r32', NULL, NULL, NULL, NULL),
+(84,  84,  NULL, NULL, NULL, NULL, 'r32', NULL, NULL, NULL, NULL),
+(85,  85,  NULL, NULL, NULL, NULL, 'r32', NULL, NULL, NULL, NULL),
+(86,  86,  NULL, NULL, NULL, NULL, 'r32', NULL, NULL, NULL, NULL),
+(87,  87,  NULL, NULL, NULL, NULL, 'r32', NULL, NULL, NULL, NULL),
+(88,  88,  NULL, NULL, NULL, NULL, 'r32', NULL, NULL, NULL, NULL);
+
+-- ROUND OF 16 (Jul 4–7)
+-- 89: W74 vs W77 | 90: W73 vs W75 | 91: W76 vs W78 | 92: W79 vs W80
+-- 93: W83 vs W84 | 94: W81 vs W82 | 95: W86 vs W88 | 96: W85 vs W87
+INSERT INTO matches (match_id, fifa_match_no, team_home, team_away, goals_home, goals_away, stage, group_name, match_date, stadium, city) VALUES
+(89,  89,  NULL, NULL, NULL, NULL, 'r16', NULL, NULL, NULL, NULL),
+(90,  90,  NULL, NULL, NULL, NULL, 'r16', NULL, NULL, NULL, NULL),
+(91,  91,  NULL, NULL, NULL, NULL, 'r16', NULL, NULL, NULL, NULL),
+(92,  92,  NULL, NULL, NULL, NULL, 'r16', NULL, NULL, NULL, NULL),
+(93,  93,  NULL, NULL, NULL, NULL, 'r16', NULL, NULL, NULL, NULL),
+(94,  94,  NULL, NULL, NULL, NULL, 'r16', NULL, NULL, NULL, NULL),
+(95,  95,  NULL, NULL, NULL, NULL, 'r16', NULL, NULL, NULL, NULL),
+(96,  96,  NULL, NULL, NULL, NULL, 'r16', NULL, NULL, NULL, NULL);
+
+-- QUARTERFINALS (Jul 9–11)
+-- 97: W89 vs W90 | 98: W91 vs W92 | 99: W93 vs W94 | 100: W95 vs W96
+INSERT INTO matches (match_id, fifa_match_no, team_home, team_away, goals_home, goals_away, stage, group_name, match_date, stadium, city) VALUES
+(97,  97,  NULL, NULL, NULL, NULL, 'qf', NULL, NULL, NULL, NULL),
+(98,  98,  NULL, NULL, NULL, NULL, 'qf', NULL, NULL, NULL, NULL),
+(99,  99,  NULL, NULL, NULL, NULL, 'qf', NULL, NULL, NULL, NULL),
+(100, 100, NULL, NULL, NULL, NULL, 'qf', NULL, NULL, NULL, NULL);
+
+-- SEMIFINALS (Jul 14–15)
+-- 101: W97 vs W98 | 102: W99 vs W100
+INSERT INTO matches (match_id, fifa_match_no, team_home, team_away, goals_home, goals_away, stage, group_name, match_date, stadium, city) VALUES
+(101, 101, NULL, NULL, NULL, NULL, 'sf', NULL, NULL, NULL, NULL),
+(102, 102, NULL, NULL, NULL, NULL, 'sf', NULL, NULL, NULL, NULL);
+
+-- THIRD PLACE (Jul 18)
+INSERT INTO matches (match_id, fifa_match_no, team_home, team_away, goals_home, goals_away, stage, group_name, match_date, stadium, city) VALUES
+(103, 103, NULL, NULL, NULL, NULL, 'third_place', NULL, '2026-07-18', NULL, NULL);
+
+-- FINAL (Jul 19 — MetLife Stadium confirmed)
+INSERT INTO matches (match_id, fifa_match_no, team_home, team_away, goals_home, goals_away, stage, group_name, match_date, stadium, city) VALUES
+(104, 104, NULL, NULL, NULL, NULL, 'final', NULL, '2026-07-19', 'MetLife Stadium', 'New York/New Jersey');
+
+-- ============================================================
+-- TEAM BASE CAMPS — city, State/Province
+-- Source: Wikipedia "2026 FIFA World Cup" base camp table
+-- Snapshot: 2026-06-17
+-- ============================================================
+UPDATE teams SET base_camp = 'Lawrence, Kansas'                WHERE team_id = 'ALG';
+UPDATE teams SET base_camp = 'Kansas City, Missouri'           WHERE team_id = 'ARG';
+UPDATE teams SET base_camp = 'Berkeley, California'            WHERE team_id = 'AUS';
+UPDATE teams SET base_camp = 'Santa Barbara, California'       WHERE team_id = 'AUT';
+UPDATE teams SET base_camp = 'Renton, Washington'              WHERE team_id = 'BEL';
+UPDATE teams SET base_camp = 'Salt Lake City, Utah'            WHERE team_id = 'BIH';
+UPDATE teams SET base_camp = 'Basking Ridge, New Jersey'       WHERE team_id = 'BRA';
+UPDATE teams SET base_camp = 'Vancouver, British Columbia'     WHERE team_id = 'CAN';
+UPDATE teams SET base_camp = 'Tampa, Florida'                  WHERE team_id = 'CPV';
+UPDATE teams SET base_camp = 'Wilmington, Delaware'            WHERE team_id = 'CIV';
+UPDATE teams SET base_camp = 'Houston, Texas'                  WHERE team_id = 'COD';
+UPDATE teams SET base_camp = 'Guadalajara, Jalisco'            WHERE team_id = 'COL';
+UPDATE teams SET base_camp = 'Alexandria, Virginia'            WHERE team_id = 'CRO';
+UPDATE teams SET base_camp = 'Boca Raton, Florida'             WHERE team_id = 'CUW';
+UPDATE teams SET base_camp = 'Mansfield, Texas'                WHERE team_id = 'CZE';
+UPDATE teams SET base_camp = 'Columbus, Ohio'                  WHERE team_id = 'ECU';
+UPDATE teams SET base_camp = 'Spokane, Washington'             WHERE team_id = 'EGY';
+UPDATE teams SET base_camp = 'Kansas City, Missouri'           WHERE team_id = 'ENG';
+UPDATE teams SET base_camp = 'Chattanooga, Tennessee'          WHERE team_id = 'ESP';
+UPDATE teams SET base_camp = 'Boston, Massachusetts'           WHERE team_id = 'FRA';
+UPDATE teams SET base_camp = 'Winston-Salem, North Carolina'   WHERE team_id = 'GER';
+UPDATE teams SET base_camp = 'Providence, Rhode Island'        WHERE team_id = 'GHA';
+UPDATE teams SET base_camp = 'Atlantic City, New Jersey'       WHERE team_id = 'HAI';
+UPDATE teams SET base_camp = 'Tijuana, Baja California'        WHERE team_id = 'IRN';
+UPDATE teams SET base_camp = 'White Sulphur Springs, West Virginia' WHERE team_id = 'IRQ';
+UPDATE teams SET base_camp = 'Portland, Oregon'                WHERE team_id = 'JOR';
+UPDATE teams SET base_camp = 'Nashville, Tennessee'            WHERE team_id = 'JPN';
+UPDATE teams SET base_camp = 'Guadalajara, Jalisco'            WHERE team_id = 'KOR';
+UPDATE teams SET base_camp = 'Austin, Texas'                   WHERE team_id = 'KSA';
+UPDATE teams SET base_camp = 'Warren, New Jersey'              WHERE team_id = 'MAR';
+UPDATE teams SET base_camp = 'Mexico City, Mexico'             WHERE team_id = 'MEX';
+UPDATE teams SET base_camp = 'Kansas City, Missouri'           WHERE team_id = 'NED';
+UPDATE teams SET base_camp = 'Greensboro, North Carolina'      WHERE team_id = 'NOR';
+UPDATE teams SET base_camp = 'San Diego, California'           WHERE team_id = 'NZL';
+UPDATE teams SET base_camp = 'New Tecumseth, Ontario'          WHERE team_id = 'PAN';
+UPDATE teams SET base_camp = 'San José, California'            WHERE team_id = 'PAR';
+UPDATE teams SET base_camp = 'Palm Beach Gardens, Florida'     WHERE team_id = 'POR';
+UPDATE teams SET base_camp = 'Santa Barbara, California'       WHERE team_id = 'QAT';
+UPDATE teams SET base_camp = 'Pachuca, Hidalgo'                WHERE team_id = 'RSA';
+UPDATE teams SET base_camp = 'Charlotte, North Carolina'       WHERE team_id = 'SCO';
+UPDATE teams SET base_camp = 'New Brunswick, New Jersey'       WHERE team_id = 'SEN';
+UPDATE teams SET base_camp = 'San Diego, California'           WHERE team_id = 'SUI';
+UPDATE teams SET base_camp = 'Frisco, Texas'                   WHERE team_id = 'SWE';
+UPDATE teams SET base_camp = 'Monterrey, Nuevo León'           WHERE team_id = 'TUN';
+UPDATE teams SET base_camp = 'Mesa, Arizona'                   WHERE team_id = 'TUR';
+UPDATE teams SET base_camp = 'Playa del Carmen, Quintana Roo'  WHERE team_id = 'URU';
+UPDATE teams SET base_camp = 'Irvine, California'              WHERE team_id = 'USA';
+UPDATE teams SET base_camp = 'Atlanta, Georgia'                WHERE team_id = 'UZB';
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
