@@ -281,4 +281,31 @@ UPDATE matches SET
     possession_home=56.0, possession_away=44.0,
     attendance=52497, referee='Omar Mohamed Al Ali'
 WHERE match_id=40;
+-- Daily update 2026-06-23: Group stage matchday 2 results (June 22 matches)
+UPDATE matches SET
+    goals_home=2, goals_away=0,
+    corners_home=1, corners_away=3,
+    possession_home=54.0, possession_away=46.0,
+    attendance=70649, referee='Amin Omar'
+WHERE match_id=57;
 
+UPDATE matches SET
+    goals_home=3, goals_away=0,
+    corners_home=4, corners_away=2,
+    possession_home=56.0, possession_away=44.0,
+    attendance=68324, referee='Drew Fischer'
+WHERE match_id=51;
+
+UPDATE matches SET
+    goals_home=2, goals_away=3,
+    corners_home=4, corners_away=5,
+    possession_home=58.0, possession_away=42.0,
+    attendance=80663, referee='Wilton Sampaio'
+WHERE match_id=52;
+
+UPDATE matches SET
+    goals_home=2, goals_away=1,
+    corners_home=10, corners_away=1,
+    possession_home=72.0, possession_away=28.0,
+    attendance=68371, referee='Slavko Vinčič'
+WHERE match_id=58;

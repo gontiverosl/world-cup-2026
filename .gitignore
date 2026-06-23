@@ -17,3 +17,5 @@ Scripts/
 # worldcup26.db is intentionally TRACKED (not ignored) — it is a GitHub
 # candidate per project decision. The seed (worldcup26_seed.sql) and the
 # results/ CSVs are also tracked as source data.
+
+test_write.db*
