@@ -6,6 +6,10 @@ __pycache__/
 *.xlsx
 *.log
 
+# --- Generated outputs (regenerable via fbref_fetch.py) ---
+results/raw/
+*.db-journal
+
 # --- Claude Code project settings (local only) ---
 .claude/settings.local.json
 

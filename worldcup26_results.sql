@@ -309,3 +309,13 @@ UPDATE matches SET
     possession_home=72.0, possession_away=28.0,
     attendance=68371, referee='Slavko Vinčič'
 WHERE match_id=58;
+
+-- Daily update 2026-06-24: June 23 match results (verified via FBref)
+-- match_id 63: POR 5-0 UZB (DB home=POR, away=UZB)
+UPDATE matches SET goals_home=5, goals_away=0, corners_home=3, corners_away=2, possession_home=66.0, possession_away=34.0, attendance=68777, referee='Jalal Jayed' WHERE match_id=63;
+-- match_id 64: COD 0-1 COL (DB home=COD, away=COL; FBref listed Colombia first)
+UPDATE matches SET goals_home=0, goals_away=1, corners_home=4, corners_away=5, possession_home=37.0, possession_away=64.0, attendance=45358, referee='Maurizio Mariani' WHERE match_id=64;
+-- match_id 69: ENG 0-0 GHA (DB home=ENG, away=GHA)
+UPDATE matches SET goals_home=0, goals_away=0, corners_home=9, corners_away=2, possession_home=79.0, possession_away=21.0, attendance=63983, referee='Said Martínez' WHERE match_id=69;
+-- match_id 70: CRO 1-0 PAN (DB home=CRO, away=PAN; FBref listed Panama first)
+UPDATE matches SET goals_home=1, goals_away=0, corners_home=2, corners_away=7, possession_home=58.0, possession_away=42.0, attendance=43036, referee='Pierre Ghislain Atcho' WHERE match_id=70;
