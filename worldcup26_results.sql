@@ -319,3 +319,25 @@ UPDATE matches SET goals_home=0, goals_away=1, corners_home=4, corners_away=5, p
 UPDATE matches SET goals_home=0, goals_away=0, corners_home=9, corners_away=2, possession_home=79.0, possession_away=21.0, attendance=63983, referee='Said Martínez' WHERE match_id=69;
 -- match_id 70: CRO 1-0 PAN (DB home=CRO, away=PAN; FBref listed Panama first)
 UPDATE matches SET goals_home=1, goals_away=0, corners_home=2, corners_away=7, possession_home=58.0, possession_away=42.0, attendance=43036, referee='Pierre Ghislain Atcho' WHERE match_id=70;
+
+-- Daily update 2026-06-25: Group stage matchday 3 (June 24 matches)
+UPDATE matches SET goals_home=3, goals_away=0, corners_home=1, corners_away=5, possession_home=48.0, possession_away=52.0, attendance=80824, referee='Yael Falcón' WHERE match_id=5;
+UPDATE matches SET goals_home=1, goals_away=0, corners_home=4, corners_away=6, possession_home=32.0, possession_away=69.0, attendance=51243, referee='Facundo Tello' WHERE match_id=6;
+UPDATE matches SET goals_home=1, goals_away=2, corners_home=7, corners_away=2, possession_home=45.0, possession_away=55.0, attendance=52497, referee='Ramon Abatti' WHERE match_id=11;
+UPDATE matches SET goals_home=3, goals_away=1, corners_home=5, corners_away=5, possession_home=55.0, possession_away=46.0, attendance=66925, referee='Jesús Valenzuela' WHERE match_id=12;
+UPDATE matches SET goals_home=3, goals_away=0, corners_home=6, corners_away=7, possession_home=54.0, possession_away=46.0, attendance=64478, referee='César Arturo Ramos' WHERE match_id=17;
+UPDATE matches SET goals_home=4, goals_away=2, corners_home=9, corners_away=1, possession_home=69.0, possession_away=31.0, attendance=68239, referee='Danny Makkelie' WHERE match_id=18;
+
+-- Daily update 2026-06-26: Group stage matchday 3 (June 25 matches, verified via FBref)
+-- match_id=30: CUW 0-2 CIV (DB home=CUW, away=CIV; matches FBref)
+UPDATE matches SET goals_home=0, goals_away=2, corners_home=4, corners_away=6, possession_home=37.0, possession_away=63.0, attendance=68324, referee='Glenn Nyberg' WHERE match_id=30;
+-- match_id=29: GER 1-2 ECU (DB home=GER, away=ECU; FBref listed ECU first at MetLife)
+UPDATE matches SET goals_home=1, goals_away=2, corners_home=2, corners_away=3, possession_home=61.0, possession_away=39.0, attendance=80663, referee='Tori Penso' WHERE match_id=29;
+-- match_id=36: JPN 1-1 SWE (DB home=JPN, away=SWE; matches FBref)
+UPDATE matches SET goals_home=1, goals_away=1, corners_home=2, corners_away=8, possession_home=52.0, possession_away=48.0, attendance=70137, referee='Iván Barton' WHERE match_id=36;
+-- match_id=35: NED 3-1 TUN (DB home=NED, away=TUN; FBref listed TUN first at Arrowhead)
+UPDATE matches SET goals_home=3, goals_away=1, corners_home=6, corners_away=4, possession_home=72.0, possession_away=29.0, attendance=68391, referee='Katia García' WHERE match_id=35;
+-- match_id=24: PAR 0-0 AUS (DB home=PAR, away=AUS; matches FBref)
+UPDATE matches SET goals_home=0, goals_away=0, corners_home=1, corners_away=3, possession_home=44.0, possession_away=56.0, attendance=68827, referee='Clément Turpin' WHERE match_id=24;
+-- match_id=23: USA 2-3 TUR (DB home=USA, away=TUR; FBref listed TUR first at SoFi)
+UPDATE matches SET goals_home=2, goals_away=3, corners_home=9, corners_away=2, possession_home=53.0, possession_away=48.0, attendance=70492, referee='Mustapha Ghorbal' WHERE match_id=23;
