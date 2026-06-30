@@ -52,6 +52,7 @@ Inherits the NovaPay conventions — keep them identical across both repos:
 - **Knockout team assignment rule**: once knockout teams are known, run `UPDATE matches SET team_home=?, team_away=? WHERE match_id=?` against the live DB and append to `worldcup26_results.sql`. Only update the seed when correcting structural data (wrong bracket position, wrong date).
 - **Results layer rule**: `worldcup26_results.sql` accumulates **all** dynamic data — match score UPDATEs and player/GK stat INSERTs. Rebuild = `sqlite3 worldcup26.db < worldcup26_seed.sql && sqlite3 worldcup26.db < worldcup26_results.sql`. This file is the "final seed" for the LinkedIn-ready repo.
 - **Canonical data source**: https://fbref.com/en/ — all player stats and match data come from FBref. Summary tab → `player_stats`. Goalkeeper Stats tab → `goalkeeper_stats`. Never INSERT or UPDATE from memory — always verify against FBref first.
+- **FBref scraping — always use Chrome, never requests**: FBref blocks all bot/script access with Cloudflare. Direct `requests.get()` returns 403. Use Claude in Chrome (`mcp__Claude_in_Chrome__navigate` + `mcp__Claude_in_Chrome__javascript_tool`) to fetch any FBref page. This is the established convention — do not attempt to bypass it via `requests`, `curl`, `httpx`, or any other HTTP library.
 
 ## Prohibited (never do)
 
