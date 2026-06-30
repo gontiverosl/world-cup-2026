@@ -1,0 +1,33 @@
+Player,#,Pos,Age,Min,Gls,Ast,PK,PKatt,Sh,SoT,CrdY,CrdR,Fls,Fld,Off,Crs,TklW,Int,OG,PKwon,PKcon,fbref_id,team_id,match_id
+Cristiano Ronaldo,7.0,FW,41-138,90,2,0,0,0,7,5,0,0,1,1,2,0,1,1,0,0,0,dea698d9,4a1b4ea8,904bbbdc
+João Félix,11.0,AM,26-225,62,0,0,0,0,3,1,0,0,1,2,0,1,2,0,0,0,0,8aafd64f,4a1b4ea8,904bbbdc
+Francisco Trincão,16.0,"FW,MF",26-176,28,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,77e39b04,4a1b4ea8,904bbbdc
+Bruno Fernandes,8.0,AM,31-288,90,0,1,0,0,2,1,0,0,1,1,0,6,1,0,0,0,0,507c7bdf,4a1b4ea8,904bbbdc
+Pedro Neto,18.0,AM,26-106,45,0,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0,7ba2eaa9,4a1b4ea8,904bbbdc
+Francisco Conceição,26.0,MF,23-191,45,0,0,0,0,0,0,0,0,0,1,0,1,2,0,0,0,0,5ef3d210,4a1b4ea8,904bbbdc
+Vitinha,23.0,DM,26-130,82,0,0,0,0,1,0,0,0,2,0,0,0,0,0,0,0,0,3b029691,4a1b4ea8,904bbbdc
+Rafael Leão,17.0,"FW,MF",27-013,8,1,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,0,20730eae,4a1b4ea8,904bbbdc
+João Neves,15.0,DM,21-269,75,0,0,0,0,0,0,0,0,0,1,0,1,1,0,0,0,0,c2a15a27,4a1b4ea8,904bbbdc
+Bernardo Silva,10.0,"FW,MF",31-317,15,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,3eb22ec9,4a1b4ea8,904bbbdc
+Nuno Mendes,25.0,LB,24-004,90,1,0,0,0,1,1,0,0,3,4,0,6,2,0,0,0,0,f20e4cc9,4a1b4ea8,904bbbdc
+Renato Veiga,13.0,CB,22-329,90,0,0,0,0,0,0,1,0,1,1,0,0,0,1,0,0,0,fc8fcbd1,4a1b4ea8,904bbbdc
+Rúben Dias,3.0,CB,29-040,90,0,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,31c69ef1,4a1b4ea8,904bbbdc
+João Cancelo,20.0,RB,32-027,45,0,1,0,0,1,0,0,0,2,1,0,5,0,1,0,0,0,bd6351cd,4a1b4ea8,904bbbdc
+Nélson Semedo,2.0,"DF,MF",32-219,45,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,d04b94db,4a1b4ea8,904bbbdc
+Diogo Costa,1.0,GK,26-277,90,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,93fffbcf,4a1b4ea8,904bbbdc
+Eldor Shomurodov,14.0,FW,30-359,90,0,0,0,0,1,0,0,0,2,2,1,0,1,0,0,0,0,57469b2d,cd389e75,904bbbdc
+Abbosbek Fayzullayev,22.0,LM,22-263,72,0,0,0,0,1,1,0,0,1,1,0,1,2,1,0,0,0,ef1d36a1,cd389e75,904bbbdc
+Igor Sergeev,21.0,FW,33-054,18,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,8df41977,cd389e75,904bbbdc
+Otabek Shukurov,7.0,CM,30-001,89,0,0,0,0,2,0,0,0,1,2,0,0,1,0,0,0,0,62032a56,cd389e75,904bbbdc
+Sherzod Esanov,23.0,MF,23-142,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,bd6667ba,cd389e75,904bbbdc
+Odiljon Hamrobekov,9.0,CM,30-130,45,0,0,0,0,1,0,1,0,1,1,0,0,0,0,0,0,0,03f63e77,cd389e75,904bbbdc
+Akmal Mozgovoy,6.0,MF,27-082,45,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,114cb95b,cd389e75,904bbbdc
+Aziz Gʻaniyev,19.0,RM,28-121,90,0,0,0,0,1,0,0,0,1,1,0,4,2,0,0,0,0,0c492054,cd389e75,904bbbdc
+Sherzod Nasrullaev,13.0,LB,27-335,45,0,0,0,0,1,1,0,0,0,0,0,1,0,1,0,0,0,aeb0c7f7,cd389e75,904bbbdc
+Khojiakbar Alijonov,3.0,DF,29-065,45,0,0,0,0,0,0,0,0,1,1,0,1,0,2,0,0,0,e53cbd7a,cd389e75,904bbbdc
+Rustam Ashurmatov,5.0,CB,29-351,90,0,0,0,0,0,0,0,0,1,0,0,0,2,2,0,0,0,a0ecd397,cd389e75,904bbbdc
+Abdulla Abdullaev,18.0,CB,28-295,90,0,0,0,0,0,0,0,0,2,1,0,0,1,3,0,0,0,03053fbf,cd389e75,904bbbdc
+Abdukodir Khusanov,2.0,CB,22-114,90,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,d17ce930,cd389e75,904bbbdc
+Bekhruz Karimov,24.0,RB,18-320,89,0,0,0,0,0,0,0,0,5,4,0,1,4,0,0,0,0,74cdaeba,cd389e75,904bbbdc
+Ruslanbek Jiyanov,10.0,FW,25-018,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,3c181746,cd389e75,904bbbdc
+Abduvohid Nematov,12.0,GK,25-095,90,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,25e45f2a,cd389e75,904bbbdc

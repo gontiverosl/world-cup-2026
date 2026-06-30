@@ -1,0 +1,33 @@
+Player,#,Pos,Age,Min,Gls,Ast,PK,PKatt,Sh,SoT,CrdY,CrdR,Fls,Fld,Off,Crs,TklW,Int,OG,PKwon,PKcon,fbref_id,team_id,match_id
+Mikel Oyarzabal,21.0,FW,29-061,45,2,1,0,0,5,3,0,0,1,0,0,1,1,0,0,0,0,8c3c640c,b561dd30,0fcac1d8
+Ferrán Torres,7.0,"FW,MF",26-112,45,0,0,0,0,2,1,0,0,1,0,1,0,0,0,0,0,0,9e1035f8,b561dd30,0fcac1d8
+Álex Baena,15.0,FW,24-336,61,0,0,0,0,2,0,0,0,1,0,0,7,0,1,0,0,0,518f2234,b561dd30,0fcac1d8
+Nico Williams,17.0,MF,23-344,29,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,afdc14d7,b561dd30,0fcac1d8
+Lamine Yamal,19.0,FW,18-343,45,1,0,0,0,5,2,0,0,0,0,0,6,1,0,0,0,0,82ec26c1,b561dd30,0fcac1d8
+Yéremy Pino,11.0,"FW,MF",23-244,45,0,0,0,0,0,0,0,0,2,0,0,1,0,0,0,0,0,540ec57b,b561dd30,0fcac1d8
+Pedri,20.0,CM,23-208,69,0,0,0,0,1,0,0,0,0,0,0,0,0,6,0,0,0,0d9b2d31,b561dd30,0fcac1d8
+Fabián Ruiz Peña,8.0,MF,30-079,21,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,c0c7ff58,b561dd30,0fcac1d8
+Dani Olmo,10.0,CM,28-045,60,0,1,0,0,2,0,0,0,1,0,0,0,0,1,0,0,0,ae44e8e2,b561dd30,0fcac1d8
+Mikel Merino,6.0,MF,29-364,30,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,d080ed5e,b561dd30,0fcac1d8
+Rodri,16.0,DM,29-364,90,0,0,0,0,1,0,0,0,0,1,1,0,2,1,0,0,0,6434f10d,b561dd30,0fcac1d8
+Marc Cucurella,24.0,LB,27-334,90,0,0,0,0,1,1,0,0,2,0,0,2,0,1,0,0,0,1daec722,b561dd30,0fcac1d8
+Aymeric Laporte,14.0,CB,32-025,90,0,1,0,0,0,0,0,0,1,0,0,0,1,2,0,0,0,119b9a8e,b561dd30,0fcac1d8
+Pau Cubarsí,22.0,CB,19-150,90,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,cc7888f3,b561dd30,0fcac1d8
+Pedro Porro,12.0,RB,26-281,90,0,0,0,0,2,1,0,0,1,0,0,6,3,2,0,0,0,27d0a506,b561dd30,0fcac1d8
+Unai Simón,23.0,GK,29-010,90,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5dcf3e90,b561dd30,0fcac1d8
+Firas Al-Buraikan,9.0,FW,26-038,59,0,0,0,0,0,0,0,0,1,1,0,0,0,1,0,0,0,ac717a23,6e84edac,0fcac1d8
+Mohammed Abu Al-Shamat,26.0,"DF,MF",23-314,31,0,0,0,0,0,0,0,0,0,1,0,1,3,0,0,0,0,dd65e243,6e84edac,0fcac1d8
+Salem Al-Dawsari,10.0,LM,34-306,90,0,0,0,0,1,0,1,0,0,3,1,1,0,0,0,0,0,60ee859c,6e84edac,0fcac1d8
+Nasser Al-Dawsari,6.0,CM,27-184,89,0,0,0,0,0,0,0,0,0,1,0,0,2,1,0,0,0,7709e4a6,6e84edac,0fcac1d8
+Khalid Al Ghannam,17.0,MF,25-225,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,c16843c7,6e84edac,0fcac1d8
+Abdullah Al-Khaibari,15.0,CM,29-309,45,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,ab47ae1c,6e84edac,0fcac1d8
+Mohamed Kanno,23.0,MF,31-272,45,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,74ccf212,6e84edac,0fcac1d8
+Musab Al Juwayr,7.0,RM,23-001,45,0,0,0,0,0,0,0,0,0,1,2,0,2,0,0,0,0,62592fc1,6e84edac,0fcac1d8
+Abdullah Al-Hamdan,19.0,FW,26-281,45,0,0,0,0,1,1,0,0,0,0,0,1,0,0,0,0,0,cc4b5436,6e84edac,0fcac1d8
+Moteb Al-Harbi,24.0,LB,26-121,90,0,0,0,0,0,0,0,0,0,1,0,0,0,3,0,0,0,1d88554c,6e84edac,0fcac1d8
+Hassan Al Tambakti,5.0,CB,27-132,90,0,0,0,0,0,0,0,0,0,1,0,0,2,1,1,0,0,6d78c320,6e84edac,0fcac1d8
+Ali Lajami,3.0,CB,30-058,90,0,0,0,0,0,0,0,0,0,1,0,0,1,2,0,0,0,46f7ab4f,6e84edac,0fcac1d8
+Abdulelah Al-Amri,4.0,CB,29-157,59,0,0,0,0,1,0,0,0,0,0,0,0,0,2,0,0,0,fd0affe3,6e84edac,0fcac1d8
+Alaa Al Hejji,18.0,MF,30-200,31,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,6d258576,6e84edac,0fcac1d8
+Saud Abdulhamid,12.0,RB,26-338,90,0,0,0,0,0,0,0,0,0,0,0,2,1,1,0,0,0,caa254e4,6e84edac,0fcac1d8
+Mohammed Al-Owais,21.0,GK,34-254,90,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,f2c060c6,6e84edac,0fcac1d8

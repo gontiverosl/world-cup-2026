@@ -1,0 +1,33 @@
+Player,#,Pos,Age,Min,Gls,Ast,PK,PKatt,Sh,SoT,CrdY,CrdR,Fls,Fld,Off,Crs,TklW,Int,OG,PKwon,PKcon,fbref_id,team_id,match_id
+Jørgen Strand Larsen,11.0,FW,26-140,90,0,0,0,1,2,1,0,0,0,2,1,0,0,0,0,0,0,f553b2b3,599eba19,1bcdcfc8
+Andreas Schjelderup,21.0,FW,22-025,82,0,1,0,0,0,0,0,0,2,1,0,1,1,3,0,0,0,a427724f,599eba19,1bcdcfc8
+Antonio Nusa,20.0,"FW,MF",21-070,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4ab12002,599eba19,1bcdcfc8
+Oscar Bobb,22.0,FW,22-349,82,0,0,0,0,2,1,0,0,1,3,0,1,0,1,0,0,0,eed2427e,599eba19,1bcdcfc8
+Jens Petter Hauge,23.0,"DF,FW",26-257,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,12c35abe,599eba19,1bcdcfc8
+Thelo Aasgaard,19.0,CM,24-055,90,1,0,0,0,2,1,0,0,0,3,0,0,1,3,0,0,0,c88a28b9,599eba19,1bcdcfc8
+Kristian Thorstvedt,18.0,CM,27-105,45,0,0,0,0,1,1,0,0,2,1,0,0,0,0,0,0,0,76ff8d0d,599eba19,1bcdcfc8
+Morten Thorsby,2.0,MF,30-052,45,0,0,0,0,0,0,0,0,1,0,0,0,1,1,0,0,0,d1b49282,599eba19,1bcdcfc8
+Patrick Berg,6.0,DM,28-214,90,0,0,0,0,1,0,1,0,1,0,0,5,0,1,0,0,0,e4114f5d,599eba19,1bcdcfc8
+Fredrik André Bjørkan,15.0,LB,27-309,45,0,0,0,0,0,0,0,0,0,0,0,0,1,2,0,0,0,3724baa1,599eba19,1bcdcfc8
+Marcus Pedersen,16.0,"DF,MF",25-345,45,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,596cc50e,599eba19,1bcdcfc8
+Leo Østigård,4.0,CB,26-210,90,0,0,0,0,1,0,0,0,1,0,0,0,2,1,0,0,0,b35a7399,599eba19,1bcdcfc8
+Henrik Falchener,25.0,CB,23-049,65,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,57fe6b9b,599eba19,1bcdcfc8
+Sondre Langås,24.0,DF,25-144,25,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,107e4890,599eba19,1bcdcfc8
+Fredrik Aursnes,14.0,RB,30-198,90,0,0,0,0,1,0,0,0,1,0,0,2,5,0,0,0,0,f0677ed7,599eba19,1bcdcfc8
+Egil Selvik,13.0,GK,28-331,90,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,05d89c1c,599eba19,1bcdcfc8
+Kylian Mbappé,10.0,FW,27-188,86,0,2,0,0,4,2,0,0,0,0,0,0,0,0,0,0,0,42fd9c7f,b1b36dcd,1bcdcfc8
+Jean-Philippe Mateta,22.0,FW,28-363,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,50e6dc35,b1b36dcd,1bcdcfc8
+Désiré Doué,20.0,AM,21-023,90,1,0,0,0,4,3,0,0,0,1,0,0,1,1,0,0,0,9e7483ff,b1b36dcd,1bcdcfc8
+Michael Olise,11.0,AM,24-196,64,0,0,0,0,3,0,0,0,0,2,0,1,0,0,0,0,0,c4486bac,b1b36dcd,1bcdcfc8
+Rayan Cherki,24.0,"FW,MF",22-313,26,0,0,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0,b34c63a5,b1b36dcd,1bcdcfc8
+Ousmane Dembélé,7.0,AM,29-042,64,3,0,0,0,3,3,0,0,0,0,1,3,0,0,0,0,0,b19db005,b1b36dcd,1bcdcfc8
+Bradley Barcola,12.0,"FW,MF",23-297,26,0,1,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0,a0d55a09,b1b36dcd,1bcdcfc8
+Manu Koné,6.0,DM,25-040,90,0,0,0,0,1,1,0,0,0,1,0,0,1,0,0,0,0,86574238,b1b36dcd,1bcdcfc8
+Aurélien Tchouaméni,8.0,DM,26-150,90,0,1,0,0,1,0,1,0,3,0,0,1,7,2,0,0,0,4f255115,b1b36dcd,1bcdcfc8
+Theo Hernández,19.0,LB,28-263,90,0,0,0,0,2,0,0,0,2,3,0,2,0,0,0,0,0,d4c9725f,b1b36dcd,1bcdcfc8
+Maxence Lacroix,26.0,CB,26-081,90,0,0,0,0,0,0,0,0,2,0,1,0,1,1,0,0,0,277c49ed,b1b36dcd,1bcdcfc8
+Dayot Upamecano,4.0,CB,27-242,75,0,0,0,0,0,0,0,0,1,0,0,0,0,2,0,0,0,d248cd8f,b1b36dcd,1bcdcfc8
+Ibrahima Konaté,15.0,DF,27-032,15,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,5ed9b537,b1b36dcd,1bcdcfc8
+Jules Koundé,5.0,RB,27-226,86,0,0,0,0,0,0,0,0,1,1,0,0,3,1,0,0,0,4d1666ff,b1b36dcd,1bcdcfc8
+Malo Gusto,2.0,"DF,MF",23-038,4,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,d56b9520,b1b36dcd,1bcdcfc8
+Mike Maignan,16.0,GK,30-358,90,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,fcb38f57,b1b36dcd,1bcdcfc8

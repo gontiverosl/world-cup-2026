@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 import re
 import pandas as pd
@@ -6,12 +7,8 @@ from bs4 import BeautifulSoup
 from io import StringIO
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-HTML_PATH = os.path.join(BASE_DIR, "results", "raw", "a2c54ed9.html")
 LOG_PATH = os.path.join(BASE_DIR, "worldcup26.log")
-PLAYER_PATH = os.path.join(BASE_DIR, "results", "a2c54ed9_players.csv")
-KEEPER_PATH = os.path.join(BASE_DIR, "results", "a2c54ed9_keepers.csv")
 
-MATCH_ID = "a2c54ed9"
 PLAYER_COLS = ["Min", "Gls", "Ast", "PK", "PKatt", "Sh", "SoT", "CrdY", "CrdR", "Fls", "Fld", "Off", "Crs", "TklW", "Int", "OG", "PKwon", "PKcon"]
 KEEPER_COLS = ["Min", "SoTA", "GA", "Saves"]
 
@@ -21,8 +18,8 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-def read_table(path):
-    with open(path, "r", encoding="utf-8") as f:
+def read_table(html_path):
+    with open(html_path, "r", encoding="utf-8") as f:
         html = f.read()
     soup = BeautifulSoup(html, "lxml")
     player_tables = soup.find_all("table", id=re.compile(r"^stats_[0-9a-f]+_summary$"))
@@ -48,23 +45,38 @@ def parse_table(table, team_id, match_id, numeric_cols):
     return df
 
 def main():
-    player_tables, keeper_tables = read_table(HTML_PATH)
+    if len(sys.argv) < 2:
+        logging.error("Usage: python3 fbref_parse.py <match_hex>")
+        sys.exit(1)
+
+    match_hex = sys.argv[1]
+    html_path   = os.path.join(BASE_DIR, "results", "raw", f"{match_hex}.html")
+    player_path = os.path.join(BASE_DIR, "results", f"{match_hex}_players.csv")
+    keeper_path = os.path.join(BASE_DIR, "results", f"{match_hex}_keepers.csv")
+
+    if not os.path.exists(html_path):
+        logging.error(f"HTML not found for {match_hex}: {html_path}")
+        sys.exit(1)
+
+    player_tables, keeper_tables = read_table(html_path)
+
     players = []
     for t in player_tables:
         team_id = re.match(r"^stats_([0-9a-f]+)_summary$", t["id"]).group(1)
-        df = parse_table(t, team_id, MATCH_ID, PLAYER_COLS)
+        df = parse_table(t, team_id, match_hex, PLAYER_COLS)
         players.append(df)
     player_df = pd.concat(players, ignore_index=True)
-    player_df.to_csv(PLAYER_PATH, index=False)
-    logging.info(f"{len(player_df)} player rows written.")
+    player_df.to_csv(player_path, index=False)
+    logging.info(f"{match_hex}: {len(player_df)} player rows written.")
+
     keepers = []
     for t in keeper_tables:
         team_id = re.match(r"^keeper_stats_([0-9a-f]+)$", t["id"]).group(1)
-        df = parse_table(t, team_id, MATCH_ID, KEEPER_COLS)
+        df = parse_table(t, team_id, match_hex, KEEPER_COLS)
         keepers.append(df)
     keeper_df = pd.concat(keepers, ignore_index=True)
-    keeper_df.to_csv(KEEPER_PATH, index=False)
-    logging.info(f"{len(keeper_df)} keeper rows written.")
+    keeper_df.to_csv(keeper_path, index=False)
+    logging.info(f"{match_hex}: {len(keeper_df)} keeper rows written.")
 
 if __name__ == "__main__":
     main()

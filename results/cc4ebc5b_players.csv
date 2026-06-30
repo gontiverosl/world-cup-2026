@@ -1,0 +1,33 @@
+Player,#,Pos,Age,Min,Gls,Ast,PK,PKatt,Sh,SoT,CrdY,CrdR,Fls,Fld,Off,Crs,TklW,Int,OG,PKwon,PKcon,fbref_id,team_id,match_id
+Enner Valencia,13.0,FW,36-233,63,0,0,0,0,2,1,0,0,0,2,0,0,0,0,0,0,0,fb485406,123acaf8,cc4ebc5b
+Kevin Rodríguez,11.0,FW,26-113,27,0,1,0,0,1,0,0,0,2,0,0,0,0,0,0,0,0,189fb038,123acaf8,cc4ebc5b
+Gonzalo Plata,19.0,FW,25-236,90,1,0,0,0,2,1,1,0,4,1,0,2,0,0,0,0,0,54bcdeb0,123acaf8,cc4ebc5b
+Nilson Angulo,20.0,LW,23-006,84,1,0,0,0,1,1,0,0,2,2,0,1,0,1,0,0,0,a9b9d89c,123acaf8,cc4ebc5b
+Jordy Caicedo,16.0,FW,28-219,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7fcb27d8,123acaf8,cc4ebc5b
+John Yeboah,9.0,RW,26-002,84,0,0,0,0,0,0,0,0,0,1,0,3,0,1,0,0,0,8dfdc6c3,123acaf8,cc4ebc5b
+Félix Torres Caicedo,2.0,DF,29-165,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,c0a8860f,123acaf8,cc4ebc5b
+Pedro Vite,15.0,CM,24-108,90,0,1,0,0,0,0,0,0,0,2,0,1,6,2,0,0,0,9c146b36,123acaf8,cc4ebc5b
+Moisés Caicedo,23.0,CM,24-235,90,0,0,0,0,1,0,0,0,1,0,0,1,2,1,0,0,0,16264a81,123acaf8,cc4ebc5b
+Piero Hincapié,3.0,LB,24-167,70,0,0,0,0,0,0,1,0,2,0,0,2,1,1,0,0,0,0c7a48f8,123acaf8,cc4ebc5b
+Pervis Estupiñán,7.0,"DF,MF",28-155,20,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,d38fdf53,123acaf8,cc4ebc5b
+Willian Pacho,6.0,CB,24-252,90,0,0,0,0,0,0,0,0,0,1,0,0,1,4,0,0,0,ecbe2839,123acaf8,cc4ebc5b
+Joel Ordóñez,4.0,CB,22-065,90,0,0,0,0,0,0,0,0,1,1,0,0,3,0,0,0,0,2990a15c,123acaf8,cc4ebc5b
+Alan Franco,21.0,RB,27-308,63,0,0,0,0,0,0,1,0,2,0,0,2,2,1,0,0,0,c76b161b,123acaf8,cc4ebc5b
+Ángelo Preciado,17.0,"DF,MF",28-127,27,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,eadc8e4f,123acaf8,cc4ebc5b
+Hernán Galíndez,1.0,GK,39-087,90,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,89c136f6,123acaf8,cc4ebc5b
+Kai Havertz,7.0,FW,27-014,59,0,0,0,0,1,1,0,0,0,0,0,0,2,0,0,0,0,fed7cb61,c1e40422,cc4ebc5b
+Deniz Undav,26.0,"FW,MF",29-341,31,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,dd549382,c1e40422,cc4ebc5b
+Florian Wirtz,17.0,AM,23-053,72,0,1,0,0,3,0,0,0,0,0,0,2,1,0,0,0,0,e7fcf289,c1e40422,cc4ebc5b
+Pascal Groß,13.0,"DF,MF",35-010,18,0,0,0,0,1,0,0,0,1,0,0,1,2,0,0,0,0,8aec0537,c1e40422,cc4ebc5b
+Jamal Musiala,10.0,AM,23-119,90,0,0,0,0,1,0,0,0,1,5,0,1,0,1,0,0,0,2c0558b8,c1e40422,cc4ebc5b
+Leroy Sané,19.0,AM,30-165,90,1,0,0,0,2,2,0,0,2,1,0,0,1,1,0,0,0,2b114be3,c1e40422,cc4ebc5b
+Aleksandar Pavlovic,5.0,DM,22-053,45,0,0,0,0,0,0,1,0,1,2,0,0,0,0,0,0,0,2658c82f,c1e40422,cc4ebc5b
+Angelo Stiller,16.0,MF,25-082,45,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,3b1ed320,c1e40422,cc4ebc5b
+Felix Nmecha,23.0,DM,25-258,63,0,0,0,0,2,0,0,0,0,1,0,0,1,0,0,0,0,091c86e2,c1e40422,cc4ebc5b
+Maximilian Beier,14.0,"FW,MF",23-251,27,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,5db45ee5,c1e40422,cc4ebc5b
+David Raum,22.0,LB,28-064,90,0,0,0,0,0,0,0,0,2,0,0,11,1,0,0,0,0,7d450ed3,c1e40422,cc4ebc5b
+Antonio Rüdiger,2.0,CB,33-114,90,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,18b896d6,c1e40422,cc4ebc5b
+Jonathan Tah,4.0,CB,30-134,90,0,0,0,0,0,0,0,0,1,0,0,0,2,0,0,0,0,bd142efb,c1e40422,cc4ebc5b
+Joshua Kimmich,6.0,RB,31-137,59,0,0,0,0,0,0,0,0,0,3,0,1,0,1,0,0,0,49296448,c1e40422,cc4ebc5b
+Malick Thiaw,24.0,"DF,MF",24-321,31,0,0,0,0,0,0,0,0,1,1,0,0,2,0,0,0,0,ff5ea0bf,c1e40422,cc4ebc5b
+Manuel Neuer,1.0,GK,40-090,90,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8778c910,c1e40422,cc4ebc5b

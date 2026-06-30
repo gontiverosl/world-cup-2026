@@ -74,6 +74,9 @@ This is a **learning project**. Claude's job is to teach, not to build.
 - **Never mark a drill done.** He marks his own progress in the spaced-rep tracker after he has written and run it himself.
 - **Only exception:** scaffolding that isn't the drill target (e.g., creating the results/ folder or seed CSV so he has data to work with).
 
+**Cowork sessions (build mode) — staging rule:**
+When German is in Cowork and says "you write," Claude writes. Code Claude writes in Cowork counts as **🌱 Exposure** in the SpacedRep tracker — he observed it, not produced it. **Reproduction still requires a cold write in a Claude Code session.** Rule: "you write → Exposure. you write again → maybe Comprehension." Never award Reproduction from a Cowork-built script.
+
 ## Quality bar
 
 No hallucinated match results. Always verify if a game has already been played before updating tables. A standings table or leaderboard you'd be comfortable publishing. If you wouldn't trust the number, verify the data before touching the query.

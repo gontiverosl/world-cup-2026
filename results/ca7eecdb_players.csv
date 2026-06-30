@@ -1,0 +1,32 @@
+Player,#,Pos,Age,Min,Gls,Ast,PK,PKatt,Sh,SoT,CrdY,CrdR,Fls,Fld,Off,Crs,TklW,Int,OG,PKwon,PKcon,fbref_id,team_id,match_id
+Enner Valencia,13.0,FW,36-228,90,0,0,0,0,7,5,0,0,0,1,1,0,0,0,0,0,0,fb485406,123acaf8,ca7eecdb
+Gonzalo Plata,19.0,FW,25-231,90,0,0,0,0,5,3,0,0,0,1,0,4,1,1,0,0,0,54bcdeb0,123acaf8,ca7eecdb
+Pervis Estupiñán,7.0,LW,28-150,69,0,0,0,0,0,0,0,0,2,0,0,2,0,0,0,0,0,d38fdf53,123acaf8,ca7eecdb
+Nilson Angulo,20.0,"FW,MF",23-001,21,0,0,0,0,1,1,0,0,0,0,0,1,0,1,0,0,0,a9b9d89c,123acaf8,ca7eecdb
+Moisés Caicedo,23.0,AM,24-230,90,0,0,0,0,1,1,0,0,0,0,0,6,2,1,0,0,0,16264a81,123acaf8,ca7eecdb
+Pedro Vite,15.0,AM,24-103,90,0,0,0,0,2,1,0,0,1,2,0,3,1,0,0,0,0,9c146b36,123acaf8,ca7eecdb
+John Yeboah,9.0,RW,25-362,88,0,0,0,0,3,2,0,0,0,0,0,8,1,1,0,0,0,8dfdc6c3,123acaf8,ca7eecdb
+Jordy Caicedo,16.0,FW,28-214,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7fcb27d8,123acaf8,ca7eecdb
+Jordy Alcivar,5.0,DM,26-319,45,0,0,0,0,1,0,1,0,1,0,0,1,1,0,0,0,0,6e98c19f,123acaf8,ca7eecdb
+Kevin Rodríguez,11.0,FW,26-108,45,0,0,0,0,4,1,0,0,0,2,0,0,1,0,0,0,0,189fb038,123acaf8,ca7eecdb
+Piero Hincapié,3.0,CB,24-162,90,0,0,0,0,2,0,0,0,1,2,0,4,1,1,0,0,0,0c7a48f8,123acaf8,ca7eecdb
+Willian Pacho,6.0,CB,24-247,90,0,0,0,0,1,1,0,0,1,0,0,0,1,1,0,0,0,ecbe2839,123acaf8,ca7eecdb
+Alan Franco,21.0,CB,27-303,82,0,0,0,0,0,0,0,0,1,0,0,2,2,1,0,0,0,c76b161b,123acaf8,ca7eecdb
+Ángelo Preciado,17.0,"DF,MF",28-122,8,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,eadc8e4f,123acaf8,ca7eecdb
+Hernán Galíndez,1.0,GK,39-082,90,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,89c136f6,123acaf8,ca7eecdb
+Jürgen Locadia,9.0,FW,32-225,82,0,0,0,0,1,0,0,0,1,1,2,0,0,0,0,0,0,6cc47ae1,e0f5893a,ca7eecdb
+Gervane Kastaneer,19.0,"FW,MF",30-011,8,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0c142e14,e0f5893a,ca7eecdb
+Juninho Bacuna,7.0,LM,28-317,74,0,0,0,0,3,1,1,0,1,1,0,0,1,0,0,0,0,aaf1bf05,e0f5893a,ca7eecdb
+Kenji Gorré,14.0,"FW,MF",31-264,16,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,52d1a4c6,e0f5893a,ca7eecdb
+Leandro Bacuna,10.0,CM,34-303,90,0,0,0,0,2,1,1,0,2,0,0,1,0,0,0,0,0,9dc69d38,e0f5893a,ca7eecdb
+Livano Comenencia,8.0,CM,22-137,83,0,0,0,0,3,1,1,0,2,0,0,0,0,2,0,0,0,c9d96dc1,e0f5893a,ca7eecdb
+Godfried Roemeratoe,6.0,MF,26-305,7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,a646b710,e0f5893a,ca7eecdb
+Tahith Chong,21.0,RM,26-198,75,0,0,0,0,0,0,0,0,1,3,0,0,0,0,0,0,0,2696b6a9,e0f5893a,ca7eecdb
+Jearl Margaritha,16.0,"FW,MF",26-071,15,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,be915a68,e0f5893a,ca7eecdb
+Deveron Fonville,24.0,LB,23-035,75,0,0,0,0,0,0,0,0,0,1,0,0,1,1,0,0,0,21932982,e0f5893a,ca7eecdb
+Roshon van Eijma,4.0,DF,28-011,15,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,130368de,e0f5893a,ca7eecdb
+Sherel Floranus,5.0,CB,27-301,90,0,0,0,0,1,0,0,0,0,0,0,0,1,2,0,0,0,5ad49fbb,e0f5893a,ca7eecdb
+Armando Obispo,18.0,CB,27-107,90,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,2ffa6348,e0f5893a,ca7eecdb
+Juriën Gaari,3.0,CB,32-179,90,0,0,0,0,0,0,1,0,2,1,0,0,2,2,0,0,0,bf7a9d1a,e0f5893a,ca7eecdb
+Joshua Brenet,20.0,RB,32-092,90,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,2b5527c4,e0f5893a,ca7eecdb
+Eloy Room,1.0,GK,37-134,90,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6b33d86b,e0f5893a,ca7eecdb
