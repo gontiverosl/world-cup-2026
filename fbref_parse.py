@@ -30,11 +30,19 @@ def read_table(path):
     return player_tables, keeper_tables
 
 def parse_table(table, team_id, match_id, numeric_cols):
+    # Extract fbref_id from data-append-csv attribute before pd.read_html loses the HTML
+    id_map = {}
+    for tr in table.find("tbody").find_all("tr"):
+        th = tr.find("th", {"data-stat": "player"})
+        if th and th.get("data-append-csv"):
+            id_map[th.get_text(strip=True)] = th["data-append-csv"]
+
     df = pd.read_html(StringIO(str(table)))[0]
     df.columns = df.columns.get_level_values(-1)
     df = df[df["Min"] != "Min"]
     df = df[~df["Player"].str.contains("Players", na=False)].copy()
     df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric, errors="coerce").fillna(0).astype(int)
+    df["fbref_id"] = df["Player"].map(id_map)   # stable join key — no name drift
     df["team_id"] = team_id
     df["match_id"] = match_id
     return df

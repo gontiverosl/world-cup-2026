@@ -105,7 +105,8 @@ CREATE TABLE matches (
     city            TEXT,                     -- knockout rounds pending
     stadium_id      INTEGER REFERENCES stadiums(stadium_id),  -- FK -> stadiums; NULL until venue assigned
     attendance      INTEGER,                  -- dynamic; from FBref match page
-    referee         TEXT                      -- dynamic; from FBref match page
+    referee         TEXT,                     -- dynamic; from FBref match page
+    fbref_match_id  TEXT                      -- FBref match hex (e.g. 'a2c54ed9'); pipeline join key
 );
 
 -- ============================================================

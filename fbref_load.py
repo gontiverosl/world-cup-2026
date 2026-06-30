@@ -1,4 +1,5 @@
 import os
+import sys
 import sqlite3
 import logging
 import pandas as pd
@@ -6,11 +7,6 @@ import pandas as pd
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "worldcup26.db")
 LOG_PATH = os.path.join(BASE_DIR, "worldcup26.log")
-PLAYER_PATH = os.path.join(BASE_DIR, "results", "a2c54ed9_players.csv")
-KEEPER_PATH = os.path.join(BASE_DIR, "results", "a2c54ed9_keepers.csv")
-
-MATCH_ID = 25                                          # a2c54ed9 → integer match_id (drill constant)
-TEAM_MAP = {"c1e40422": "GER", "e0f5893a": "CUW"}      # FBref hex → FIFA code
 
 # Idempotency: OR REPLACE keeps the DB in sync with the latest CSV on every re-run —
 # FBref revises stats post-match, so a re-pull should overwrite, not skip.
@@ -37,24 +33,40 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-def resolve_player_id(conn, name, team_id):
+def resolve_match_id(conn, match_hex):
+    """Look up the integer match_id from the FBref match hex stored in matches.fbref_match_id."""
     cursor = conn.cursor()
-    cursor.execute("SELECT player_id FROM players WHERE name=? AND team_id=?", (name, team_id))
+    cursor.execute("SELECT match_id FROM matches WHERE fbref_match_id = ?", (match_hex,))
     row = cursor.fetchone()
     if row is None:
-        logging.warning(f"No player_id for {name} ({team_id}) - skipped")
-        return None 
+        logging.error(f"No match_id found for fbref_match_id={match_hex} — populate matches.fbref_match_id first.")
+        return None
+    return row[0]
+
+def resolve_player_id(conn, fbref_id):
+    """Look up player_id by fbref_id — stable across name changes and accent drift."""
+    cursor = conn.cursor()
+    cursor.execute("SELECT player_id FROM players WHERE fbref_id = ?", (fbref_id,))
+    row = cursor.fetchone()
+    if row is None:
+        logging.warning(f"No player_id for fbref_id={fbref_id} — skipped")
+        return None
     return row[0]
 
 def load_players(conn, df, match_id):
     cursor = conn.cursor()
     inserted = 0
     for _, row in df.iterrows():
-        team_id = TEAM_MAP[row["team_id"]]            # CSV hex → FIFA code
-        pid = resolve_player_id(conn, row["Player"], team_id)
+        pid = resolve_player_id(conn, row["fbref_id"])
         if pid is None:
-            continue                                  # miss already logged — skip
-        values = (pid, match_id, row["Min"], row["Gls"], row["Ast"], row["PK"], row["PKatt"], row["Sh"], row["SoT"], row["CrdY"], row["CrdR"], row["Fls"], row["Fld"], row["Off"], row["Crs"], row["TklW"], row["Int"], row["OG"], row["PKwon"], row["PKcon"])
+            continue
+        values = (
+            pid, match_id,
+            row["Min"], row["Gls"], row["Ast"], row["PK"], row["PKatt"],
+            row["Sh"], row["SoT"], row["CrdY"], row["CrdR"],
+            row["Fls"], row["Fld"], row["Off"], row["Crs"],
+            row["TklW"], row["Int"], row["OG"], row["PKwon"], row["PKcon"]
+        )
         cursor.execute(INSERT_PLAYER, values)
         inserted += 1
     logging.info(f"{inserted} player_stats rows inserted for match {match_id}.")
@@ -63,27 +75,41 @@ def load_keepers(conn, df, match_id):
     cursor = conn.cursor()
     inserted = 0
     for _, row in df.iterrows():
-        team_id = TEAM_MAP[row["team_id"]]            # CSV hex → FIFA code
-        pid = resolve_player_id(conn, row["Player"], team_id)
+        pid = resolve_player_id(conn, row["fbref_id"])
         if pid is None:
-            continue                                  # miss already logged — skip
+            continue
         values = (pid, match_id, row["Min"], row["SoTA"], row["GA"], row["Saves"])
         cursor.execute(INSERT_KEEPER, values)
         inserted += 1
     logging.info(f"{inserted} goalkeeper_stats rows inserted for match {match_id}.")
 
 def main():
+    if len(sys.argv) < 2:
+        logging.error("Usage: python3 fbref_load.py <match_hex>")
+        sys.exit(1)
+
+    match_hex = sys.argv[1]
+    player_path = os.path.join(BASE_DIR, "results", f"{match_hex}_players.csv")
+    keeper_path  = os.path.join(BASE_DIR, "results", f"{match_hex}_keepers.csv")
+
     conn = None
     try:
         conn = sqlite3.connect(DB_PATH)
-        player_df = pd.read_csv(PLAYER_PATH)
-        load_players(conn, player_df, MATCH_ID)
-        keeper_df = pd.read_csv(KEEPER_PATH)
-        load_keepers(conn, keeper_df, MATCH_ID)
-        conn.commit()                                  # one commit covers both loaders
+
+        match_id = resolve_match_id(conn, match_hex)
+        if match_id is None:
+            return
+
+        player_df = pd.read_csv(player_path)
+        load_players(conn, player_df, match_id)
+
+        keeper_df = pd.read_csv(keeper_path)
+        load_keepers(conn, keeper_df, match_id)
+
+        conn.commit()
     finally:
         if conn:
             conn.close()
-    
+
 if __name__ == "__main__":
     main()
