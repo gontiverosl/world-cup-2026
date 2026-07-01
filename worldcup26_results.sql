@@ -2806,3 +2806,27 @@ INSERT OR IGNORE INTO goalkeeper_stats (player_id, match_id, minutes_played, sho
 INSERT OR IGNORE INTO goalkeeper_stats (player_id, match_id, minutes_played, shots_on_target_against, goals_against, saves) VALUES (871, 71, 90, 6, 2, 4);
 INSERT OR IGNORE INTO goalkeeper_stats (player_id, match_id, minutes_played, shots_on_target_against, goals_against, saves) VALUES (331, 72, 90, 1, 1, 0);
 INSERT OR IGNORE INTO goalkeeper_stats (player_id, match_id, minutes_played, shots_on_target_against, goals_against, saves) VALUES (533, 72, 90, 4, 2, 2);
+
+-- daily-update 2026-06-30: group stage Jun 26-27 (final round), R32 Jun 28-29
+UPDATE matches SET team_home='RSA', team_away='CAN' WHERE match_id=73;
+UPDATE matches SET team_home='BRA', team_away='JPN' WHERE match_id=74;
+UPDATE matches SET team_home='GER', team_away='PAR' WHERE match_id=75;
+UPDATE matches SET team_home='NED', team_away='MAR' WHERE match_id=76;
+UPDATE matches SET goals_home=1, goals_away=4, corners_home=4, corners_away=5, possession_home=43.0, possession_away=57.0, attendance=64146, referee='Michael Oliver' WHERE match_id=53;
+UPDATE matches SET goals_home=5, goals_away=0, corners_home=12, corners_away=3, possession_home=69.0, possession_away=31.0, attendance=43036, referee='Anthony Taylor' WHERE match_id=54;
+UPDATE matches SET goals_home=0, goals_away=1, corners_home=1, corners_away=6, possession_home=33.0, possession_away=67.0, attendance=45065, referee='Ismail Elfath' WHERE match_id=47;
+UPDATE matches SET goals_home=0, goals_away=0, corners_home=4, corners_away=2, possession_home=51.0, possession_away=49.0, attendance=68278, referee='François Letexier' WHERE match_id=48;
+UPDATE matches SET goals_home=1, goals_away=1, corners_home=8, corners_away=2, possession_home=61.0, possession_away=39.0, attendance=66925, referee='Szymon Marciniak' WHERE match_id=42;
+UPDATE matches SET goals_home=1, goals_away=5, corners_home=5, corners_away=8, possession_home=45.0, possession_away=55.0, attendance=52497, referee='Adham Makhadmeh' WHERE match_id=41;
+UPDATE matches SET goals_home=0, goals_away=2, corners_home=3, corners_away=7, possession_home=33.0, possession_away=67.0, attendance=80663, referee='Abdulrahman Ibrahim Al Jassim' WHERE match_id=71;
+UPDATE matches SET goals_home=2, goals_away=1, corners_home=3, corners_away=2, possession_home=53.0, possession_away=47.0, attendance=68324, referee='Drew Fischer' WHERE match_id=72;
+UPDATE matches SET goals_home=3, goals_away=1, corners_home=2, corners_away=4, possession_home=58.0, possession_away=42.0, attendance=68239, referee='Felix Zwayer' WHERE match_id=66;
+UPDATE matches SET goals_home=0, goals_away=0, corners_home=5, corners_away=2, possession_home=55.0, possession_away=45.0, attendance=64478, referee='Alireza Faghani' WHERE match_id=65;
+UPDATE matches SET goals_home=3, goals_away=3, corners_home=0, corners_away=3, possession_home=65.0, possession_away=35.0, attendance=69045, referee='Ilgiz Tantashev' WHERE match_id=60;
+UPDATE matches SET goals_home=1, goals_away=3, corners_home=2, corners_away=6, possession_home=27.0, possession_away=73.0, attendance=70649, referee='István Kovács' WHERE match_id=59;
+UPDATE matches SET goals_home=0, goals_away=1, corners_home=1, corners_away=4, possession_home=58.0, possession_away=42.0, attendance=69237, referee='João Pinheiro' WHERE match_id=73;
+UPDATE matches SET goals_home=2, goals_away=1, corners_home=6, corners_away=2, possession_home=69.0, possession_away=31.0, attendance=68777, referee='Maurizio Mariani' WHERE match_id=74;
+UPDATE matches SET goals_home=1, goals_away=1, corners_home=16, corners_away=6, possession_home=75.0, possession_away=25.0, attendance=63945, referee='Jalal Jayed' WHERE match_id=75;
+UPDATE matches SET pk_home=3, pk_away=4 WHERE match_id=75;
+UPDATE matches SET goals_home=1, goals_away=1, corners_home=5, corners_away=8, possession_home=30.0, possession_away=70.0, attendance=51243, referee='Wilton Sampaio' WHERE match_id=76;
+UPDATE matches SET pk_home=2, pk_away=3 WHERE match_id=76;
