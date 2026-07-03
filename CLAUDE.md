@@ -6,6 +6,8 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 World Cup 2026 (WC26) — a live SQLite database of the FIFA World Cup 2026 (Jun 11 – Jul 19, 2026), built and grown session by session. Phase 3 domain anchor (S4 slash commands + S5 skills — complete). Phase 4 data visualization capstone — comparable in scope to the CFDI Parser. Target: one or more LinkedIn posts built with Python, SQL, FastAPI, pandas, Plotly, and Tableau Public. The DB grows daily as match results come in.
 
+Project hub: `WC26 Main.md` in the brain vault (`Documents\brain`) — strategy, status, and cross-project links (learn-claude drills, linkedin-content posts). This file stays the truth for schema and conventions; the hub is the truth for status and roadmap. Never duplicate schema into the hub.
+
 ## Database Schema
 
 **worldcup26.db** (rebuilt from `worldcup26_seed.sql` + `worldcup26_results.sql`)
@@ -110,8 +112,8 @@ A session is **not done until git is clean.** Commit is part of "done," not an o
 
 - **No session ends with uncommitted work.** Flow-state work — schema redesigns, architecture spikes, the Sunday rabbit holes — is exactly what skips the commit. It's also the most valuable work to not lose. Close it out.
 - **`wip:` commits are allowed and encouraged mid-flow.** `git commit -m "wip: schema redesign spike"` beats zero commits. Squash later if you care. A messy paper trail beats no paper trail.
-- **One trigger, not five steps.** Use `/wrap <prefix>` to collapse diff → stage → commit → push into a single command (drill spec: `learn-claude/Drill_Spec_Wrap_Command_v1.md`).
-- **The Sunday Reflection checks this repo's `git status` + last-commit age** — the backstop that catches a multi-day uncommitted backlog before it grows. (See `learn-claude/Learning_OS.md` §11.)
+- **One trigger, not five steps.** Use `/wrap <prefix>` to collapse diff → stage → commit → push into a single command (live in Claude Code).
+- **The Sunday Reflection checks this repo's `git status` + last-commit age** — the backstop that catches a multi-day uncommitted backlog before it grows. (See `Learning_OS.md` §11 in the brain vault — `Documents/brain`, the canonical home of all AI md context since 2026-07-02.)
 
 ## File layout
 
@@ -122,9 +124,3 @@ world-cup-2026/
 ├── worldcup26_results.sql   — dynamic data accumulator (match score UPDATEs + player/GK stat INSERTs)
 ├── wc26_standings.py        — group standings from played matches
 ├── CLAUDE.md                — this file
-├── results/                 — match result CSVs as the tournament progresses
-├── .claude/
-│   ├── commands/            — slash commands (S4)
-│   └── skills/              — domain knowledge files (always-on context)
-└── [session files]          — wc26_report.py, wc26_api.py, wc26_loader.py (planned)
-```
