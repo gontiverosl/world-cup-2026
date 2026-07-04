@@ -123,4 +123,10 @@ world-cup-2026/
 ├── worldcup26_seed.sql      — pure structural baseline (schema + reference data + NULL score placeholders)
 ├── worldcup26_results.sql   — dynamic data accumulator (match score UPDATEs + player/GK stat INSERTs)
 ├── wc26_standings.py        — group standings from played matches
-├── CLAUDE.md     
+├── CLAUDE.md                — this file
+├── results/                 — match result CSVs as the tournament progresses
+├── .claude/
+│   ├── commands/            — slash commands (S4)
+│   └── skills/              — domain knowledge files (always-on context)
+└── [session files]          — wc26_report.py, wc26_api.py, wc26_loader.py (planned)
+```

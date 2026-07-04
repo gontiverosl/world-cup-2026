@@ -2830,3 +2830,84 @@ UPDATE matches SET goals_home=1, goals_away=1, corners_home=16, corners_away=6, 
 UPDATE matches SET pk_home=3, pk_away=4 WHERE match_id=75;
 UPDATE matches SET goals_home=1, goals_away=1, corners_home=5, corners_away=8, possession_home=30.0, possession_away=70.0, attendance=51243, referee='Wilton Sampaio' WHERE match_id=76;
 UPDATE matches SET pk_home=2, pk_away=3 WHERE match_id=76;
+
+-- ============================================================
+-- 2026-07-02 daily-update: Group L finals (Jun 27) + R32 team
+-- assignments and results (Jun 28 – Jul 1)
+-- ============================================================
+
+-- Step 2: Knockout team assignments (R32)
+UPDATE matches SET team_home='RSA', team_away='CAN' WHERE match_id=73;
+UPDATE matches SET team_home='GER', team_away='PAR' WHERE match_id=74;
+UPDATE matches SET team_home='NED', team_away='MAR' WHERE match_id=75;
+UPDATE matches SET team_home='BRA', team_away='JPN' WHERE match_id=76;
+UPDATE matches SET team_home='FRA', team_away='SWE' WHERE match_id=77;
+UPDATE matches SET team_home='CIV', team_away='NOR' WHERE match_id=78;
+UPDATE matches SET team_home='MEX', team_away='ECU' WHERE match_id=79;
+UPDATE matches SET team_home='ENG', team_away='COD' WHERE match_id=80;
+UPDATE matches SET team_home='USA', team_away='BIH' WHERE match_id=81;
+UPDATE matches SET team_home='BEL', team_away='SEN' WHERE match_id=82;
+UPDATE matches SET team_home='POR', team_away='CRO' WHERE match_id=83;
+UPDATE matches SET team_home='ESP', team_away='AUT' WHERE match_id=84;
+UPDATE matches SET team_home='SUI', team_away='ALG' WHERE match_id=85;
+
+-- Step 4: Match results
+
+-- match_id 71: Panama 0-2 England (Group L, Jun 27)
+UPDATE matches SET goals_home=0, goals_away=2, corners_home=3, corners_away=7, possession_home=33.0, possession_away=67.0, attendance=80663, referee='Abdulrahman Ibrahim Al Jassim' WHERE match_id=71;
+
+-- match_id 72: Croatia 2-1 Ghana (Group L, Jun 27)
+UPDATE matches SET goals_home=2, goals_away=1, corners_home=3, corners_away=2, possession_home=53.0, possession_away=47.0, attendance=68324, referee='Drew Fischer' WHERE match_id=72;
+
+-- match_id 73: South Africa 0-1 Canada (R32, Jun 28)
+UPDATE matches SET goals_home=0, goals_away=1, corners_home=1, corners_away=4, possession_home=58.0, possession_away=42.0, attendance=69237, referee='João Pinheiro' WHERE match_id=73;
+
+-- match_id 74: Germany 1-1 Paraguay AET; Paraguay wins 4-3 on PKs (R32, Jun 29)
+UPDATE matches SET goals_home=1, goals_away=1, corners_home=16, corners_away=6, possession_home=75.0, possession_away=25.0, attendance=63945, referee='Jalal Jayed' WHERE match_id=74;
+UPDATE matches SET pk_home=3, pk_away=4 WHERE match_id=74;
+
+-- match_id 75: Netherlands 1-1 Morocco AET; Morocco wins 3-2 on PKs (R32, Jun 29)
+UPDATE matches SET goals_home=1, goals_away=1, corners_home=5, corners_away=8, possession_home=30.0, possession_away=70.0, attendance=51243, referee='Wilton Sampaio' WHERE match_id=75;
+UPDATE matches SET pk_home=2, pk_away=3 WHERE match_id=75;
+
+-- match_id 76: Brazil 2-1 Japan (R32, Jun 29)
+UPDATE matches SET goals_home=2, goals_away=1, corners_home=6, corners_away=2, possession_home=69.0, possession_away=31.0, attendance=68777, referee='Maurizio Mariani' WHERE match_id=76;
+
+-- match_id 77: France 3-0 Sweden (R32, Jun 30)
+UPDATE matches SET goals_home=3, goals_away=0, corners_home=9, corners_away=1, possession_home=61.0, possession_away=39.0, attendance=80663, referee='Danny Makkelie' WHERE match_id=77;
+
+-- match_id 78: Côte d'Ivoire 1-2 Norway (R32, Jun 30)
+UPDATE matches SET goals_home=1, goals_away=2, corners_home=14, corners_away=3, possession_home=47.0, possession_away=53.0, attendance=69665, referee='Jesús Valenzuela' WHERE match_id=78;
+
+-- match_id 79: Mexico 2-0 Ecuador (R32, Jun 30)
+UPDATE matches SET goals_home=2, goals_away=0, corners_home=3, corners_away=8, possession_home=43.0, possession_away=57.0, attendance=80824, referee='Slavko Vinčič' WHERE match_id=79;
+
+-- match_id 80: England 2-1 Congo DR (R32, Jul 1)
+UPDATE matches SET goals_home=2, goals_away=1, corners_home=5, corners_away=3, possession_home=60.0, possession_away=40.0, attendance=68239, referee='Adham Makhadmeh' WHERE match_id=80;
+
+-- match_id 81: United States 2-0 Bosnia & Herz. (R32, Jul 1)
+UPDATE matches SET goals_home=2, goals_away=0, corners_home=4, corners_away=3, possession_home=48.0, possession_away=52.0, attendance=68827, referee='Raphael Claus' WHERE match_id=81;
+
+-- match_id 82: Belgium 3-2 Senegal AET (R32, Jul 1)
+UPDATE matches SET goals_home=3, goals_away=2, corners_home=4, corners_away=2, possession_home=52.0, possession_away=48.0, attendance=66925, referee='Said Martínez' WHERE match_id=82;
+
+-- ============================================================
+-- 2026-07-03 daily-update: R32 team assignments (Jul 3) +
+-- R32 results (Jul 2: match_ids 83-85)
+-- ============================================================
+
+-- Step 2: Knockout team assignments (R32, Jul 3)
+UPDATE matches SET team_home='AUS', team_away='EGY' WHERE match_id=86;
+UPDATE matches SET team_home='ARG', team_away='CPV' WHERE match_id=87;
+UPDATE matches SET team_home='COL', team_away='GHA' WHERE match_id=88;
+
+-- Step 4: Match results (Jul 2)
+
+-- match_id 83: Portugal 2-1 Croatia (R32, Jul 2)
+UPDATE matches SET goals_home=2, goals_away=1, corners_home=9, corners_away=5, possession_home=61.0, possession_away=40.0, attendance=43036, referee='Espen Eskås' WHERE match_id=83;
+
+-- match_id 84: Spain 3-0 Austria (R32, Jul 2)
+UPDATE matches SET goals_home=3, goals_away=0, corners_home=9, corners_away=0, possession_home=65.0, possession_away=36.0, attendance=70492, referee='Glenn Nyberg' WHERE match_id=84;
+
+-- match_id 85: Switzerland 2-0 Algeria (R32, Jul 2)
+UPDATE matches SET goals_home=2, goals_away=0, corners_home=4, corners_away=2, possession_home=45.0, possession_away=55.0, attendance=52497, referee='Yael Falcón' WHERE match_id=85;
