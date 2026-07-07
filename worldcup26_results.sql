@@ -2911,3 +2911,59 @@ UPDATE matches SET goals_home=3, goals_away=0, corners_home=9, corners_away=0, p
 
 -- match_id 85: Switzerland 2-0 Algeria (R32, Jul 2)
 UPDATE matches SET goals_home=2, goals_away=0, corners_home=4, corners_away=2, possession_home=45.0, possession_away=55.0, attendance=52497, referee='Yael Falcón' WHERE match_id=85;
+
+-- ============================================================
+-- 2026-07-04 daily-update: R32 results (Jul 3: match_ids 86-88)
+--   + R16 team assignments (Jul 4: match_ids 89-90)
+-- ============================================================
+
+-- Step 2: Knockout team assignments (R16, Jul 4)
+UPDATE matches SET team_home='PAR', team_away='FRA' WHERE match_id=89;
+UPDATE matches SET team_home='CAN', team_away='MAR' WHERE match_id=90;
+
+-- Step 4: Match results (Jul 3)
+
+-- match_id 86: Australia 1-1 Egypt (R32, Jul 3) — Egypt wins 4-2 on pens
+UPDATE matches SET goals_home=1, goals_away=1, corners_home=4, corners_away=7, possession_home=42.0, possession_away=58.0, attendance=70244, referee='Gustavo Tejera' WHERE match_id=86;
+UPDATE matches SET pk_home=2, pk_away=4 WHERE match_id=86;
+
+-- match_id 87: Argentina 3-2 Cabo Verde AET (R32, Jul 3)
+UPDATE matches SET goals_home=3, goals_away=2, corners_home=8, corners_away=8, possession_home=64.0, possession_away=37.0, attendance=64478, referee='Drew Fischer' WHERE match_id=87;
+
+-- match_id 88: Colombia 1-0 Ghana (R32, Jul 3)
+UPDATE matches SET goals_home=1, goals_away=0, corners_home=3, corners_away=2, possession_home=61.0, possession_away=39.0, attendance=69045, referee='Clément Turpin' WHERE match_id=88;
+
+-- ============================================================
+-- 2026-07-06 daily-update: R16 results (Jul 5: match_ids 91-92)
+-- ============================================================
+
+-- match_id 91: Brazil 1-2 Norway (R16, Jul 5)
+UPDATE matches SET goals_home=1, goals_away=2, corners_home=5, corners_away=5, possession_home=34.0, possession_away=66.0, attendance=80663, referee='Ismail Elfath' WHERE match_id=91;
+
+-- match_id 92: Mexico 2-3 England (R16, Jul 5)
+UPDATE matches SET goals_home=2, goals_away=3, corners_home=12, corners_away=2, possession_home=67.0, possession_away=33.0, attendance=80824, referee='Alireza Faghani' WHERE match_id=92;
+
+-- ============================================================
+-- 2026-07-05 daily-update: R16 results (Jul 4: match_ids 89-90)
+--   + R16 team assignments (match_ids 91-96)
+-- NOTE: the 2026-07-04 statements above had been appended to this
+-- file but never committed to the live DB (interrupted run left a
+-- hot journal); they were re-applied to the DB on 2026-07-05.
+-- ============================================================
+
+-- Step 2: Knockout team assignments (R16, Jul 5-7; bracket fully
+-- determined after R32, pairings verified on FBref fixtures page)
+UPDATE matches SET team_home='BRA', team_away='NOR' WHERE match_id=91;
+UPDATE matches SET team_home='MEX', team_away='ENG' WHERE match_id=92;
+UPDATE matches SET team_home='POR', team_away='ESP' WHERE match_id=93;
+UPDATE matches SET team_home='USA', team_away='BEL' WHERE match_id=94;
+UPDATE matches SET team_home='ARG', team_away='EGY' WHERE match_id=95;
+UPDATE matches SET team_home='SUI', team_away='COL' WHERE match_id=96;
+
+-- Step 4: Match results (Jul 4)
+
+-- match_id 89: Paraguay 0-1 France (R16, Jul 4)
+UPDATE matches SET goals_home=0, goals_away=1, corners_home=2, corners_away=12, possession_home=24.0, possession_away=76.0, attendance=68324, referee='Ilgiz Tantashev' WHERE match_id=89;
+
+-- match_id 90: Canada 0-3 Morocco (R16, Jul 4)
+UPDATE matches SET goals_home=0, goals_away=3, corners_home=11, corners_away=1, possession_home=45.0, possession_away=55.0, attendance=68777, referee='Michael Oliver' WHERE match_id=90;

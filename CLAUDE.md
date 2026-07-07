@@ -56,6 +56,32 @@ Inherits the NovaPay conventions — keep them identical across both repos:
 - **Canonical data source**: https://fbref.com/en/ — all player stats and match data come from FBref. Summary tab → `player_stats`. Goalkeeper Stats tab → `goalkeeper_stats`. Never INSERT or UPDATE from memory — always verify against FBref first.
 - **FBref scraping — always use Chrome, never requests**: FBref blocks all bot/script access with Cloudflare. Direct `requests.get()` returns 403. Use Claude in Chrome (`mcp__Claude_in_Chrome__navigate` + `mcp__Claude_in_Chrome__javascript_tool`) to fetch any FBref page. This is the established convention — do not attempt to bypass it via `requests`, `curl`, `httpx`, or any other HTTP library.
 
+## FBref Pipeline (stats layer)
+
+The production pipeline that fills `player_stats` / `goalkeeper_stats`. Four layers — acquire is the only one that touches the network; everything downstream is local and idempotent.
+
+```
+1. ACQUIRE   Claude in Chrome → results/raw/{hex}.html
+             fbref_urls.py   — URL/hex registry scraped from the FBref schedule page
+             fbref_move.py   — moves Chrome-downloaded HTMLs (Downloads/) → results/raw/
+             fbref_fetch.py  — DEAD REFERENCE: requests.get → 403 (Cloudflare). Kept to document why.
+2. PARSE     fbref_parse.py {hex} → results/{hex}_players.csv + {hex}_keepers.csv
+             Finds ALL stats_*_summary + keeper_stats_* tables (both teams, regex on table id).
+             Extracts fbref_id from data-append-csv BEFORE read_html; stamps team_id + match hex on every row.
+3. LOAD      fbref_load.py {hex} → INSERT OR REPLACE into player_stats + goalkeeper_stats (live DB)
+             fbref_batch.py — parse+load every match with HTML on disk but no stats rows yet (resumable)
+4. MIRROR    generate_inserts.py — exports all stat rows as INSERT OR IGNORE, appends to worldcup26_results.sql
+             ⚠ run ONCE per batch — re-running duplicates lines in the .sql (harmless in DB, ugly in file)
+```
+
+**Identity resolution — never join on names.** Players resolve via `players.fbref_id` (from the `data-append-csv` attribute); matches resolve via `matches.fbref_match_id` (the URL hex). Name joins broke on accent drift (`Rüdiger` vs `Ruediger`) — that's why both crosswalk columns exist. `fbref_map_matches.py` populates `matches.fbref_match_id` from URL slugs (SLUG_TO_CODE map for non-obvious country codes). A missing crosswalk row = load skipped + logged, never a wrong id.
+
+**Idempotency:** loader is `INSERT OR REPLACE` — FBref revises stats post-match, so a re-pull overwrites (stat_id churn is harmless, nothing references it). The results.sql mirror is `INSERT OR IGNORE`.
+
+**Standing verification (after every batch):** rebuild `seed + results` into a scratch DB and compare row counts (`matches` played, `player_stats`, `goalkeeper_stats`) against the live DB. The two known lockstep failure modes are stats loaded without score UPDATEs (Jun 27 batch) and results.sql UPDATEs never applied to the live DB (R32 batch) — the rebuild test catches both directions.
+
+**Daily flow per newly played match:** verify on FBref → `UPDATE matches` (score, corners, possession, attendance, referee) in live DB + append to results.sql → Chrome-save the match HTML → `fbref_batch.py` → `generate_inserts.py` → rebuild test. The `daily-update` scheduled task is the reminder for exactly this sequence.
+
 ## Prohibited (never do)
 
 - No f-strings or string concatenation in SQL queries
@@ -122,11 +148,20 @@ world-cup-2026/
 ├── worldcup26.db            — SQLite database (live, grows daily, tracked in git)
 ├── worldcup26_seed.sql      — pure structural baseline (schema + reference data + NULL score placeholders)
 ├── worldcup26_results.sql   — dynamic data accumulator (match score UPDATEs + player/GK stat INSERTs)
+├── fbref_urls.py            — FBref match URL/hex registry
+├── fbref_fetch.py           — dead reference (requests → 403; acquire = Claude in Chrome)
+├── fbref_move.py            — Downloads/ → results/raw/
+├── fbref_parse.py           — raw HTML → per-match players/keepers CSVs
+├── fbref_load.py            — CSVs → player_stats + goalkeeper_stats
+├── fbref_batch.py           — parse+load all fetched-but-unloaded matches
+├── fbref_map_matches.py     — populates matches.fbref_match_id from URL slugs
+├── generate_inserts.py      — mirrors stat rows into worldcup26_results.sql
 ├── wc26_standings.py        — group standings from played matches
+├── wc26_viz.py              — Plotly viz (money vs goals scatter)
 ├── CLAUDE.md                — this file
-├── results/                 — match result CSVs as the tournament progresses
+├── results/                 — per-match CSVs; results/raw/ = Chrome-saved match HTMLs
 ├── .claude/
 │   ├── commands/            — slash commands (S4)
 │   └── skills/              — domain knowledge files (always-on context)
-└── [session files]          — wc26_report.py, wc26_api.py, wc26_loader.py (planned)
+└── [session files]          — wc26_report.py, wc26_api.py (planned)
 ```
