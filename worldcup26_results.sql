@@ -2967,3 +2967,20 @@ UPDATE matches SET goals_home=0, goals_away=1, corners_home=2, corners_away=12, 
 
 -- match_id 90: Canada 0-3 Morocco (R16, Jul 4)
 UPDATE matches SET goals_home=0, goals_away=3, corners_home=11, corners_away=1, possession_home=45.0, possession_away=55.0, attendance=68777, referee='Michael Oliver' WHERE match_id=90;
+
+-- Step 4: Match results (Jul 6)
+
+-- match_id 93: Portugal 0-1 Spain (R16, Jul 6)
+UPDATE matches SET goals_home=0, goals_away=1, corners_home=3, corners_away=7, possession_home=45.0, possession_away=56.0, attendance=70649, referee='Anthony Taylor' WHERE match_id=93;
+
+-- match_id 94: United States 1-4 Belgium (R16, Jul 6)
+UPDATE matches SET goals_home=1, goals_away=4, corners_home=3, corners_away=5, possession_home=56.0, possession_away=44.0, attendance=66925, referee='Adham Makhadmeh' WHERE match_id=94;
+
+-- Step 4: Match results (Jul 7)
+
+-- match_id 95: Argentina 3-2 Egypt (R16, Jul 7)
+UPDATE matches SET goals_home=3, goals_away=2, corners_home=6, corners_away=1, possession_home=64.0, possession_away=36.0, attendance=68239, referee='François Letexier' WHERE match_id=95;
+
+-- match_id 96: Switzerland 0-0 Colombia AET, Switzerland won penalty shootout 4-3 (R16, Jul 7)
+UPDATE matches SET goals_home=0, goals_away=0, corners_home=3, corners_away=7, possession_home=53.0, possession_away=47.0, attendance=52497, referee='Iván Barton' WHERE match_id=96;
+UPDATE matches SET pk_home=4, pk_away=3 WHERE match_id=96;

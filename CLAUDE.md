@@ -11,11 +11,22 @@ Project hub: `world-cup-2026/WC26 Main.md` in the brain vault (`C:\Users\gonti\b
 ## Database Schema
 
 **worldcup26.db** (rebuilt from `worldcup26_seed.sql` + `worldcup26_results.sql`)
-- `teams`: team_id (TEXT PK — 3-letter FIFA code), country (TEXT NOT NULL), confederation (TEXT NOT NULL), group_name (TEXT NOT NULL — 'A'–'L'), fifa_ranking (INTEGER), appearances (INTEGER — previous WC tournaments excl. WC26; 0 = first-timer), best_finish (TEXT — NULL for first-timers; values: 'Champion'/'Runner-up'/'Third place'/'Fourth place'/'Quarterfinals'/'Round of 16'/'Round of 32'/'Group stage'), coach (TEXT), host (INTEGER DEFAULT 0 — 1 = co-host MEX/USA/CAN), base_camp (TEXT — 'city, state, country'), market_value_m (REAL — Transfermarkt pre-tournament snapshot, EUR millions). All static.
-- `players`: player_id (INTEGER PK AUTOINCREMENT), team_id (TEXT FK → teams.team_id), shirt_number (INTEGER), name (TEXT NOT NULL), position (TEXT NOT NULL — GK/DF/MF/FW; combos like FW-MF), footed (TEXT — 'Left'/'Right'), birthday (TEXT — 'YYYY-MM-DD'), birthplace (TEXT — 'city, state, country'), league (TEXT), club (TEXT), matches_played (INTEGER), matches_started (INTEGER), minutes_played (INTEGER), goals (INTEGER), assists (INTEGER), yellow_cards (INTEGER), red_cards (INTEGER). All static. Career NT stats (matches_played → red_cards) sourced from FBref national team pages, excluding WC26 data. Nullable until populated.
-- `matches`: match_id (INTEGER PK AUTOINCREMENT), fifa_match_no (INTEGER UNIQUE), team_home (TEXT FK, NULL for unresolved knockout), team_away (TEXT FK, NULL for unresolved knockout), goals_home (INTEGER), goals_away (INTEGER), pk_home (INTEGER, NULL unless knockout + tied), pk_away (INTEGER, NULL unless knockout + tied), corners_home (INTEGER), corners_away (INTEGER), possession_home (REAL — % without sign), possession_away (REAL), stage (TEXT NOT NULL — 'group'/'r32'/'r16'/'qf'/'sf'/'third_place'/'final'), group_name (TEXT NOT NULL — 'A'–'L' for group stage, 'knock-out' for knockout), match_date (TEXT ISO 'YYYY-MM-DD'), match_time (TEXT 'HH:MM' local), stadium (TEXT), city (TEXT), attendance (INTEGER), referee (TEXT). Static fields: match_id, fifa_match_no, team_home/away (group fixed; knockout dynamic), stage, group_name, match_date, match_time, stadium, city. Dynamic fields (worldcup26_results.sql): goals_home/away, pk_home/away, corners_home/away, possession_home/away, attendance, referee.
-- `player_stats`: stat_id (INTEGER PK AUTOINCREMENT), player_id (INTEGER FK → players.player_id), match_id (INTEGER FK → matches.match_id), minutes_played (Min), goals (Gls), assists (Ast), pk_made (G-PK), pk_att (PKatt), shots (Sh), shots_on_goal (SoT), yellow_cards (CrdY), red_cards (CrdR), fouls (Fls), fouls_drawn (Fld), offsides (Off), crosses (Crs), tackles_won (TklW), interceptions (Int), own_goals (OG), pk_won (PKwon), pk_conceded (PKcon) — all INTEGER DEFAULT 0. UNIQUE (player_id, match_id). Column order matches FBref Summary tab left-to-right. All dynamic — rows inserted via worldcup26_results.sql.
+- `teams`: team_id (TEXT PK — 3-letter FIFA code), fbref_team_id (TEXT UNIQUE — FBref squad-page hex; crosswalked for all 48 teams 2026-07-08), country (TEXT NOT NULL), confederation (TEXT NOT NULL), group_name (TEXT NOT NULL — 'A'–'L'), fifa_ranking (INTEGER), appearances (INTEGER — previous WC tournaments excl. WC26; 0 = first-timer), best_finish (TEXT — NULL for first-timers; values: 'Champion'/'Runner-up'/'Third place'/'Fourth place'/'Quarterfinals'/'Round of 16'/'Round of 32'/'Group stage'), coach (TEXT), host (INTEGER DEFAULT 0 — 1 = co-host MEX/USA/CAN), base_camp (TEXT — 'city, state, country'), market_value_m (REAL — Transfermarkt pre-tournament snapshot, EUR millions). All static.
+- `players`: player_id (INTEGER PK AUTOINCREMENT), fbref_id (TEXT UNIQUE — FBref player id, stable join key), team_id (TEXT FK → teams.team_id), shirt_number (INTEGER), name (TEXT NOT NULL, indexed), position (TEXT NOT NULL — GK/DF/MF/FW; combos like FW-MF), goalkeeper_flag (INTEGER DEFAULT 0 — derived from `position LIKE '%GK%'`, seeded once so consumers don't each reimplement that check), birthday (TEXT — 'YYYY-MM-DD'), birthplace (TEXT — 'city, state, country'), league (TEXT), club (TEXT), matches_played (INTEGER), matches_started (INTEGER), minutes_played (INTEGER), goals (INTEGER), assists (INTEGER), yellow_cards (INTEGER), red_cards (INTEGER). All static. Career NT stats (matches_played → red_cards) sourced from FBref national team pages, excluding WC26 data. Nullable until populated.
+- `matches`: match_id (INTEGER PK AUTOINCREMENT), fbref_match_id (TEXT UNIQUE — FBref match hex, pipeline join key), fifa_match_no (INTEGER UNIQUE), team_home (TEXT FK, NULL for unresolved knockout), team_away (TEXT FK, NULL for unresolved knockout), goals_home (INTEGER), goals_away (INTEGER), pk_home (INTEGER, NULL unless knockout + tied), pk_away (INTEGER, NULL unless knockout + tied), corners_home (INTEGER), corners_away (INTEGER), possession_home (REAL — % without sign), possession_away (REAL), stage (TEXT NOT NULL — 'group'/'r32'/'r16'/'qf'/'sf'/'third_place'/'final'), group_name (TEXT NOT NULL — 'A'–'L' for group stage, 'knock-out' for knockout), match_date (TEXT ISO 'YYYY-MM-DD'), match_time (TEXT 'HH:MM' local), stadium (TEXT), city (TEXT), attendance (INTEGER), referee (TEXT). Static fields: match_id, fifa_match_no, team_home/away (group fixed; knockout dynamic), stage, group_name, match_date, match_time, stadium, city. Dynamic fields (worldcup26_results.sql): goals_home/away, pk_home/away, corners_home/away, possession_home/away, attendance, referee.
+- `player_stats`: stat_id (INTEGER PK AUTOINCREMENT), player_id (INTEGER FK → players.player_id), match_id (INTEGER FK → matches.match_id, indexed), minutes_played (Min), goals (Gls), assists (Ast), pk_made (G-PK), pk_att (PKatt), shots (Sh), shots_on_goal (SoT), yellow_cards (CrdY), red_cards (CrdR), fouls (Fls), fouls_drawn (Fld), offsides (Off), crosses (Crs), tackles_won (TklW), interceptions (Int), own_goals (OG), pk_won (PKwon), pk_conceded (PKcon) — all INTEGER DEFAULT 0. UNIQUE (player_id, match_id). Column order matches FBref Summary tab left-to-right. All dynamic — rows inserted via worldcup26_results.sql.
 - `goalkeeper_stats`: stat_id (INTEGER PK AUTOINCREMENT), player_id (INTEGER FK → players.player_id), match_id (INTEGER FK → matches.match_id), minutes_played (INTEGER DEFAULT 0), shots_on_target_against (SoTA, INTEGER DEFAULT 0), goals_against (GA, INTEGER DEFAULT 0), saves (INTEGER DEFAULT 0). UNIQUE (player_id, match_id). Maps to FBref Goalkeeper Stats tab. save_pct is derived — never stored: CAST(saves AS REAL) / NULLIF(shots_on_target_against, 0). GK also appears in player_stats with outfield columns. All dynamic — rows inserted via worldcup26_results.sql.
+- `metadata`: singleton table (one row, updated in place — no PK). schema_version (TEXT — semver, e.g. '1.0.0'), api_version (TEXT — NULL until wc26_api.py ships), last_sync (TEXT — ISO 8601 timestamp of the last wc26-daily-update run), last_matchday (TEXT — max match_date among played matches as of that run), records_imported (INTEGER — rows written by the **last run only**, a delta, never cumulative). Field ownership:
+
+  | Field | Owner | Updated | Notes |
+  |---|---|---|---|
+  | `schema_version` | Human, seed-authored | Only on schema changes | Bump when `worldcup26_seed.sql`'s `CREATE TABLE`s change |
+  | `api_version` | Human, seed-authored | Only on API changes | NULL until `wc26_api.py` ships |
+  | `last_sync` | `wc26-daily-update` task | Every run | ISO 8601 timestamp of that run, not a bare date |
+  | `last_matchday` | `wc26-daily-update` task | Every run | `MAX(match_date)` among played matches as of that run |
+  | `records_imported` | `wc26-daily-update` task | Every run | **This-run delta** — rows written in that run, not a running total |
+
+  `schema_version`/`api_version` are seeded in `worldcup26_seed.sql` with real values and only change when a human edits the seed. `last_sync`/`last_matchday` seed with a real snapshot as of authoring time (not a NULL placeholder — this table represents current status, not tournament history) and are UPDATEd via `worldcup26_results.sql` from then on. `records_imported` seeds NULL — no run had instrumented a per-run delta count before 2026-07-08, so NULL is the honest value; 0 or a backfilled cumulative number would misrepresent that gap.
 
 ## Stack
 
@@ -44,7 +55,7 @@ Inherits the NovaPay conventions — keep them identical across both repos:
 - `goals_home` / `goals_away` are NULL when a match is **not yet played**. Standings and stats queries must filter `WHERE goals_home IS NOT NULL`.
 - `matches` stores `team_id` references, never country names — JOIN to `teams` for display names.
 - `worldcup26_seed.sql` is the **pure structural baseline** — schema + reference data only. This includes teams, players, match schedule (with NULL goal placeholders), and the empty table definitions for `player_stats` / `goalkeeper_stats`. Never put scores or stat data here.
-- Daily result updates source: https://fbref.com/en/comps/1/2026/matches. The `daily-update` scheduled task (cron `0 0 * * *`) is a reminder to: (1) UPDATE matches with result + corners + possession + attendance + referee; (2) INSERT player_stats from FBref Summary tab; (3) INSERT goalkeeper_stats from FBref Goalkeeper Stats tab; (4) append all statements to `worldcup26_results.sql`.
+- Daily result updates source: https://fbref.com/en/comps/1/2026/matches. Match results are fetched by the external `wc26-daily-update` scheduled skill (`C:\Users\gonti\Claude\Scheduled\wc26-daily-update\SKILL.md`, cron `0 0 * * *`) via the Firecrawl MCP connector (`firecrawl_scrape`, JSON extraction — no HTML file ever saved; migrated 2026-07-07). It: (1) UPDATEs matches with result + corners + possession + attendance + referee; (2) appends the same statements to `worldcup26_results.sql`. It explicitly does **not** load `player_stats`/`goalkeeper_stats` — see "FBref Pipeline (stats layer)" below, which is currently broken pending S7.
 - **Dynamic field map** — `worldcup26_results.sql` contains exactly three statement types:
   - `UPDATE matches` — goals, pk, corners, possession, attendance, referee (post-match); team_home/team_away (knockout bracket, pre-match)
   - `INSERT INTO player_stats` — one row per player per match, all stat columns
@@ -54,16 +65,33 @@ Inherits the NovaPay conventions — keep them identical across both repos:
 - **Knockout team assignment rule**: once knockout teams are known, run `UPDATE matches SET team_home=?, team_away=? WHERE match_id=?` against the live DB and append to `worldcup26_results.sql`. Only update the seed when correcting structural data (wrong bracket position, wrong date).
 - **Results layer rule**: `worldcup26_results.sql` accumulates **all** dynamic data — match score UPDATEs and player/GK stat INSERTs. Rebuild = `sqlite3 worldcup26.db < worldcup26_seed.sql && sqlite3 worldcup26.db < worldcup26_results.sql`. This file is the "final seed" for the LinkedIn-ready repo.
 - **Canonical data source**: https://fbref.com/en/ — all player stats and match data come from FBref. Summary tab → `player_stats`. Goalkeeper Stats tab → `goalkeeper_stats`. Never INSERT or UPDATE from memory — always verify against FBref first.
-- **FBref scraping — always use Chrome, never requests**: FBref blocks all bot/script access with Cloudflare. Direct `requests.get()` returns 403. Use Claude in Chrome (`mcp__Claude_in_Chrome__navigate` + `mcp__Claude_in_Chrome__javascript_tool`) to fetch any FBref page. This is the established convention — do not attempt to bypass it via `requests`, `curl`, `httpx`, or any other HTTP library.
+- **FBref scraping — never `requests`/`curl`/`httpx`; the acquisition method now splits in two:** FBref blocks all bot/script access with Cloudflare, so direct `requests.get()` returns 403 either way. (1) Match-result fetching is handled by the external `wc26-daily-update` skill via the Firecrawl MCP connector (`firecrawl_scrape`) — migrated 2026-07-07, currently working. (2) `player_stats`/`goalkeeper_stats` acquisition (this repo's pipeline, below) still requires a Chrome-saved HTML file in `results/raw/` and is **currently broken — Chrome was uninstalled 2026-07-08**. Migrating this half to Firecrawl is S7 scope; do not attempt a `requests`-based workaround in the meantime.
+
+## Data Integrity Invariants (never violate)
+
+`players` table: every `team_id` has exactly 26 rows, and `shirt_number` across those 26 rows forms a complete, gapless, non-duplicated set of 1-26.
+```sql
+SELECT team_id, COUNT(*) AS n, COUNT(DISTINCT shirt_number) AS distinct_n
+FROM players GROUP BY team_id
+HAVING n != 26 OR distinct_n != 26
+```
+must return zero rows. FIFA's WC26 squad cap is 26 — more isn't extra data, it's wrong data (non-squad players contaminating the table). `COUNT(*) = 26` alone is necessary but not sufficient — verified 2026-07-08 that a team can hit 26 rows with a non-squad player occupying a slot that should belong to someone else (caught via `shirt_number`, not row count). Never trust a source to have already enforced this, including FBref's own squad pages — confirmed 2026-07-06 (Chunk Audit) that FBref returns 27-28 per squad in some cases, and Germany/Jordan squad-page fetches this session returned 44 and 56. Any script or fetch that adds player rows must be checked against this cap before trusting the count.
+
+**Verification scale must match change scale — do not over-apply:**
+- Schema changes, bulk backfills (multi-row batch operations across many players/matches/teams), and anything touching table structure → full rebuild-and-verify (scratch DB, compare all row counts, invariant checks) is mandatory.
+- Single targeted fixes (one row, one or two columns — e.g. correcting one player's `fbref_id` or `position`) → verify with a direct scoped query confirming the specific change (`SELECT ... WHERE ...`), not a full pipeline rebuild. A full rebuild for a 1-row fix costs real time for no additional safety — the targeted query already proves correctness for that row, and nothing about a single-field UPDATE can silently corrupt unrelated rows the way a schema change or batch load can.
+
+**Never run overlapping writes against the live DB:** `sqlite3` rebuild/apply commands against `worldcup26.db` must run sequentially, each fully waited-on before the next starts. Concurrent writes to the same SQLite file can partially truncate or corrupt tables mid-transaction — this happened 2026-07-08 (`matches` 96→65, `player_stats` 2263→816, `goalkeeper_stats` 149→2) from multiple unmonitored background rebuild processes firing against the live DB at once. The source `.sql` files were unaffected; only the derived `.db` binary was. Recovery is always a single clean sequential rebuild from seed+results, never a race to fix it faster with parallel attempts.
 
 ## FBref Pipeline (stats layer)
 
 The production pipeline that fills `player_stats` / `goalkeeper_stats`. Four layers — acquire is the only one that touches the network; everything downstream is local and idempotent.
 
 ```
-1. ACQUIRE   Claude in Chrome → results/raw/{hex}.html
+1. ACQUIRE   ⚠ BROKEN (Chrome uninstalled 2026-07-08) — was: Claude in Chrome → results/raw/{hex}.html
+             Migrating this step to Firecrawl is S7 scope — not yet done.
              fbref_urls.py   — URL/hex registry scraped from the FBref schedule page
-             fbref_move.py   — moves Chrome-downloaded HTMLs (Downloads/) → results/raw/
+             fbref_move.py   — moves Chrome-downloaded HTMLs (Downloads/) → results/raw/. Dead until S7 — no Chrome to download from.
              fbref_fetch.py  — DEAD REFERENCE: requests.get → 403 (Cloudflare). Kept to document why.
 2. PARSE     fbref_parse.py {hex} → results/{hex}_players.csv + {hex}_keepers.csv
              Finds ALL stats_*_summary + keeper_stats_* tables (both teams, regex on table id).
@@ -80,7 +108,7 @@ The production pipeline that fills `player_stats` / `goalkeeper_stats`. Four lay
 
 **Standing verification (after every batch):** rebuild `seed + results` into a scratch DB and compare row counts (`matches` played, `player_stats`, `goalkeeper_stats`) against the live DB. The two known lockstep failure modes are stats loaded without score UPDATEs (Jun 27 batch) and results.sql UPDATEs never applied to the live DB (R32 batch) — the rebuild test catches both directions.
 
-**Daily flow per newly played match:** verify on FBref → `UPDATE matches` (score, corners, possession, attendance, referee) in live DB + append to results.sql → Chrome-save the match HTML → `fbref_batch.py` → `generate_inserts.py` → rebuild test. The `daily-update` scheduled task is the reminder for exactly this sequence.
+**Daily flow, current state (two separate tasks, don't conflate them):** Match results are fully handled by the external `wc26-daily-update` skill (Firecrawl-based, working) — verify on FBref → `UPDATE matches` (score, corners, possession, attendance, referee) → append to results.sql. Done there; not this repo's concern. `player_stats`/`goalkeeper_stats` are **blocked** — the acquisition step (Chrome → `results/raw/{hex}.html`) is broken since Chrome was uninstalled 2026-07-08. Once acquisition is fixed (S7), the rest of the chain is unchanged: `fbref_batch.py` → `generate_inserts.py` → rebuild test → `UPDATE metadata SET last_sync=..., last_matchday=..., records_imported=...` in live DB + append to results.sql.
 
 ## Prohibited (never do)
 
@@ -149,8 +177,8 @@ world-cup-2026/
 ├── worldcup26_seed.sql      — pure structural baseline (schema + reference data + NULL score placeholders)
 ├── worldcup26_results.sql   — dynamic data accumulator (match score UPDATEs + player/GK stat INSERTs)
 ├── fbref_urls.py            — FBref match URL/hex registry
-├── fbref_fetch.py           — dead reference (requests → 403; acquire = Claude in Chrome)
-├── fbref_move.py            — Downloads/ → results/raw/
+├── fbref_fetch.py           — dead reference (requests → 403; acquire = Chrome, now broken — uninstalled 2026-07-08, S7 migrates to Firecrawl)
+├── fbref_move.py            — Downloads/ → results/raw/. Dead until S7 — no Chrome to download from.
 ├── fbref_parse.py           — raw HTML → per-match players/keepers CSVs
 ├── fbref_load.py            — CSVs → player_stats + goalkeeper_stats
 ├── fbref_batch.py           — parse+load all fetched-but-unloaded matches
@@ -159,7 +187,7 @@ world-cup-2026/
 ├── wc26_standings.py        — group standings from played matches
 ├── wc26_viz.py              — Plotly viz (money vs goals scatter)
 ├── CLAUDE.md                — this file
-├── results/                 — per-match CSVs; results/raw/ = Chrome-saved match HTMLs
+├── results/                 — per-match CSVs; results/raw/ = HTML acquired via Chrome (broken since 2026-07-08 — S7 migrates to Firecrawl)
 ├── .claude/
 │   ├── commands/            — slash commands (S4)
 │   └── skills/              — domain knowledge files (always-on context)

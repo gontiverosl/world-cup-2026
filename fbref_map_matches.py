@@ -28,7 +28,10 @@ SLUG_TO_CODE = {
     "Korea-Republic":          "KOR",
 }
 
-# All 73 played matches scraped from FBref schedule page (2026-06-29)
+# All 94 played matches with a published FBref Match Report link as of 2026-07-08
+# (73 scraped 2026-06-29 [group stage + first R32 match] + 21 backfilled 2026-07-08
+# [remaining R32 + R16 through Jul 6]). match_id 95-96 (Jul 7 R16) not yet linked on
+# FBref's fixtures page as of this fetch — left out, never guessed.
 # (hex, date, team1_slug, team2_slug)
 # R32 match flagged — team_home/away NULL in DB until bracket is filled
 MATCHES = [
@@ -107,6 +110,29 @@ MATCHES = [
     ("ded93e98", "2026-06-27", "Colombia",                "Portugal"),
     ("5ec98037", "2026-06-27", "Jordan",                  "Argentina"),
     ("79a8f8c8", "2026-06-27", "Algeria",                 "Austria"),
+    # --- Round of 32 (remaining 15, backfilled 2026-07-08) ---
+    ("89da405b", "2026-06-29", "Germany",                 "Paraguay"),
+    ("bebca560", "2026-06-29", "Netherlands",              "Morocco"),
+    ("58289f35", "2026-06-29", "Brazil",                   "Japan"),
+    ("da47849b", "2026-06-30", "France",                   "Sweden"),
+    ("d280258e", "2026-06-30", "Cote-dIvoire",              "Norway"),
+    ("5eca3d3a", "2026-06-30", "Mexico",                    "Ecuador"),
+    ("520a5665", "2026-07-01", "England",                   "Congo-DR"),
+    ("89aea7f3", "2026-07-01", "United-States",              "Bosnia-and-Herzegovina"),
+    ("cf968279", "2026-07-01", "Belgium",                    "Senegal"),
+    ("87717b95", "2026-07-02", "Portugal",                   "Croatia"),
+    ("288fba4d", "2026-07-02", "Spain",                      "Austria"),
+    ("b2f307a9", "2026-07-02", "Switzerland",                "Algeria"),
+    ("3ccca695", "2026-07-03", "Australia",                  "Egypt"),
+    ("675b328b", "2026-07-03", "Argentina",                  "Cabo-Verde"),
+    ("d4ac0040", "2026-07-03", "Colombia",                   "Ghana"),
+    # --- Round of 16 (6 of 8, backfilled 2026-07-08; Jul 7 pair not yet linked on FBref) ---
+    ("8ad9833e", "2026-07-04", "Paraguay",                   "France"),
+    ("b709bfa1", "2026-07-04", "Canada",                     "Morocco"),
+    ("dabafdc1", "2026-07-05", "Brazil",                     "Norway"),
+    ("3ed2ad56", "2026-07-05", "Mexico",                     "England"),
+    ("fe9daeb3", "2026-07-06", "Portugal",                   "Spain"),
+    ("ac3ca9ea", "2026-07-06", "United-States",              "Belgium"),
 ]
 
 def slug_to_code(slug):

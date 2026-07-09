@@ -7,21 +7,45 @@
 -- Run: sqlite3 worldcup26.db < worldcup26_seed.sql
 -- Or paste into DBeaver and execute.
 -- ============================================================
+-- NULL-placeholder convention:
+--   goals_home / goals_away                        NULL = match not yet played
+--   team_home / team_away                          NULL = knockout slot not yet resolved
+--   group_name                                     NEVER NULL — 'A'-'L' or literal 'knock-out'
+--   fbref_id / fbref_match_id /
+--   fbref_team_id                                  NULL = not yet crosswalked to FBref
+--   metadata.last_sync / last_matchday             seed with a real snapshot as of
+--                                                  authoring time; owned by wc26-daily-update
+--                                                  from then on (every run, via results.sql).
+--   metadata.records_imported                      NULL in seed = not tracked before this
+--                                                  session's instrumentation; owned by
+--                                                  wc26-daily-update from then on — a
+--                                                  PER-RUN DELTA, never a cumulative total.
+--   metadata.schema_version                        Human-authored in this file; bump only on a
+--                                                  deliberate schema-freeze session (e.g. S6).
+--   metadata.api_version                           NULL until wc26_api.py exists (S9); human-
+--                                                  authored there when the API contract changes.
+--
+-- Seed = schema + reference data + NULL-score match skeleton.
+-- Results = everything the tournament wrote.
+-- ============================================================
 
 PRAGMA foreign_keys = ON;
+
+DROP TABLE IF EXISTS metadata;
+DROP TABLE IF EXISTS broadcasts;
+DROP TABLE IF EXISTS goalkeeper_stats;
+DROP TABLE IF EXISTS player_stats;
+DROP TABLE IF EXISTS matches;
+DROP TABLE IF EXISTS stadiums;
+DROP TABLE IF EXISTS players;
+DROP TABLE IF EXISTS teams;
 
 -- ============================================================
 -- TABLE: teams
 -- ============================================================
-DROP TABLE IF EXISTS broadcasts;
-DROP TABLE IF EXISTS goalkeeper_stats;
-DROP TABLE IF EXISTS player_stats;
-DROP TABLE IF EXISTS players;
-DROP TABLE IF EXISTS matches;
-DROP TABLE IF EXISTS teams;
-
 CREATE TABLE teams (
     team_id         TEXT PRIMARY KEY,    -- 3-letter FIFA code
+    fbref_team_id   TEXT UNIQUE,         -- FBref squad-page hex; NULL until crosswalked
     country         TEXT NOT NULL,
     confederation   TEXT NOT NULL,       -- UEFA / CONMEBOL / AFC / CAF / CONCACAF / OFC
     group_name      TEXT NOT NULL,       -- 'A' through 'L'
@@ -39,17 +63,16 @@ CREATE TABLE teams (
 -- ============================================================
 CREATE TABLE players (
     player_id       INTEGER PRIMARY KEY AUTOINCREMENT,
-    fbref_id        TEXT,                  -- FBref player id (stable join key)
+    fbref_id        TEXT UNIQUE,           -- FBref player id (stable join key)
     team_id         TEXT NOT NULL REFERENCES teams(team_id),
     name            TEXT NOT NULL,
     position        TEXT,                  -- FBref roster pos (GK/DF/MF/FW; combos e.g. 'FW,MF')
+    goalkeeper_flag INTEGER DEFAULT 0,     -- derived from position LIKE '%GK%'; normalizes combo positions (e.g. 'GK,DF')
     shirt_number    INTEGER,
-    footed          TEXT,                  -- pending: player page
     birthday        TEXT,                  -- 'YYYY-MM-DD'
     birthplace      TEXT,
-    height_cm       INTEGER,               -- pending: player page
-    weight_kg       INTEGER,               -- pending: player page
-    league          TEXT,                  -- pending: player page
+    league          TEXT,                  -- raw "{tier}. {country}" from FBref roster page (e.g. '1. England');
+                                            -- NOT a resolved competition name yet -- tier+country only
     club            TEXT,
     matches_played  INTEGER,               -- career NT (excl WC26); pending
     matches_started INTEGER,               -- pending
@@ -64,9 +87,8 @@ CREATE TABLE players (
     red_cards       INTEGER                -- pending
 );
 
--- ============================================================
--- TABLE: matches
--- ============================================================
+CREATE INDEX idx_players_name ON players(name);
+
 -- ============================================================
 -- TABLE: stadiums  (16 WC26 venues; capacity = FIFA-published)
 -- ============================================================
@@ -84,8 +106,12 @@ CREATE TABLE stadiums (
     roof            TEXT                  -- Open / Retractable / Fixed canopy / Partial / Canopy
 );
 
+-- ============================================================
+-- TABLE: matches
+-- ============================================================
 CREATE TABLE matches (
     match_id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    fbref_match_id  TEXT UNIQUE,              -- FBref match hex (e.g. 'a2c54ed9'); pipeline join key
     fifa_match_no   INTEGER UNIQUE,           -- FIFA official match number (1–104)
     team_home       TEXT REFERENCES teams(team_id),  -- NULL for unresolved knockout fixtures
     team_away       TEXT REFERENCES teams(team_id),
@@ -105,8 +131,7 @@ CREATE TABLE matches (
     city            TEXT,                     -- knockout rounds pending
     stadium_id      INTEGER REFERENCES stadiums(stadium_id),  -- FK -> stadiums; NULL until venue assigned
     attendance      INTEGER,                  -- dynamic; from FBref match page
-    referee         TEXT,                     -- dynamic; from FBref match page
-    fbref_match_id  TEXT                      -- FBref match hex (e.g. 'a2c54ed9'); pipeline join key
+    referee         TEXT                      -- dynamic; from FBref match page
 );
 
 -- ============================================================
@@ -137,6 +162,8 @@ CREATE TABLE player_stats (
     UNIQUE (player_id, match_id)
 );
 
+CREATE INDEX idx_player_stats_match_id ON player_stats(match_id);
+
 -- ============================================================
 -- TABLE: goalkeeper_stats
 -- ============================================================
@@ -150,6 +177,27 @@ CREATE TABLE goalkeeper_stats (
     saves                   INTEGER DEFAULT 0,                               -- FBref Saves
     UNIQUE (player_id, match_id)
 );
+
+-- ============================================================
+-- TABLE: metadata (singleton — one row, updated in place)
+-- Field ownership (see CLAUDE.md for the full table):
+--   schema_version / api_version   — human, seed-authored, on schema/API changes only
+--   last_sync / last_matchday /
+--   records_imported               — wc26-daily-update task, every run
+-- ============================================================
+CREATE TABLE metadata (
+    schema_version   TEXT,      -- semver, e.g. '1.0.0'; human-authored, bump on schema change
+    api_version      TEXT,      -- NULL until wc26_api.py ships; human-authored, bump on API change
+    last_sync        TEXT,      -- ISO 8601 timestamp of last wc26-daily-update run
+    last_matchday    TEXT,      -- max match_date among played matches, as of last_sync
+    records_imported INTEGER    -- rows written by the LAST run only — a delta, never cumulative
+);
+
+-- last_sync/last_matchday below are a real snapshot as of authoring time (2026-07-08), not
+-- placeholders. records_imported is NULL because no run had instrumented a per-run delta count
+-- before this session — 0 or a guessed number here would misrepresent that gap, so NULL it is.
+INSERT INTO metadata (schema_version, api_version, last_sync, last_matchday, records_imported)
+VALUES ('1.0.0', NULL, '2026-07-08T20:02:14Z', '2026-07-07', NULL);
 
 -- ============================================================
 -- SEED: teams (all 48 — real groups, confederations, rankings)
@@ -322,7 +370,6 @@ INSERT INTO players (fbref_id, team_id, name, position, shirt_number, birthday, 
 ('c818c4d9', 'ALG', 'Luca Zidane', 'GK', 23, '1998-05-13', 'Marseille, France', 'Granada'),
 ('27f33438', 'ARG', 'Thiago Almada', 'MF', 16, '2001-04-26', 'Ciudadela, Argentina', 'Atlético Madrid'),
 ('15ab5a2b', 'ARG', 'Julián Álvarez', 'FW,MF', 9, '2000-01-31', 'Calchín, Argentina', 'Atlético Madrid'),
-('7c3ed041', 'ARG', 'Leonardo Balerdi', 'DF', NULL, '1999-01-26', 'Villa Mercedes, Argentina', 'Marseille'),
 ('b9f282ec', 'ARG', 'Valentín Barco', 'DF,MF', 8, '2004-07-23', 'Veinticinco de Mayo, Argentina', 'Strasbourg'),
 ('162efffd', 'ARG', 'Rodrigo De Paul', 'MF', 7, '1994-05-24', 'Sarandí, Argentina', 'Inter Miami'),
 ('5ff4ab71', 'ARG', 'Enzo Fernández', 'MF', 24, '2001-01-17', 'General San Martín, Argentina', 'Chelsea'),
@@ -376,7 +423,6 @@ INSERT INTO players (fbref_id, team_id, name, position, shirt_number, birthday, 
 ('4b00cd47', 'AUT', 'David Affengruber', 'DF', 2, '2001-03-19', 'Scheibbs, Austria', 'Elche'),
 ('05439de2', 'AUT', 'David Alaba', 'DF', 8, '1992-06-24', 'Austria', 'Real Madrid'),
 ('00459419', 'AUT', 'Marko Arnautović', 'FW,MF', 7, '1989-04-19', 'Austria', 'Red Star'),
-('437f2b00', 'AUT', 'Christoph Baumgartner', 'FW,MF', NULL, '1999-08-01', 'Horn, Austria', 'RB Leipzig'),
 ('b2f9c73e', 'AUT', 'Carney Chukwuemeka', 'MF', 17, '2003-10-20', 'Eisenstadt, Austria', 'Dortmund'),
 ('6e33125f', 'AUT', 'Kevin Danso', 'DF', 3, '1998-09-19', 'Voitsberg, Austria', 'Tottenham'),
 ('f86ad3f5', 'AUT', 'Marco Friedl', 'DF', 23, '1998-03-16', 'Kirchbichl, Austria', 'Werder Bremen'),
@@ -431,14 +477,12 @@ INSERT INTO players (fbref_id, team_id, name, position, shirt_number, birthday, 
 ('9b0a0d51', 'BIH', 'Ivan Bašić', 'MF', 13, '2002-04-30', 'Imotski, Croatia', 'FC Astana'),
 ('e59c9d0d', 'BIH', 'Samed Baždar', 'FW', 9, '2004-01-31', 'Novi Pazar, Serbia', 'Gladbach'),
 ('0dabaf14', 'BIH', 'Dženis Burnić', 'MF', 17, '1998-05-22', 'Hamm, Germany', 'Karlsruher'),
-('4e0d2a01', 'BIH', 'Nidal Čelik', 'DF', NULL, '2006-07-17', 'Sarajevo, Bosnia and Herzegovina', 'Lens'),
 ('bc6e544a', 'BIH', 'Amar Dedić', 'DF', 7, '2002-08-18', 'Zell am See, Austria', 'Benfica'),
 ('ed79b7d3', 'BIH', 'Ermedin Demirović', 'FW', 10, '1998-03-25', 'Hamburg, Germany', 'Stuttgart'),
 ('3bb7f478', 'BIH', 'Edin Džeko', 'FW', 11, '1986-03-17', 'Sarajevo, Bosnia and Herzegovina', 'Schalke 04'),
 ('d0a0858e', 'BIH', 'Armin Gigovic', 'MF', 8, '2002-04-06', 'Lund, Sweden', 'Young Boys'),
 ('e8213ed3', 'BIH', 'Amir Hadžiahmetović', 'MF', 16, '1997-03-08', 'Nexø, Denmark', 'Hull City'),
 ('82cfae2a', 'BIH', 'Dennis Hadžikadunić', 'DF', 3, '1998-07-09', 'Malmö, Sweden', 'Sampdoria'),
-('549922a7', 'BIH', 'Osman Hadžikić', 'GK', NULL, '1996-03-12', 'Klosterneuburg, Austria', 'Slaven Belupo'),
 ('4cf89690', 'BIH', 'Mladen Jurkas', 'GK', 12, '2007-10-07', 'Doboj, Bosnia and Herzegovina', 'B. Banja Luka'),
 ('35bd124a', 'BIH', 'Nikola Katić', 'DF', 18, '1996-10-10', 'Ljubuški, Bosnia and Herzegovina', 'Schalke 04'),
 ('3935e52e', 'BIH', 'Sead Kolašinac', 'DF', 5, '1993-06-20', 'Karlsruhe, Germany', 'Atalanta'),
@@ -479,7 +523,6 @@ INSERT INTO players (fbref_id, team_id, name, position, shirt_number, birthday, 
 ('c50e5bba', 'BRA', 'Douglas Santos', 'DF', 16, '1994-03-22', 'João Pessoa, Brazil', 'Zenit'),
 ('a9202def', 'BRA', 'Éderson Silva', 'MF', 2, '1999-07-07', 'Campo Grande, Brazil', 'Atalanta'),
 ('dc45ac24', 'BRA', 'Igor Thiago', 'FW', 25, '2001-06-26', 'Brasília, Brazil', 'Brentford'),
-('f2c49c79', 'BRA', 'Wesley', 'DF,MF', NULL, '2003-09-06', 'São Luís, Brazil', 'Roma'),
 ('81be82e9', 'BRA', 'Wéverton', 'GK', 12, '1987-12-13', 'Rio Branco, Brazil', 'Grêmio'),
 ('c692cef2', 'CPV', 'Telmo Arcanjo', 'MF', 18, '2001-06-21', 'Lisbon, Portugal', 'Vit. Guimarães'),
 ('eae26fce', 'CPV', 'Gilson Benchimol', 'FW', 9, '2001-12-29', 'Praia, Cape Verde', 'Akron Tolyatti'),
@@ -518,7 +561,6 @@ INSERT INTO players (fbref_id, team_id, name, position, shirt_number, birthday, 
 ('d781d855', 'CAN', 'Alphonso Davies', 'DF,FW', 19, '2000-11-02', 'Monrovia, Liberia', 'Bayern Munich'),
 ('45c427ff', 'CAN', 'Luc De Fougerolles', 'DF', 4, '2005-10-12', 'London, England, United Kingdom', 'Fulham'),
 ('577efaec', 'CAN', 'Stephen Eustáquio', 'MF', 7, '1996-12-21', 'Leamington, ON, Canada', 'Porto'),
-('937b36b1', 'CAN', 'Marcelo Flores', 'MF', NULL, '2003-10-01', 'Estado de México, Mexico', 'UANL'),
 ('8074e66f', 'CAN', 'Owen Goodman', 'GK', 18, '2003-11-27', 'England, United Kingdom', 'Barnsley'),
 ('4fb17e20', 'CAN', 'Alistair Johnston', 'DF', 2, '1998-10-08', 'Vancouver, BC, Canada', 'Celtic'),
 ('e5c107a1', 'CAN', 'Alfie Jones', 'DF,MF', 3, '1997-10-07', 'England, United Kingdom', 'Middlesbrough'),
@@ -564,7 +606,6 @@ INSERT INTO players (fbref_id, team_id, name, position, shirt_number, birthday, 
 ('be47b750', 'COD', 'Simon Banza', 'FW,MF', 23, '1996-08-13', 'Creil, France', 'Al Jazira Club'),
 ('37d39918', 'COD', 'Dylan Batubinsika', 'DF', 5, '1996-02-15', 'Cergy-Pontoise, France', 'AEL Limassol'),
 ('0da6a13e', 'COD', 'Theo Bongonda', 'FW,MF', 10, '1995-11-20', 'Charleroi, Belgium', 'Spartak Moscow'),
-('e1378bd5', 'COD', 'Rocky Bushiri', 'DF', NULL, '1999-11-30', 'Duffel, Belgium', 'Hibernian'),
 ('e4787d6f', 'COD', 'Brian Cipenga', 'MF', 9, '1998-03-11', 'Kinshasa, Congo DR', 'Castellón'),
 ('5d51b074', 'COD', 'Meschak Elia', 'FW,MF', 13, '1997-08-06', 'Kinshasa, Congo DR', 'Alanyaspor'),
 ('6ee69cca', 'COD', 'Matthieu Epolo', 'GK', 21, '2005-01-15', 'Brussels, Belgium', 'Standard Liège'),
@@ -589,7 +630,6 @@ INSERT INTO players (fbref_id, team_id, name, position, shirt_number, birthday, 
 ('2500cef9', 'COD', 'Yoane Wissa', 'FW', 20, '1996-09-03', 'Épinay-sous-Sénart, France', 'Newcastle'),
 ('4dcec659', 'CIV', 'Simon Adingra', 'FW,MF', 10, '2002-01-01', 'Abidjan, Côte d''Ivoire', 'Monaco'),
 ('75f1ed80', 'CIV', 'Emmanuel Agbadou', 'DF', 20, '1997-06-17', 'Abidjan, Côte d''Ivoire', 'Beşiktaş'),
-('0abb5072', 'CIV', 'Clément Akpa', 'DF', NULL, '2001-11-24', 'Meudon, France', 'Auxerre'),
 ('64629ba4', 'CIV', 'Ange-Yoan Bonny', 'FW', 9, '2003-10-25', 'Aubervilliers, France', 'Inter'),
 ('44435c8f', 'CIV', 'Oumar Diakité', 'FW', 14, '2003-12-20', 'Bingerville, Côte d''Ivoire', 'Cercle Brugge'),
 ('9dc96f10', 'CIV', 'Amad Diallo', 'MF,FW', 15, '2002-07-11', 'Abidjan, Côte d''Ivoire', 'Manchester Utd'),
@@ -735,7 +775,7 @@ INSERT INTO players (fbref_id, team_id, name, position, shirt_number, birthday, 
 ('0b89ad1b', 'EGY', 'Yasser Ibrahim', 'DF', 2, '1993-02-10', 'Al Manşūrah, Egypt', 'Al Ahly'),
 ('bad461f1', 'EGY', 'El Mahdy Soliman', 'GK', 16, '1986-11-30', 'Cairo, Egypt', 'Zamalek SC'),
 ('0e0102eb', 'EGY', 'Omar Marmoush', 'FW', 22, '1999-02-07', 'Cairo, Egypt', 'Manchester City'),
-('d12fad9f', 'EGY', 'Mohanad Mostafa', NULL, 17, '1996-05-29', 'Cairo, Egypt', 'Pyramids FC'),
+('8c041c7d', 'EGY', 'Mohanad Mostafa', 'MF', 17, '1996-05-29', 'Cairo, Egypt', 'Pyramids FC'),
 ('e32afa36', 'EGY', 'Ramy Rabia', 'DF,MF', 5, '1993-05-20', 'Cairo, Egypt', 'Al Ain'),
 ('632c42f5', 'EGY', 'Mahmoud Saber', 'MF', 21, '2001-07-30', 'Egypt', 'ZED'),
 ('e342ad68', 'EGY', 'Mohamed Salah', 'MF,FW', 10, '1992-06-15', 'Basyūn, Egypt', 'Liverpool'),
@@ -756,7 +796,6 @@ INSERT INTO players (fbref_id, team_id, name, position, shirt_number, birthday, 
 ('1265a93a', 'ENG', 'Reece James', 'DF', 24, '1999-12-08', 'London, England, United Kingdom', 'Chelsea'),
 ('21a66f6a', 'ENG', 'Harry Kane', 'FW', 9, '1993-07-28', 'Walthamstow, England, United Kingdom', 'Bayern Munich'),
 ('0313a347', 'ENG', 'Ezri Konsa', 'DF', 2, '1997-10-23', 'London, England, United Kingdom', 'Aston Villa'),
-('afed6722', 'ENG', 'Tino Livramento', 'DF,MF', NULL, '2002-11-12', 'Croydon, England, United Kingdom', 'Newcastle'),
 ('bf34eebd', 'ENG', 'Noni Madueke', 'MF', 20, '2002-03-10', 'Barnet, England, United Kingdom', 'Arsenal'),
 ('c6220452', 'ENG', 'Kobbie Mainoo', 'MF', 16, '2005-04-19', 'Stockport, England, United Kingdom', 'Manchester Utd'),
 ('91ca4a16', 'ENG', 'Nico O''Reilly', 'DF', 3, '2005-03-21', 'Manchester, England, United Kingdom', 'Manchester City'),
@@ -805,7 +844,6 @@ INSERT INTO players (fbref_id, team_id, name, position, shirt_number, birthday, 
 ('cc86b9a3', 'GER', 'Leon Goretzka', 'MF', 8, '1995-02-06', 'Bochum, Germany', 'Bayern Munich'),
 ('8aec0537', 'GER', 'Pascal Groß', 'DF,MF', 13, '1991-06-15', 'Mannheim, Germany', 'Brighton'),
 ('fed7cb61', 'GER', 'Kai Havertz', 'FW', 7, '1999-06-11', 'Aachen, Germany', 'Arsenal'),
-('a0deb1e9', 'GER', 'Lennart Karl', 'MF', NULL, '2008-02-22', 'Frammersbach, Markt, Germany', 'Bayern Munich'),
 ('49296448', 'GER', 'Joshua Kimmich', 'DF', 6, '1995-02-08', 'Rottweil, Germany', 'Bayern Munich'),
 ('13fe7b69', 'GER', 'Jamie Leweling', 'FW,MF', 9, '2001-02-26', 'Nürnberg, Germany', 'Stuttgart'),
 ('2c0558b8', 'GER', 'Jamal Musiala', 'MF', 10, '2003-02-26', 'Stuttgart, Germany', 'Bayern Munich'),
@@ -870,7 +908,6 @@ INSERT INTO players (fbref_id, team_id, name, position, shirt_number, birthday, 
 ('20e87a42', 'HAI', 'Duckens Nazon', 'FW,MF', 9, '1994-04-07', 'Paris, France', 'Esteghlal'),
 ('4385ee98', 'HAI', 'Wilguens Paugain', 'DF', 24, '2001-08-24', 'Thomazeau, Haiti', 'Zulte Waregem'),
 ('d0fc9f5f', 'HAI', 'Alexandre Pierre', 'GK', 12, '2001-02-25', 'Aubervilliers, France', 'Sochaux'),
-('dcaa55af', 'HAI', 'Leverton Pierre', 'MF', NULL, '1998-03-09', 'Tabarre, Haiti', 'Vizela'),
 ('1b452afb', 'HAI', 'Woodensky Pierre', 'MF', 26, '2004-12-30', 'Cité Soleil, Haiti', 'Violette AC'),
 ('307877be', 'HAI', 'Frantzdy Pierrot', 'FW', 20, '1995-03-29', 'Port-au-Prince, Haiti', 'Rizespor'),
 ('f1666a9d', 'HAI', 'Johny Placide', 'GK', 1, '1988-01-29', 'Montfermeil, France', 'Bastia'),
@@ -926,12 +963,10 @@ INSERT INTO players (fbref_id, team_id, name, position, shirt_number, birthday, 
 ('928bec06', 'IRQ', 'Rebin Sulaka', 'DF', 2, '1992-04-12', '‘Aynkāwah, Iraq', 'Port FC'),
 ('f3380f7e', 'IRQ', 'Zaid Tahseen', 'DF', 4, '2001-01-29', 'Najaf, Iraq', 'Pakhtakor Tashkent FK'),
 ('c01d9e76', 'IRQ', 'Fahad Talib', 'GK', 1, '1994-10-21', 'Baghdad, Iraq', 'Al-Talaba'),
-('929da297', 'IRQ', 'Ahmed Yahya', 'DF', NULL, '1995-07-01', NULL, 'Al-Shorta'),
 ('18d3b8df', 'IRQ', 'Kevin Yakob', 'MF', 19, '2000-10-10', 'Göteborg, Sweden', 'AGF'),
 ('b798826e', 'IRQ', 'Manaf Younis', 'DF', 6, '1996-11-16', 'Tikrīt, Iraq', 'Al-Shorta'),
 ('943fd50a', 'IRQ', 'Ali Yousif', 'FW', 13, '1996-01-19', 'Baghdad, Iraq', 'Al-Talaba'),
 ('d01bbb6f', 'JPN', 'Ritsu Doan', 'MF', 10, '1998-06-16', 'Amagasaki Shi, Japan', 'Frankfurt'),
-('c149016b', 'JPN', 'Wataru Endo', 'DF,MF', NULL, '1993-02-09', 'Yokohama Shi, Japan', 'Liverpool'),
 ('82a2ca86', 'JPN', 'Keisuke Gotō', 'FW', 9, '2005-06-03', 'Hamamatsu-shi, Japan', 'Sint-Truiden'),
 ('4a0023c9', 'JPN', 'Tomoki Hayakawa', 'GK', 23, '1999-03-03', 'Japan', 'Kashima Antlers'),
 ('97d545ae', 'JPN', 'Ko Itakura', 'DF', 4, '1997-01-27', 'Yokohama Shi, Japan', 'Ajax'),
@@ -979,7 +1014,6 @@ INSERT INTO players (fbref_id, team_id, name, position, shirt_number, birthday, 
 ('feaa0ffd', 'JOR', 'Nizar Al Rashdan', 'MF', 21, '1999-03-23', 'Jordan', 'Qatar SC'),
 ('3bb06c86', 'JOR', 'Noor Al Rawabdeh', 'MF', 8, '1997-02-24', 'Amman, Jordan', 'Selangor FA'),
 ('f3115445', 'JOR', 'Saed Al-Rosan', 'DF', 19, '1997-02-01', 'Jordan', 'Al-Hussein SC'),
-('eb63719c', 'JOR', 'Ibrahim Sabra', 'FW', NULL, '2006-02-01', 'Saḩāb, Jordan', 'Lokomotiva'),
 ('4bdf95b2', 'JOR', 'Ibrahim Sadeh', 'MF', 15, '2000-04-27', 'Zarqa, Jordan', 'Al-Karma'),
 ('67e2aed8', 'JOR', 'Sharara', 'FW', 7, '1997-12-30', 'Ar Ramthā, Jordan', 'Raja Casablanca'),
 ('f15f8b2b', 'JOR', 'Musa Al-Taamari', 'FW', 10, '1997-06-10', 'Amman, Jordan', 'Rennes'),
@@ -1010,7 +1044,6 @@ INSERT INTO players (fbref_id, team_id, name, position, shirt_number, birthday, 
 ('32257cce', 'KOR', 'Lee Tae-seok', 'MF', 13, '2002-07-28', 'Korea Republic', 'Austria Wien'),
 ('dcf21532', 'KOR', 'Cho Wi-je', 'DF', 14, '2001-08-25', 'Korea Republic', 'Jeonbuk'),
 ('8e577e1d', 'KOR', 'Seol Young-woo', 'MF', 22, '1998-12-05', 'Korea Republic', 'Red Star'),
-('7a4529dc', 'KOR', 'Cho Yu-min', 'DF', NULL, '1996-11-17', 'Korea Republic', 'Al-Sharjah SCC'),
 ('0810e384', 'MEX', 'Carlos Acevedo', 'GK', 12, '1996-04-19', 'Torreón, Estado de Coahuila de Zaragoza, Mexico', 'Santos Laguna'),
 ('ff871e14', 'MEX', 'Roberto Alvarado', 'FW,MF', 25, '1998-09-07', 'Salamanca, Estado de Guanajuato, Mexico', 'Guadalajara'),
 ('8b3ab7ad', 'MEX', 'Edson Álvarez', 'MF,DF', 4, '1997-10-24', 'Tlalnepantla de Baz, Estado de México, Mexico', 'West Ham'),
@@ -1037,7 +1070,6 @@ INSERT INTO players (fbref_id, team_id, name, position, shirt_number, birthday, 
 ('9cc1fde4', 'MEX', 'Obed Vargas', 'MF', 18, '2005-08-05', 'Anchorage, AK, United States', 'Atlético Madrid'),
 ('5eaed77a', 'MEX', 'Johan Vásquez', 'DF', 5, '1998-10-22', 'Navojoa, Estado de Sonora, Mexico', 'Genoa'),
 ('f40f4c38', 'MEX', 'Alexis Vega', 'FW,MF', 10, '1997-11-25', 'Cuauhtémoc, Ciudad de México, Mexico', 'Toluca'),
-('288e1e13', 'MAR', 'Nayef Aguerd', 'DF', NULL, '1996-03-30', 'Kenitra, Morocco', 'Marseille'),
 ('c5a07a5e', 'MAR', 'Ayoube Amaimouni', 'MF', 21, '2004-11-30', 'Vic, Spain', 'Frankfurt'),
 ('5a2cb25d', 'MAR', 'Sofyan Amrabat', 'MF', 4, '1996-08-21', 'Gemeente Huizen, Netherlands', 'Real Betis'),
 ('17e1261b', 'MAR', 'Neil El Aynaoui', 'MF', 24, '2001-07-02', 'Nancy, France', 'Roma'),
@@ -1046,7 +1078,6 @@ INSERT INTO players (fbref_id, team_id, name, position, shirt_number, birthday, 
 ('f6798fc3', 'MAR', 'Yassine Bounou', 'GK', 1, '1991-04-05', 'Montréal, QC, Canada', 'Al-Hilal'),
 ('407feb71', 'MAR', 'Brahim Díaz', 'MF', 10, '1999-08-03', 'Málaga, Spain', 'Real Madrid'),
 ('a712ca2b', 'MAR', 'Issa Diop', 'DF', 14, '1997-01-09', 'Toulouse, France', 'Fulham'),
-('bed68338', 'MAR', 'Abde Ezzalzouli', 'FW,MF', NULL, '2001-12-17', 'Beni Mellal, Morocco', 'Real Betis'),
 ('e42d61c7', 'MAR', 'Achraf Hakimi', 'DF', 2, '1998-11-04', 'Getafe, Spain', 'PSG'),
 ('e17c2cec', 'MAR', 'Redouane Halhal', 'DF', 25, '2003-03-05', 'Montpellier, France', 'Mechelen'),
 ('b1bfd1d4', 'MAR', 'Ayoub El Kaabi', 'FW', 20, '1993-06-26', 'Casablanca, Morocco', 'Olympiacos'),
@@ -1085,7 +1116,6 @@ INSERT INTO players (fbref_id, team_id, name, position, shirt_number, birthday, 
 ('2a1beb34', 'NED', 'Marten de Roon', 'DF,MF', 3, '1991-03-29', 'Zwijndrecht, Netherlands', 'Atalanta'),
 ('df04eb4b', 'NED', 'Crysencio Summerville', 'FW', 24, '2001-10-30', 'Rotterdam, Netherlands', 'West Ham'),
 ('6e44569a', 'NED', 'Guus Til', 'FW,MF', 16, '1997-12-22', 'Amsterdam, Netherlands', 'PSV'),
-('41034650', 'NED', 'Jurriën Timber', 'DF', NULL, '2001-06-17', 'Utrecht, Netherlands', 'Arsenal'),
 ('803e7aca', 'NED', 'Quinten Timber', 'MF', 26, '2001-06-17', 'Utrecht, Netherlands', 'Marseille'),
 ('e06683ca', 'NED', 'Virgil van Dijk', 'DF', 4, '1991-07-08', 'Breda, Netherlands', 'Liverpool'),
 ('8fe2a392', 'NED', 'Micky van de Ven', 'DF', 15, '2001-04-19', 'Wormer, Netherlands', 'Tottenham'),
@@ -1100,7 +1130,6 @@ INSERT INTO players (fbref_id, team_id, name, position, shirt_number, birthday, 
 ('dd86e8e4', 'NZL', 'Liberato Cacace', 'DF', 13, '2000-09-27', 'Wellington, New Zealand', 'Wrexham'),
 ('fdf47077', 'NZL', 'Max Crocombe', 'GK', 1, '1993-08-12', 'Auckland, New Zealand', 'Millwall'),
 ('9d6968a3', 'NZL', 'Callan Elliot', 'DF', 24, '1999-07-07', 'Dumfries, Scotland, United Kingdom', 'Auckland FC'),
-('dece7370', 'NZL', 'Matt Garbett', 'MF', NULL, '2002-04-13', 'London, England, United Kingdom', 'Peterborough'),
 ('0c295d6e', 'NZL', 'Elijah Just', 'MF', 11, '2000-05-01', 'Palmerston North, New Zealand', 'Motherwell'),
 ('3fc42049', 'NZL', 'Callum McCowatt', 'MF', 20, '1999-04-30', 'Auckland, New Zealand', 'Silkeborg'),
 ('e14e818c', 'NZL', 'Ben Old', 'MF', 19, '2002-08-13', 'Auckland, New Zealand', 'Saint-Étienne'),
@@ -1282,7 +1311,6 @@ INSERT INTO players (fbref_id, team_id, name, position, shirt_number, birthday, 
 ('ee64a822', 'SCO', 'Lewis Ferguson', 'MF', 19, '1999-08-24', 'Hamilton, Scotland, United Kingdom', 'Bologna'),
 ('81a92add', 'SCO', 'Tyler Fletcher', 'MF', 8, '2007-03-19', 'Manchester, England, United Kingdom', 'Manchester Utd'),
 ('733f1a7d', 'SCO', 'Ben Gannon-Doak', 'MF', 17, '2005-11-11', 'Dalry, Scotland, United Kingdom', 'Bournemouth'),
-('df10e27c', 'SCO', 'Billy Gilmour', 'MF', NULL, '2001-06-11', 'Irvine, Scotland, United Kingdom', 'Napoli'),
 ('b15780e3', 'SCO', 'Craig Gordon', 'GK', 21, '1982-12-31', 'Edinburgh, Scotland, United Kingdom', 'Hearts'),
 ('e082af5b', 'SCO', 'Angus Gunn', 'GK', 1, '1996-01-22', 'Norwich, England, United Kingdom', 'Nottingham'),
 ('e9254eec', 'SCO', 'Grant Hanley', 'DF', 5, '1991-11-20', 'Dumfries, Scotland, United Kingdom', 'Hibernian'),
@@ -1389,7 +1417,6 @@ INSERT INTO players (fbref_id, team_id, name, position, shirt_number, birthday, 
 ('d5d22a58', 'SWE', 'Gabriel Gudmundsson', 'MF,DF', 5, '1999-04-29', 'Malmö, Sweden', 'Leeds United'),
 ('4d5a9185', 'SWE', 'Viktor Gyökeres', 'FW', 17, '1998-06-04', 'Bromölla, Sweden', 'Arsenal'),
 ('12806697', 'SWE', 'Isak Hien', 'DF', 4, '1999-01-13', 'Stockholm, Sweden', 'Atalanta'),
-('c2357b65', 'SWE', 'Emil Holm', 'DF,MF', NULL, '2000-05-13', 'Göteborg, Sweden', 'Juventus'),
 ('8e92be30', 'SWE', 'Alexander Isak', 'FW', 9, '1999-09-21', 'Solna, Sweden', 'Liverpool'),
 ('6f864562', 'SWE', 'Herman Johansson', 'MF', 6, '1997-10-16', 'Örnsköldsvik, Sweden', 'FC Dallas'),
 ('e4a588a7', 'SWE', 'Viktor Johansson', 'GK', 12, '1998-09-14', 'Stockholm, Sweden', 'Stoke City'),
@@ -1552,7 +1579,6 @@ INSERT INTO players (fbref_id, team_id, name, position, shirt_number, birthday, 
 ('74cdaeba', 'UZB', 'Bekhruz Karimov', 'DF', 24, '2007-08-07', 'Namangan, Uzbekistan', 'FC Surkhon'),
 ('d2dd2ffb', 'UZB', 'Dostonbek Khamdamov', 'MF', 17, '1996-07-24', 'Bekobod, Uzbekistan', 'Pakhtakor Tashkent FK'),
 ('d17ce930', 'UZB', 'Abdukodir Khusanov', 'DF', 2, '2004-02-29', 'Toshkent, Uzbekistan', 'Manchester City'),
-('e309042b', 'UZB', 'Jaloliddin Masharipov', 'FW,MF', NULL, '1993-09-01', 'Uzbekistan', 'Esteghlal'),
 ('114cb95b', 'UZB', 'Akmal Mozgovoy', 'MF', 6, '1999-04-02', 'Qarshi, Uzbekistan', 'Pakhtakor Tashkent FK'),
 ('aeb0c7f7', 'UZB', 'Sherzod Nasrullaev', 'DF', 13, '1998-07-23', 'Koson, Uzbekistan', 'FC Nasaf'),
 ('25e45f2a', 'UZB', 'Abduvohid Nematov', 'GK', 12, '2001-03-20', 'Jizzax, Uzbekistan', 'FC Nasaf'),
@@ -1564,6 +1590,1264 @@ INSERT INTO players (fbref_id, team_id, name, position, shirt_number, birthday, 
 ('71210bed', 'UZB', 'Jakhongir Urozov', 'DF', 26, '2004-01-18', 'Zomin, Uzbekistan', 'FK Dinamo Samarqand'),
 ('56521adf', 'UZB', 'Oston Urunov', 'MF', 11, '2000-12-19', 'Navoiy, Uzbekistan', 'Persepolis'),
 ('31caffaf', 'UZB', 'Utkir Yusupov', 'GK', 1, '1991-01-04', 'Sayramsu, Kazakhstan', 'Navbahor');
+
+-- goalkeeper_flag: derived from position, not fetched — normalizes combo positions (e.g. 'GK,DF')
+-- so downstream consumers (validators, viz, ad hoc queries) don't each reimplement this LIKE independently
+UPDATE players SET goalkeeper_flag = 1 WHERE position LIKE '%GK%';
+
+-- league crosswalk (static reference data, added 2026-07-08) -- raw "{tier}. {country}" signal
+-- from each team's FBref roster page (division tier + flag-icon country, NOT a resolved competition
+-- name yet -- e.g. '1. England' means top-flight club based in England, could be several leagues).
+-- Sourced via Firecrawl rawHtml + deterministic DOM extraction (data-append-csv join key, same as
+-- fbref_id everywhere else in this pipeline) -- never LLM/JSON extraction.
+UPDATE players SET league = '1. Algeria' WHERE player_id = 1;
+UPDATE players SET league = '1. England' WHERE player_id = 2;
+UPDATE players SET league = '1. Tunisia' WHERE player_id = 3;
+UPDATE players SET league = '1. Germany' WHERE player_id = 4;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 5;
+UPDATE players SET league = '1. Algeria' WHERE player_id = 6;
+UPDATE players SET league = '1. Italy' WHERE player_id = 7;
+UPDATE players SET league = '1. Algeria' WHERE player_id = 8;
+UPDATE players SET league = '1. Hungary' WHERE player_id = 9;
+UPDATE players SET league = '1. Germany' WHERE player_id = 10;
+UPDATE players SET league = '1. France' WHERE player_id = 11;
+UPDATE players SET league = '1. France' WHERE player_id = 12;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 13;
+UPDATE players SET league = '1. Germany' WHERE player_id = 14;
+UPDATE players SET league = '1. France' WHERE player_id = 15;
+UPDATE players SET league = '2. Italy' WHERE player_id = 16;
+UPDATE players SET league = '1. France' WHERE player_id = 17;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 18;
+UPDATE players SET league = '1. Switzerland' WHERE player_id = 19;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 20;
+UPDATE players SET league = '1. France' WHERE player_id = 21;
+UPDATE players SET league = '2. Switzerland' WHERE player_id = 22;
+UPDATE players SET league = '1. Germany' WHERE player_id = 23;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 24;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 25;
+UPDATE players SET league = '2. Spain' WHERE player_id = 26;
+UPDATE players SET league = '1. Spain' WHERE player_id = 27;
+UPDATE players SET league = '1. Spain' WHERE player_id = 28;
+UPDATE players SET league = '1. France' WHERE player_id = 29;
+UPDATE players SET league = '1. United States' WHERE player_id = 30;
+UPDATE players SET league = '1. England' WHERE player_id = 31;
+UPDATE players SET league = '1. Spain' WHERE player_id = 32;
+UPDATE players SET league = '1. Spain' WHERE player_id = 33;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 34;
+UPDATE players SET league = '1. England' WHERE player_id = 35;
+UPDATE players SET league = '1. England' WHERE player_id = 36;
+UPDATE players SET league = '1. Italy' WHERE player_id = 37;
+UPDATE players SET league = '1. England' WHERE player_id = 38;
+UPDATE players SET league = '1. France' WHERE player_id = 39;
+UPDATE players SET league = '1. United States' WHERE player_id = 40;
+UPDATE players SET league = '1. Spain' WHERE player_id = 41;
+UPDATE players SET league = '1. Argentina' WHERE player_id = 42;
+UPDATE players SET league = '1. Spain' WHERE player_id = 43;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 44;
+UPDATE players SET league = '1. Germany' WHERE player_id = 45;
+UPDATE players SET league = '1. Argentina' WHERE player_id = 46;
+UPDATE players SET league = '1. Italy' WHERE player_id = 47;
+UPDATE players SET league = '1. England' WHERE player_id = 48;
+UPDATE players SET league = '1. France' WHERE player_id = 49;
+UPDATE players SET league = '1. England' WHERE player_id = 50;
+UPDATE players SET league = '1. Spain' WHERE player_id = 51;
+UPDATE players SET league = '1. France' WHERE player_id = 52;
+UPDATE players SET league = '1. Australia' WHERE player_id = 53;
+UPDATE players SET league = '1. Australia' WHERE player_id = 54;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 55;
+UPDATE players SET league = '2. England' WHERE player_id = 56;
+UPDATE players SET league = '1. Italy' WHERE player_id = 57;
+UPDATE players SET league = '1. Cyprus' WHERE player_id = 58;
+UPDATE players SET league = '1. Scotland' WHERE player_id = 59;
+UPDATE players SET league = '2. Japan' WHERE player_id = 60;
+UPDATE players SET league = '1. United States' WHERE player_id = 61;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 62;
+UPDATE players SET league = '2. England' WHERE player_id = 63;
+UPDATE players SET league = '1. Germany' WHERE player_id = 64;
+UPDATE players SET league = '1. Austria' WHERE player_id = 65;
+UPDATE players SET league = '1. Denmark' WHERE player_id = 66;
+UPDATE players SET league = '1. Australia' WHERE player_id = 67;
+UPDATE players SET league = '2. Spain' WHERE player_id = 68;
+UPDATE players SET league = '1. Germany' WHERE player_id = 69;
+UPDATE players SET league = '1. United States' WHERE player_id = 70;
+UPDATE players SET league = '1. Australia' WHERE player_id = 71;
+UPDATE players SET league = '1. Spain' WHERE player_id = 72;
+UPDATE players SET league = '2. England' WHERE player_id = 73;
+UPDATE players SET league = '2. England' WHERE player_id = 74;
+UPDATE players SET league = '1. United States' WHERE player_id = 75;
+UPDATE players SET league = '1. Australia' WHERE player_id = 76;
+UPDATE players SET league = '1. Italy' WHERE player_id = 77;
+UPDATE players SET league = '1. Japan' WHERE player_id = 78;
+UPDATE players SET league = '1. Spain' WHERE player_id = 79;
+UPDATE players SET league = '1. Spain' WHERE player_id = 80;
+UPDATE players SET league = '1. Serbia' WHERE player_id = 81;
+UPDATE players SET league = '1. Germany' WHERE player_id = 82;
+UPDATE players SET league = '1. England' WHERE player_id = 83;
+UPDATE players SET league = '1. Germany' WHERE player_id = 84;
+UPDATE players SET league = '1. Germany' WHERE player_id = 85;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 86;
+UPDATE players SET league = '1. Austria' WHERE player_id = 87;
+UPDATE players SET league = '1. Germany' WHERE player_id = 88;
+UPDATE players SET league = '1. Germany' WHERE player_id = 89;
+UPDATE players SET league = '2. Germany' WHERE player_id = 90;
+UPDATE players SET league = '1. Germany' WHERE player_id = 91;
+UPDATE players SET league = '1. Denmark' WHERE player_id = 92;
+UPDATE players SET league = '1. Germany' WHERE player_id = 93;
+UPDATE players SET league = '1. Germany' WHERE player_id = 94;
+UPDATE players SET league = '1. Germany' WHERE player_id = 95;
+UPDATE players SET league = '1. Austria' WHERE player_id = 96;
+UPDATE players SET league = '1. Germany' WHERE player_id = 97;
+UPDATE players SET league = '1. Germany' WHERE player_id = 98;
+UPDATE players SET league = '1. Austria' WHERE player_id = 99;
+UPDATE players SET league = '1. Germany' WHERE player_id = 100;
+UPDATE players SET league = '2. Italy' WHERE player_id = 101;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 102;
+UPDATE players SET league = '1. Czech Republic' WHERE player_id = 103;
+UPDATE players SET league = '1. Germany' WHERE player_id = 104;
+UPDATE players SET league = '1. England' WHERE player_id = 105;
+UPDATE players SET league = '1. Spain' WHERE player_id = 106;
+UPDATE players SET league = '1. Italy' WHERE player_id = 107;
+UPDATE players SET league = '1. England' WHERE player_id = 108;
+UPDATE players SET league = '1. Italy' WHERE player_id = 109;
+UPDATE players SET league = '1. Italy' WHERE player_id = 110;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 111;
+UPDATE players SET league = '1. England' WHERE player_id = 112;
+UPDATE players SET league = '1. France' WHERE player_id = 113;
+UPDATE players SET league = '1. England' WHERE player_id = 114;
+UPDATE players SET league = '1. Italy' WHERE player_id = 115;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 116;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 117;
+UPDATE players SET league = '1. France' WHERE player_id = 118;
+UPDATE players SET league = '1. France' WHERE player_id = 119;
+UPDATE players SET league = '1. France' WHERE player_id = 120;
+UPDATE players SET league = '1. England' WHERE player_id = 121;
+UPDATE players SET league = '1. France' WHERE player_id = 122;
+UPDATE players SET league = '1. Scotland' WHERE player_id = 123;
+UPDATE players SET league = '1. Italy' WHERE player_id = 124;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 125;
+UPDATE players SET league = '1. Germany' WHERE player_id = 126;
+UPDATE players SET league = '1. England' WHERE player_id = 127;
+UPDATE players SET league = '1. England' WHERE player_id = 128;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 129;
+UPDATE players SET league = '1. Spain' WHERE player_id = 130;
+UPDATE players SET league = '1. Austria' WHERE player_id = 131;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 132;
+UPDATE players SET league = '1. Kazakhstan' WHERE player_id = 133;
+UPDATE players SET league = '1. Germany' WHERE player_id = 134;
+UPDATE players SET league = '2. Germany' WHERE player_id = 135;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 136;
+UPDATE players SET league = '1. Germany' WHERE player_id = 137;
+UPDATE players SET league = '2. Germany' WHERE player_id = 138;
+UPDATE players SET league = '1. Switzerland' WHERE player_id = 139;
+UPDATE players SET league = '2. England' WHERE player_id = 140;
+UPDATE players SET league = '2. Italy' WHERE player_id = 141;
+UPDATE players SET league = '1. Bosnia and Herzegovina' WHERE player_id = 142;
+UPDATE players SET league = '2. Germany' WHERE player_id = 143;
+UPDATE players SET league = '1. Italy' WHERE player_id = 144;
+UPDATE players SET league = '1. Romania' WHERE player_id = 145;
+UPDATE players SET league = '1. Czech Republic' WHERE player_id = 146;
+UPDATE players SET league = '1. Austria' WHERE player_id = 147;
+UPDATE players SET league = '1. Czech Republic' WHERE player_id = 148;
+UPDATE players SET league = '1. Italy' WHERE player_id = 149;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 150;
+UPDATE players SET league = '1. Croatia' WHERE player_id = 151;
+UPDATE players SET league = '1. Cyprus' WHERE player_id = 152;
+UPDATE players SET league = '2. Germany' WHERE player_id = 153;
+UPDATE players SET league = '1. Denmark' WHERE player_id = 154;
+UPDATE players SET league = '1. Germany' WHERE player_id = 155;
+UPDATE players SET league = '1. Croatia' WHERE player_id = 156;
+UPDATE players SET league = '1. England' WHERE player_id = 157;
+UPDATE players SET league = '1. Italy' WHERE player_id = 158;
+UPDATE players SET league = '1. England' WHERE player_id = 159;
+UPDATE players SET league = '1. England' WHERE player_id = 160;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 161;
+UPDATE players SET league = '1. France' WHERE player_id = 162;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 163;
+UPDATE players SET league = '1. England' WHERE player_id = 164;
+UPDATE players SET league = '1. Russia' WHERE player_id = 165;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 166;
+UPDATE players SET league = '1. Spain' WHERE player_id = 167;
+UPDATE players SET league = '1. England' WHERE player_id = 168;
+UPDATE players SET league = '1. France' WHERE player_id = 169;
+UPDATE players SET league = '1. England' WHERE player_id = 170;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 171;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 172;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 173;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 174;
+UPDATE players SET league = '1. Spain' WHERE player_id = 175;
+UPDATE players SET league = '1. England' WHERE player_id = 176;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 177;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 178;
+UPDATE players SET league = '1. Russia' WHERE player_id = 179;
+UPDATE players SET league = '1. Italy' WHERE player_id = 180;
+UPDATE players SET league = '1. England' WHERE player_id = 181;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 182;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 183;
+UPDATE players SET league = '1. Russia' WHERE player_id = 184;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 185;
+UPDATE players SET league = '1. Spain' WHERE player_id = 186;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 187;
+UPDATE players SET league = '1. United Arab Emirates' WHERE player_id = 188;
+UPDATE players SET league = '1. United States' WHERE player_id = 189;
+UPDATE players SET league = '1. Bulgaria' WHERE player_id = 190;
+UPDATE players SET league = '1. Hungary' WHERE player_id = 191;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 192;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 193;
+UPDATE players SET league = '2. Turkey' WHERE player_id = 194;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 195;
+UPDATE players SET league = '1. United States' WHERE player_id = 196;
+UPDATE players SET league = '1. Romania' WHERE player_id = 197;
+UPDATE players SET league = '1. Republic of Ireland' WHERE player_id = 198;
+UPDATE players SET league = '1. Russia' WHERE player_id = 199;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 200;
+UPDATE players SET league = '1. Finland' WHERE player_id = 201;
+UPDATE players SET league = '1. Cyprus' WHERE player_id = 202;
+UPDATE players SET league = '1. Bulgaria' WHERE player_id = 203;
+UPDATE players SET league = '1. Cyprus' WHERE player_id = 204;
+UPDATE players SET league = '2. Portugal' WHERE player_id = 205;
+UPDATE players SET league = '1. Israel' WHERE player_id = 206;
+UPDATE players SET league = '2. Portugal' WHERE player_id = 207;
+UPDATE players SET league = '2. Portugal' WHERE player_id = 208;
+UPDATE players SET league = '2. England' WHERE player_id = 209;
+UPDATE players SET league = '1. France' WHERE player_id = 210;
+UPDATE players SET league = '1. Spain' WHERE player_id = 211;
+UPDATE players SET league = '1. United States' WHERE player_id = 212;
+UPDATE players SET league = '1. France' WHERE player_id = 213;
+UPDATE players SET league = '1. United States' WHERE player_id = 214;
+UPDATE players SET league = '1. Italy' WHERE player_id = 215;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 216;
+UPDATE players SET league = '1. Germany' WHERE player_id = 217;
+UPDATE players SET league = '1. England' WHERE player_id = 218;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 219;
+UPDATE players SET league = '3. England' WHERE player_id = 220;
+UPDATE players SET league = '1. Scotland' WHERE player_id = 221;
+UPDATE players SET league = '2. England' WHERE player_id = 222;
+UPDATE players SET league = '1. Italy' WHERE player_id = 223;
+UPDATE players SET league = '1. Spain' WHERE player_id = 224;
+UPDATE players SET league = '1. United States' WHERE player_id = 225;
+UPDATE players SET league = '2. England' WHERE player_id = 226;
+UPDATE players SET league = '1. United States' WHERE player_id = 227;
+UPDATE players SET league = '1. Spain' WHERE player_id = 228;
+UPDATE players SET league = '1. United States' WHERE player_id = 229;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 230;
+UPDATE players SET league = '1. United States' WHERE player_id = 231;
+UPDATE players SET league = '1. Croatia' WHERE player_id = 232;
+UPDATE players SET league = '1. United States' WHERE player_id = 233;
+UPDATE players SET league = '1. United States' WHERE player_id = 234;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 235;
+UPDATE players SET league = '1. Argentina' WHERE player_id = 236;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 237;
+UPDATE players SET league = '1. Argentina' WHERE player_id = 238;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 239;
+UPDATE players SET league = '1. Argentina' WHERE player_id = 240;
+UPDATE players SET league = '1. Russia' WHERE player_id = 241;
+UPDATE players SET league = '1. Spain' WHERE player_id = 242;
+UPDATE players SET league = '1. Argentina' WHERE player_id = 243;
+UPDATE players SET league = '1. Germany' WHERE player_id = 244;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 245;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 246;
+UPDATE players SET league = '1. England' WHERE player_id = 247;
+UPDATE players SET league = '1. Italy' WHERE player_id = 248;
+UPDATE players SET league = '1. France' WHERE player_id = 249;
+UPDATE players SET league = '1. Italy' WHERE player_id = 250;
+UPDATE players SET league = '1. Spain' WHERE player_id = 251;
+UPDATE players SET league = '1. England' WHERE player_id = 252;
+UPDATE players SET league = '1. Colombia' WHERE player_id = 253;
+UPDATE players SET league = '2. Spain' WHERE player_id = 254;
+UPDATE players SET league = '1. Argentina' WHERE player_id = 255;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 256;
+UPDATE players SET league = '1. United States' WHERE player_id = 257;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 258;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 259;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 260;
+UPDATE players SET league = '1. Spain' WHERE player_id = 261;
+UPDATE players SET league = '1. United Arab Emirates' WHERE player_id = 262;
+UPDATE players SET league = '1. Cyprus' WHERE player_id = 263;
+UPDATE players SET league = '1. Russia' WHERE player_id = 264;
+UPDATE players SET league = '2. Spain' WHERE player_id = 265;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 266;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 267;
+UPDATE players SET league = '1. Armenia' WHERE player_id = 268;
+UPDATE players SET league = '1. Cyprus' WHERE player_id = 269;
+UPDATE players SET league = '1. Cyprus' WHERE player_id = 270;
+UPDATE players SET league = '1. Poland' WHERE player_id = 271;
+UPDATE players SET league = '2. England' WHERE player_id = 272;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 273;
+UPDATE players SET league = '1. France' WHERE player_id = 274;
+UPDATE players SET league = '1. Egypt' WHERE player_id = 275;
+UPDATE players SET league = '1. France' WHERE player_id = 276;
+UPDATE players SET league = '2. France' WHERE player_id = 277;
+UPDATE players SET league = '1. Greece' WHERE player_id = 278;
+UPDATE players SET league = '1. France' WHERE player_id = 279;
+UPDATE players SET league = '1. France' WHERE player_id = 280;
+UPDATE players SET league = '1. Spain' WHERE player_id = 281;
+UPDATE players SET league = '1. England' WHERE player_id = 282;
+UPDATE players SET league = '1. Scotland' WHERE player_id = 283;
+UPDATE players SET league = '1. England' WHERE player_id = 284;
+UPDATE players SET league = '1. England' WHERE player_id = 285;
+UPDATE players SET league = '1. England' WHERE player_id = 286;
+UPDATE players SET league = '1. France' WHERE player_id = 287;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 288;
+UPDATE players SET league = '1. Italy' WHERE player_id = 289;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 290;
+UPDATE players SET league = '1. England' WHERE player_id = 291;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 292;
+UPDATE players SET league = '1. Germany' WHERE player_id = 293;
+UPDATE players SET league = '1. France' WHERE player_id = 294;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 295;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 296;
+UPDATE players SET league = '1. England' WHERE player_id = 297;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 298;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 299;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 300;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 301;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 302;
+UPDATE players SET league = '1. Italy' WHERE player_id = 303;
+UPDATE players SET league = '1. Greece' WHERE player_id = 304;
+UPDATE players SET league = '1. Italy' WHERE player_id = 305;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 306;
+UPDATE players SET league = '1. Spain' WHERE player_id = 307;
+UPDATE players SET league = '1. England' WHERE player_id = 308;
+UPDATE players SET league = '1. Slovenia' WHERE player_id = 309;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 310;
+UPDATE players SET league = '1. Germany' WHERE player_id = 311;
+UPDATE players SET league = '1. France' WHERE player_id = 312;
+UPDATE players SET league = '1. Italy' WHERE player_id = 313;
+UPDATE players SET league = '1. Spain' WHERE player_id = 314;
+UPDATE players SET league = '1. Spain' WHERE player_id = 315;
+UPDATE players SET league = '1. Denmark' WHERE player_id = 316;
+UPDATE players SET league = '1. Croatia' WHERE player_id = 317;
+UPDATE players SET league = '1. England' WHERE player_id = 318;
+UPDATE players SET league = '1. Germany' WHERE player_id = 319;
+UPDATE players SET league = '1. Denmark' WHERE player_id = 320;
+UPDATE players SET league = '1. England' WHERE player_id = 321;
+UPDATE players SET league = '1. Germany' WHERE player_id = 322;
+UPDATE players SET league = '1. Croatia' WHERE player_id = 323;
+UPDATE players SET league = '1. Germany' WHERE player_id = 324;
+UPDATE players SET league = '1. Italy' WHERE player_id = 325;
+UPDATE players SET league = '1. Italy' WHERE player_id = 326;
+UPDATE players SET league = '1. United States' WHERE player_id = 327;
+UPDATE players SET league = '2. England' WHERE player_id = 328;
+UPDATE players SET league = '1. United States' WHERE player_id = 329;
+UPDATE players SET league = '1. Italy' WHERE player_id = 330;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 331;
+UPDATE players SET league = '1. Italy' WHERE player_id = 332;
+UPDATE players SET league = '1. Germany' WHERE player_id = 333;
+UPDATE players SET league = '1. Spain' WHERE player_id = 334;
+UPDATE players SET league = '1. Italy' WHERE player_id = 335;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 336;
+UPDATE players SET league = '1. Italy' WHERE player_id = 337;
+UPDATE players SET league = '1. Germany' WHERE player_id = 338;
+UPDATE players SET league = '1. Greece' WHERE player_id = 339;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 340;
+UPDATE players SET league = '2. Turkey' WHERE player_id = 341;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 342;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 343;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 344;
+UPDATE players SET league = '2. England' WHERE player_id = 345;
+UPDATE players SET league = '1. Switzerland' WHERE player_id = 346;
+UPDATE players SET league = '2. Netherlands' WHERE player_id = 347;
+UPDATE players SET league = '2. Netherlands' WHERE player_id = 348;
+UPDATE players SET league = '2. Netherlands' WHERE player_id = 349;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 350;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 351;
+UPDATE players SET league = '2. Saudi Arabia' WHERE player_id = 352;
+UPDATE players SET league = '1. Israel' WHERE player_id = 353;
+UPDATE players SET league = '2. England' WHERE player_id = 354;
+UPDATE players SET league = '1. Malaysia' WHERE player_id = 355;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 356;
+UPDATE players SET league = '2. United States' WHERE player_id = 357;
+UPDATE players SET league = '2. Belgium' WHERE player_id = 358;
+UPDATE players SET league = '3. England' WHERE player_id = 359;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 360;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 361;
+UPDATE players SET league = '2. Netherlands' WHERE player_id = 362;
+UPDATE players SET league = '2. United States' WHERE player_id = 363;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 364;
+UPDATE players SET league = '1. Czech Republic' WHERE player_id = 365;
+UPDATE players SET league = '1. Czech Republic' WHERE player_id = 366;
+UPDATE players SET league = '1. Czech Republic' WHERE player_id = 367;
+UPDATE players SET league = '1. Czech Republic' WHERE player_id = 368;
+UPDATE players SET league = '1. Germany' WHERE player_id = 369;
+UPDATE players SET league = '1. Czech Republic' WHERE player_id = 370;
+UPDATE players SET league = '1. Czech Republic' WHERE player_id = 371;
+UPDATE players SET league = '1. Germany' WHERE player_id = 372;
+UPDATE players SET league = '1. Czech Republic' WHERE player_id = 373;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 374;
+UPDATE players SET league = '1. Germany' WHERE player_id = 375;
+UPDATE players SET league = '1. Czech Republic' WHERE player_id = 376;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 377;
+UPDATE players SET league = '1. England' WHERE player_id = 378;
+UPDATE players SET league = '1. Czech Republic' WHERE player_id = 379;
+UPDATE players SET league = '1. Czech Republic' WHERE player_id = 380;
+UPDATE players SET league = '1. Czech Republic' WHERE player_id = 381;
+UPDATE players SET league = '1. Germany' WHERE player_id = 382;
+UPDATE players SET league = '1. Czech Republic' WHERE player_id = 383;
+UPDATE players SET league = '1. Czech Republic' WHERE player_id = 384;
+UPDATE players SET league = '1. England' WHERE player_id = 385;
+UPDATE players SET league = '1. Czech Republic' WHERE player_id = 386;
+UPDATE players SET league = '1. France' WHERE player_id = 387;
+UPDATE players SET league = '1. Czech Republic' WHERE player_id = 388;
+UPDATE players SET league = '1. Czech Republic' WHERE player_id = 389;
+UPDATE players SET league = '1. Czech Republic' WHERE player_id = 390;
+UPDATE players SET league = '1. Ecuador' WHERE player_id = 391;
+UPDATE players SET league = '1. England' WHERE player_id = 392;
+UPDATE players SET league = '1. Germany' WHERE player_id = 393;
+UPDATE players SET league = '1. Argentina' WHERE player_id = 394;
+UPDATE players SET league = '1. England' WHERE player_id = 395;
+UPDATE players SET league = '1. Denmark' WHERE player_id = 396;
+UPDATE players SET league = '1. Italy' WHERE player_id = 397;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 398;
+UPDATE players SET league = '1. Argentina' WHERE player_id = 399;
+UPDATE players SET league = '1. England' WHERE player_id = 400;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 401;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 402;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 403;
+UPDATE players SET league = '1. France' WHERE player_id = 404;
+UPDATE players SET league = '1. Argentina' WHERE player_id = 405;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 406;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 407;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 408;
+UPDATE players SET league = '1. Greece' WHERE player_id = 409;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 410;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 411;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 412;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 413;
+UPDATE players SET league = '1. Ecuador' WHERE player_id = 414;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 415;
+UPDATE players SET league = '2. Italy' WHERE player_id = 416;
+UPDATE players SET league = '4. Spain' WHERE player_id = 417;
+UPDATE players SET league = '1. Egypt' WHERE player_id = 418;
+UPDATE players SET league = '1. France' WHERE player_id = 419;
+UPDATE players SET league = '1. Denmark' WHERE player_id = 420;
+UPDATE players SET league = '1. Egypt' WHERE player_id = 421;
+UPDATE players SET league = '1. Egypt' WHERE player_id = 422;
+UPDATE players SET league = '1. Egypt' WHERE player_id = 423;
+UPDATE players SET league = '1. Egypt' WHERE player_id = 424;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 425;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 426;
+UPDATE players SET league = '1. Egypt' WHERE player_id = 427;
+UPDATE players SET league = '1. Egypt' WHERE player_id = 428;
+UPDATE players SET league = '1. Egypt' WHERE player_id = 429;
+UPDATE players SET league = '1. Spain' WHERE player_id = 430;
+UPDATE players SET league = '1. Egypt' WHERE player_id = 431;
+UPDATE players SET league = '1. Egypt' WHERE player_id = 432;
+UPDATE players SET league = '1. England' WHERE player_id = 433;
+UPDATE players SET league = '1. Egypt' WHERE player_id = 434;
+UPDATE players SET league = '1. United Arab Emirates' WHERE player_id = 435;
+UPDATE players SET league = '1. Egypt' WHERE player_id = 436;
+UPDATE players SET league = '1. England' WHERE player_id = 437;
+UPDATE players SET league = '1. Egypt' WHERE player_id = 438;
+UPDATE players SET league = '1. Egypt' WHERE player_id = 439;
+UPDATE players SET league = '1. Egypt' WHERE player_id = 440;
+UPDATE players SET league = '1. Egypt' WHERE player_id = 441;
+UPDATE players SET league = '1. Egypt' WHERE player_id = 442;
+UPDATE players SET league = '1. England' WHERE player_id = 443;
+UPDATE players SET league = '1. Spain' WHERE player_id = 444;
+UPDATE players SET league = '1. England' WHERE player_id = 445;
+UPDATE players SET league = '1. England' WHERE player_id = 446;
+UPDATE players SET league = '1. England' WHERE player_id = 447;
+UPDATE players SET league = '1. Spain' WHERE player_id = 448;
+UPDATE players SET league = '1. England' WHERE player_id = 449;
+UPDATE players SET league = '1. England' WHERE player_id = 450;
+UPDATE players SET league = '1. England' WHERE player_id = 451;
+UPDATE players SET league = '1. England' WHERE player_id = 452;
+UPDATE players SET league = '1. Germany' WHERE player_id = 453;
+UPDATE players SET league = '1. England' WHERE player_id = 454;
+UPDATE players SET league = '1. England' WHERE player_id = 455;
+UPDATE players SET league = '1. England' WHERE player_id = 456;
+UPDATE players SET league = '1. England' WHERE player_id = 457;
+UPDATE players SET league = '1. England' WHERE player_id = 458;
+UPDATE players SET league = '1. Germany' WHERE player_id = 459;
+UPDATE players SET league = '1. Spain' WHERE player_id = 460;
+UPDATE players SET league = '1. England' WHERE player_id = 461;
+UPDATE players SET league = '1. England' WHERE player_id = 462;
+UPDATE players SET league = '1. England' WHERE player_id = 463;
+UPDATE players SET league = '1. England' WHERE player_id = 464;
+UPDATE players SET league = '1. England' WHERE player_id = 465;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 466;
+UPDATE players SET league = '1. England' WHERE player_id = 467;
+UPDATE players SET league = '1. England' WHERE player_id = 468;
+UPDATE players SET league = '1. France' WHERE player_id = 469;
+UPDATE players SET league = '1. France' WHERE player_id = 470;
+UPDATE players SET league = '1. England' WHERE player_id = 471;
+UPDATE players SET league = '1. France' WHERE player_id = 472;
+UPDATE players SET league = '1. England' WHERE player_id = 473;
+UPDATE players SET league = '1. France' WHERE player_id = 474;
+UPDATE players SET league = '1. England' WHERE player_id = 475;
+UPDATE players SET league = '1. France' WHERE player_id = 476;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 477;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 478;
+UPDATE players SET league = '1. England' WHERE player_id = 479;
+UPDATE players SET league = '1. Italy' WHERE player_id = 480;
+UPDATE players SET league = '1. Spain' WHERE player_id = 481;
+UPDATE players SET league = '1. England' WHERE player_id = 482;
+UPDATE players SET league = '1. Italy' WHERE player_id = 483;
+UPDATE players SET league = '1. England' WHERE player_id = 484;
+UPDATE players SET league = '1. Spain' WHERE player_id = 485;
+UPDATE players SET league = '1. Germany' WHERE player_id = 486;
+UPDATE players SET league = '1. Italy' WHERE player_id = 487;
+UPDATE players SET league = '1. France' WHERE player_id = 488;
+UPDATE players SET league = '1. England' WHERE player_id = 489;
+UPDATE players SET league = '1. France' WHERE player_id = 490;
+UPDATE players SET league = '1. Spain' WHERE player_id = 491;
+UPDATE players SET league = '1. Italy' WHERE player_id = 492;
+UPDATE players SET league = '1. Germany' WHERE player_id = 493;
+UPDATE players SET league = '1. France' WHERE player_id = 494;
+UPDATE players SET league = '1. Germany' WHERE player_id = 495;
+UPDATE players SET league = '1. Germany' WHERE player_id = 496;
+UPDATE players SET league = '1. Germany' WHERE player_id = 497;
+UPDATE players SET league = '1. Germany' WHERE player_id = 498;
+UPDATE players SET league = '1. Germany' WHERE player_id = 499;
+UPDATE players SET league = '1. Germany' WHERE player_id = 500;
+UPDATE players SET league = '1. England' WHERE player_id = 501;
+UPDATE players SET league = '1. England' WHERE player_id = 502;
+UPDATE players SET league = '1. Germany' WHERE player_id = 503;
+UPDATE players SET league = '1. Germany' WHERE player_id = 504;
+UPDATE players SET league = '1. Germany' WHERE player_id = 505;
+UPDATE players SET league = '1. Germany' WHERE player_id = 506;
+UPDATE players SET league = '1. Germany' WHERE player_id = 507;
+UPDATE players SET league = '1. Germany' WHERE player_id = 508;
+UPDATE players SET league = '1. Germany' WHERE player_id = 509;
+UPDATE players SET league = '1. Germany' WHERE player_id = 510;
+UPDATE players SET league = '1. Germany' WHERE player_id = 511;
+UPDATE players SET league = '1. Spain' WHERE player_id = 512;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 513;
+UPDATE players SET league = '1. Germany' WHERE player_id = 514;
+UPDATE players SET league = '1. Germany' WHERE player_id = 515;
+UPDATE players SET league = '1. Germany' WHERE player_id = 516;
+UPDATE players SET league = '1. England' WHERE player_id = 517;
+UPDATE players SET league = '1. Germany' WHERE player_id = 518;
+UPDATE players SET league = '1. England' WHERE player_id = 519;
+UPDATE players SET league = '1. England' WHERE player_id = 520;
+UPDATE players SET league = '1. Germany' WHERE player_id = 521;
+UPDATE players SET league = '1. Republic of Ireland' WHERE player_id = 522;
+UPDATE players SET league = '1. Ghana' WHERE player_id = 523;
+UPDATE players SET league = '1. Switzerland' WHERE player_id = 524;
+UPDATE players SET league = '2. England' WHERE player_id = 525;
+UPDATE players SET league = '2. France' WHERE player_id = 526;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 527;
+UPDATE players SET league = '2. England' WHERE player_id = 528;
+UPDATE players SET league = '1. Czech Republic' WHERE player_id = 529;
+UPDATE players SET league = '1. Cyprus' WHERE player_id = 530;
+UPDATE players SET league = '1. France' WHERE player_id = 531;
+UPDATE players SET league = '1. Spain' WHERE player_id = 532;
+UPDATE players SET league = '1. France' WHERE player_id = 533;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 534;
+UPDATE players SET league = '1. France' WHERE player_id = 535;
+UPDATE players SET league = '1. Spain' WHERE player_id = 536;
+UPDATE players SET league = '1. France' WHERE player_id = 537;
+UPDATE players SET league = '1. Greece' WHERE player_id = 538;
+UPDATE players SET league = '1. France' WHERE player_id = 539;
+UPDATE players SET league = '1. England' WHERE player_id = 540;
+UPDATE players SET league = '1. France' WHERE player_id = 541;
+UPDATE players SET league = '1. Spain' WHERE player_id = 542;
+UPDATE players SET league = '1. United States' WHERE player_id = 543;
+UPDATE players SET league = '2. England' WHERE player_id = 544;
+UPDATE players SET league = '1. Spain' WHERE player_id = 545;
+UPDATE players SET league = '1. Denmark' WHERE player_id = 546;
+UPDATE players SET league = '1. Ecuador' WHERE player_id = 547;
+UPDATE players SET league = '1. France' WHERE player_id = 548;
+UPDATE players SET league = '1. England' WHERE player_id = 549;
+UPDATE players SET league = '1. France' WHERE player_id = 550;
+UPDATE players SET league = '1. United States' WHERE player_id = 551;
+UPDATE players SET league = '1. Switzerland' WHERE player_id = 552;
+UPDATE players SET league = '5. Germany' WHERE player_id = 553;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 554;
+UPDATE players SET league = '1. United States' WHERE player_id = 555;
+UPDATE players SET league = '2. France' WHERE player_id = 556;
+UPDATE players SET league = '2. Portugal' WHERE player_id = 557;
+UPDATE players SET league = '2. United States' WHERE player_id = 558;
+UPDATE players SET league = '1. England' WHERE player_id = 559;
+UPDATE players SET league = '1. United States' WHERE player_id = 560;
+UPDATE players SET league = '1. Hungary' WHERE player_id = 561;
+UPDATE players SET league = '2. United States' WHERE player_id = 562;
+UPDATE players SET league = '2. United States' WHERE player_id = 563;
+UPDATE players SET league = '1. Iran' WHERE player_id = 564;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 565;
+UPDATE players SET league = '3. France' WHERE player_id = 566;
+UPDATE players SET league = '1. Haiti' WHERE player_id = 567;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 568;
+UPDATE players SET league = '2. France' WHERE player_id = 569;
+UPDATE players SET league = '2. Netherlands' WHERE player_id = 570;
+UPDATE players SET league = '1. Slovakia' WHERE player_id = 571;
+UPDATE players SET league = '1. Switzerland' WHERE player_id = 572;
+UPDATE players SET league = '1. Iran' WHERE player_id = 573;
+UPDATE players SET league = '1. Iran' WHERE player_id = 574;
+UPDATE players SET league = '1. Iran' WHERE player_id = 575;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 576;
+UPDATE players SET league = '1. Iran' WHERE player_id = 577;
+UPDATE players SET league = '1. United Arab Emirates' WHERE player_id = 578;
+UPDATE players SET league = '1. United Arab Emirates' WHERE player_id = 579;
+UPDATE players SET league = '1. United Arab Emirates' WHERE player_id = 580;
+UPDATE players SET league = '1. United Arab Emirates' WHERE player_id = 581;
+UPDATE players SET league = '1. Iran' WHERE player_id = 582;
+UPDATE players SET league = '1. Iran' WHERE player_id = 583;
+UPDATE players SET league = '1. Iran' WHERE player_id = 584;
+UPDATE players SET league = '1. Iran' WHERE player_id = 585;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 586;
+UPDATE players SET league = '1. Iran' WHERE player_id = 587;
+UPDATE players SET league = '1. Iran' WHERE player_id = 588;
+UPDATE players SET league = '1. United Arab Emirates' WHERE player_id = 589;
+UPDATE players SET league = '1. Iran' WHERE player_id = 590;
+UPDATE players SET league = '1. Russia' WHERE player_id = 591;
+UPDATE players SET league = '1. Iran' WHERE player_id = 592;
+UPDATE players SET league = '1. Iran' WHERE player_id = 593;
+UPDATE players SET league = '1. Iran' WHERE player_id = 594;
+UPDATE players SET league = '1. Iran' WHERE player_id = 595;
+UPDATE players SET league = '1. Greece' WHERE player_id = 596;
+UPDATE players SET league = '1. Iran' WHERE player_id = 597;
+UPDATE players SET league = '1. Iran' WHERE player_id = 598;
+UPDATE players SET league = '1. Poland' WHERE player_id = 599;
+UPDATE players SET league = '1. United Arab Emirates' WHERE player_id = 600;
+UPDATE players SET league = '1. Poland' WHERE player_id = 601;
+UPDATE players SET league = '1. Cyprus' WHERE player_id = 602;
+UPDATE players SET league = '1. Iraq' WHERE player_id = 603;
+UPDATE players SET league = '1. United Arab Emirates' WHERE player_id = 604;
+UPDATE players SET league = '1. Indonesia' WHERE player_id = 605;
+UPDATE players SET league = '1. Czech Republic' WHERE player_id = 606;
+UPDATE players SET league = '2. Italy' WHERE player_id = 607;
+UPDATE players SET league = '2. England' WHERE player_id = 608;
+UPDATE players SET league = '1. Iraq' WHERE player_id = 609;
+UPDATE players SET league = '1. Iraq' WHERE player_id = 610;
+UPDATE players SET league = '1. Iraq' WHERE player_id = 611;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 612;
+UPDATE players SET league = '1. Iraq' WHERE player_id = 613;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 614;
+UPDATE players SET league = '1. Iraq' WHERE player_id = 615;
+UPDATE players SET league = '1. United States' WHERE player_id = 616;
+UPDATE players SET league = '1. Iraq' WHERE player_id = 617;
+UPDATE players SET league = '1. Norway' WHERE player_id = 618;
+UPDATE players SET league = '1. Thailand' WHERE player_id = 619;
+UPDATE players SET league = '1. Uzbekistan' WHERE player_id = 620;
+UPDATE players SET league = '1. Iraq' WHERE player_id = 621;
+UPDATE players SET league = '1. Denmark' WHERE player_id = 622;
+UPDATE players SET league = '1. Iraq' WHERE player_id = 623;
+UPDATE players SET league = '1. Iraq' WHERE player_id = 624;
+UPDATE players SET league = '1. Germany' WHERE player_id = 625;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 626;
+UPDATE players SET league = '1. Japan' WHERE player_id = 627;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 628;
+UPDATE players SET league = '1. Germany' WHERE player_id = 629;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 630;
+UPDATE players SET league = '1. England' WHERE player_id = 631;
+UPDATE players SET league = '1. Spain' WHERE player_id = 632;
+UPDATE players SET league = '1. Germany' WHERE player_id = 633;
+UPDATE players SET league = '1. Scotland' WHERE player_id = 634;
+UPDATE players SET league = '1. Japan' WHERE player_id = 635;
+UPDATE players SET league = '2. France' WHERE player_id = 636;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 637;
+UPDATE players SET league = '1. Japan' WHERE player_id = 638;
+UPDATE players SET league = '1. Germany' WHERE player_id = 639;
+UPDATE players SET league = '1. France' WHERE player_id = 640;
+UPDATE players SET league = '1. Germany' WHERE player_id = 641;
+UPDATE players SET league = '1. Germany' WHERE player_id = 642;
+UPDATE players SET league = '1. Denmark' WHERE player_id = 643;
+UPDATE players SET league = '1. Germany' WHERE player_id = 644;
+UPDATE players SET league = '1. Italy' WHERE player_id = 645;
+UPDATE players SET league = '1. England' WHERE player_id = 646;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 647;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 648;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 649;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 650;
+UPDATE players SET league = '1. Kuwait' WHERE player_id = 651;
+UPDATE players SET league = '1. Iraq' WHERE player_id = 652;
+UPDATE players SET league = '1. Iraq' WHERE player_id = 653;
+UPDATE players SET league = '1. Malaysia' WHERE player_id = 654;
+UPDATE players SET league = '1. Jordan' WHERE player_id = 655;
+UPDATE players SET league = '1. Korea Republic' WHERE player_id = 656;
+UPDATE players SET league = '1. Jordan' WHERE player_id = 657;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 658;
+UPDATE players SET league = '1. Jordan' WHERE player_id = 659;
+UPDATE players SET league = '1. Jordan' WHERE player_id = 660;
+UPDATE players SET league = '1. Jordan' WHERE player_id = 661;
+UPDATE players SET league = '1. Jordan' WHERE player_id = 662;
+UPDATE players SET league = '1. Egypt' WHERE player_id = 663;
+UPDATE players SET league = '1. Jordan' WHERE player_id = 664;
+UPDATE players SET league = '1. Iraq' WHERE player_id = 665;
+UPDATE players SET league = '1. Jordan' WHERE player_id = 666;
+UPDATE players SET league = '1. Iraq' WHERE player_id = 667;
+UPDATE players SET league = '1. Jordan' WHERE player_id = 668;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 669;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 670;
+UPDATE players SET league = '1. Malaysia' WHERE player_id = 671;
+UPDATE players SET league = '1. Jordan' WHERE player_id = 672;
+UPDATE players SET league = '1. Iraq' WHERE player_id = 673;
+UPDATE players SET league = '1. Morocco' WHERE player_id = 674;
+UPDATE players SET league = '1. France' WHERE player_id = 675;
+UPDATE players SET league = '1. Jordan' WHERE player_id = 676;
+UPDATE players SET league = '1. Korea Republic' WHERE player_id = 677;
+UPDATE players SET league = '1. Germany' WHERE player_id = 678;
+UPDATE players SET league = '1. Korea Republic' WHERE player_id = 679;
+UPDATE players SET league = '1. Korea Republic' WHERE player_id = 680;
+UPDATE players SET league = '1. Denmark' WHERE player_id = 681;
+UPDATE players SET league = '1. Denmark' WHERE player_id = 682;
+UPDATE players SET league = '1. England' WHERE player_id = 683;
+UPDATE players SET league = '1. United States' WHERE player_id = 684;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 685;
+UPDATE players SET league = '1. Korea Republic' WHERE player_id = 686;
+UPDATE players SET league = '1. Scotland' WHERE player_id = 687;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 688;
+UPDATE players SET league = '1. Germany' WHERE player_id = 689;
+UPDATE players SET league = '2. England' WHERE player_id = 690;
+UPDATE players SET league = '1. Korea Republic' WHERE player_id = 691;
+UPDATE players SET league = '1. China PR' WHERE player_id = 692;
+UPDATE players SET league = '2. England' WHERE player_id = 693;
+UPDATE players SET league = '1. France' WHERE player_id = 694;
+UPDATE players SET league = '1. Germany' WHERE player_id = 695;
+UPDATE players SET league = '1. Korea Republic' WHERE player_id = 696;
+UPDATE players SET league = '1. Japan' WHERE player_id = 697;
+UPDATE players SET league = '2. England' WHERE player_id = 698;
+UPDATE players SET league = '1. Japan' WHERE player_id = 699;
+UPDATE players SET league = '1. Austria' WHERE player_id = 700;
+UPDATE players SET league = '1. Korea Republic' WHERE player_id = 701;
+UPDATE players SET league = '1. Serbia' WHERE player_id = 702;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 703;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 704;
+UPDATE players SET league = '1. England' WHERE player_id = 705;
+UPDATE players SET league = '1. Russia' WHERE player_id = 706;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 707;
+UPDATE players SET league = '1. Spain' WHERE player_id = 708;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 709;
+UPDATE players SET league = '1. Italy' WHERE player_id = 710;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 711;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 712;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 713;
+UPDATE players SET league = '1. England' WHERE player_id = 714;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 715;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 716;
+UPDATE players SET league = '1. Russia' WHERE player_id = 717;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 718;
+UPDATE players SET league = '1. Cyprus' WHERE player_id = 719;
+UPDATE players SET league = '1. Greece' WHERE player_id = 720;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 721;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 722;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 723;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 724;
+UPDATE players SET league = '1. Greece' WHERE player_id = 725;
+UPDATE players SET league = '1. Spain' WHERE player_id = 726;
+UPDATE players SET league = '1. Italy' WHERE player_id = 727;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 728;
+UPDATE players SET league = '1. Germany' WHERE player_id = 729;
+UPDATE players SET league = '1. Spain' WHERE player_id = 730;
+UPDATE players SET league = '1. Italy' WHERE player_id = 731;
+UPDATE players SET league = '1. Egypt' WHERE player_id = 732;
+UPDATE players SET league = '1. France' WHERE player_id = 733;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 734;
+UPDATE players SET league = '1. Spain' WHERE player_id = 735;
+UPDATE players SET league = '1. England' WHERE player_id = 736;
+UPDATE players SET league = '1. France' WHERE player_id = 737;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 738;
+UPDATE players SET league = '1. Greece' WHERE player_id = 739;
+UPDATE players SET league = '1. Germany' WHERE player_id = 740;
+UPDATE players SET league = '1. England' WHERE player_id = 741;
+UPDATE players SET league = '1. France' WHERE player_id = 742;
+UPDATE players SET league = '1. Morocco' WHERE player_id = 743;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 744;
+UPDATE players SET league = '1. Spain' WHERE player_id = 745;
+UPDATE players SET league = '1. United Arab Emirates' WHERE player_id = 746;
+UPDATE players SET league = '1. Morocco' WHERE player_id = 747;
+UPDATE players SET league = '1. England' WHERE player_id = 748;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 749;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 750;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 751;
+UPDATE players SET league = '1. France' WHERE player_id = 752;
+UPDATE players SET league = '1. England' WHERE player_id = 753;
+UPDATE players SET league = '1. France' WHERE player_id = 754;
+UPDATE players SET league = '1. England' WHERE player_id = 755;
+UPDATE players SET league = '1. England' WHERE player_id = 756;
+UPDATE players SET league = '1. Italy' WHERE player_id = 757;
+UPDATE players SET league = '1. Germany' WHERE player_id = 758;
+UPDATE players SET league = '1. England' WHERE player_id = 759;
+UPDATE players SET league = '1. England' WHERE player_id = 760;
+UPDATE players SET league = '1. England' WHERE player_id = 761;
+UPDATE players SET league = '1. England' WHERE player_id = 762;
+UPDATE players SET league = '1. England' WHERE player_id = 763;
+UPDATE players SET league = '1. Spain' WHERE player_id = 764;
+UPDATE players SET league = '1. England' WHERE player_id = 765;
+UPDATE players SET league = '1. Italy' WHERE player_id = 766;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 767;
+UPDATE players SET league = '1. Italy' WHERE player_id = 768;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 769;
+UPDATE players SET league = '1. England' WHERE player_id = 770;
+UPDATE players SET league = '1. England' WHERE player_id = 771;
+UPDATE players SET league = '1. Italy' WHERE player_id = 772;
+UPDATE players SET league = '1. England' WHERE player_id = 773;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 774;
+UPDATE players SET league = '1. France' WHERE player_id = 775;
+UPDATE players SET league = '1. England' WHERE player_id = 776;
+UPDATE players SET league = '1. England' WHERE player_id = 777;
+UPDATE players SET league = '1. England' WHERE player_id = 778;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 779;
+UPDATE players SET league = '1. England' WHERE player_id = 780;
+UPDATE players SET league = '1. Australia' WHERE player_id = 781;
+UPDATE players SET league = '1. Australia' WHERE player_id = 782;
+UPDATE players SET league = '1. Norway' WHERE player_id = 783;
+UPDATE players SET league = '2. England' WHERE player_id = 784;
+UPDATE players SET league = '1. United States' WHERE player_id = 785;
+UPDATE players SET league = '2. England' WHERE player_id = 786;
+UPDATE players SET league = '2. England' WHERE player_id = 787;
+UPDATE players SET league = '1. Australia' WHERE player_id = 788;
+UPDATE players SET league = '1. Scotland' WHERE player_id = 789;
+UPDATE players SET league = '1. Denmark' WHERE player_id = 790;
+UPDATE players SET league = '2. France' WHERE player_id = 791;
+UPDATE players SET league = '1. Poland' WHERE player_id = 792;
+UPDATE players SET league = '1. Australia' WHERE player_id = 793;
+UPDATE players SET league = '1. Australia' WHERE player_id = 794;
+UPDATE players SET league = '1. Australia' WHERE player_id = 795;
+UPDATE players SET league = '1. Australia' WHERE player_id = 796;
+UPDATE players SET league = '1. Australia' WHERE player_id = 797;
+UPDATE players SET league = '1. Australia' WHERE player_id = 798;
+UPDATE players SET league = '5. England' WHERE player_id = 799;
+UPDATE players SET league = '2. England' WHERE player_id = 800;
+UPDATE players SET league = '1. United States' WHERE player_id = 801;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 802;
+UPDATE players SET league = '1. Australia' WHERE player_id = 803;
+UPDATE players SET league = '3. England' WHERE player_id = 804;
+UPDATE players SET league = '1. England' WHERE player_id = 805;
+UPDATE players SET league = '1. Australia' WHERE player_id = 806;
+UPDATE players SET league = '1. Scotland' WHERE player_id = 807;
+UPDATE players SET league = '1. England' WHERE player_id = 808;
+UPDATE players SET league = '1. Norway' WHERE player_id = 809;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 810;
+UPDATE players SET league = '1. Norway' WHERE player_id = 811;
+UPDATE players SET league = '1. England' WHERE player_id = 812;
+UPDATE players SET league = '1. England' WHERE player_id = 813;
+UPDATE players SET league = '1. Norway' WHERE player_id = 814;
+UPDATE players SET league = '1. England' WHERE player_id = 815;
+UPDATE players SET league = '1. Italy' WHERE player_id = 816;
+UPDATE players SET league = '2. England' WHERE player_id = 817;
+UPDATE players SET league = '1. England' WHERE player_id = 818;
+UPDATE players SET league = '1. Germany' WHERE player_id = 819;
+UPDATE players SET league = '1. Spain' WHERE player_id = 820;
+UPDATE players SET league = '1. Italy' WHERE player_id = 821;
+UPDATE players SET league = '1. Norway' WHERE player_id = 822;
+UPDATE players SET league = '1. Germany' WHERE player_id = 823;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 824;
+UPDATE players SET league = '2. England' WHERE player_id = 825;
+UPDATE players SET league = '1. England' WHERE player_id = 826;
+UPDATE players SET league = '1. Spain' WHERE player_id = 827;
+UPDATE players SET league = '1. Germany' WHERE player_id = 828;
+UPDATE players SET league = '1. Italy' WHERE player_id = 829;
+UPDATE players SET league = '1. Italy' WHERE player_id = 830;
+UPDATE players SET league = '1. England' WHERE player_id = 831;
+UPDATE players SET league = '1. Italy' WHERE player_id = 832;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 833;
+UPDATE players SET league = '1. Austria' WHERE player_id = 834;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 835;
+UPDATE players SET league = '1. Slovakia' WHERE player_id = 836;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 837;
+UPDATE players SET league = '2. England' WHERE player_id = 838;
+UPDATE players SET league = '1. Panama' WHERE player_id = 839;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 840;
+UPDATE players SET league = '1. Costa Rica' WHERE player_id = 841;
+UPDATE players SET league = '1. Ecuador' WHERE player_id = 842;
+UPDATE players SET league = '1. Russia' WHERE player_id = 843;
+UPDATE players SET league = '1. United States' WHERE player_id = 844;
+UPDATE players SET league = '1. Venezuela' WHERE player_id = 845;
+UPDATE players SET league = '1. United States' WHERE player_id = 846;
+UPDATE players SET league = '1. Ecuador' WHERE player_id = 847;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 848;
+UPDATE players SET league = '1. Israel' WHERE player_id = 849;
+UPDATE players SET league = '1. Uruguay' WHERE player_id = 850;
+UPDATE players SET league = '1. Azerbaijan' WHERE player_id = 851;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 852;
+UPDATE players SET league = '1. Panama' WHERE player_id = 853;
+UPDATE players SET league = '1. Venezuela' WHERE player_id = 854;
+UPDATE players SET league = '1. Costa Rica' WHERE player_id = 855;
+UPDATE players SET league = '1. Honduras' WHERE player_id = 856;
+UPDATE players SET league = '1. Chile' WHERE player_id = 857;
+UPDATE players SET league = '1. Chile' WHERE player_id = 858;
+UPDATE players SET league = '1. England' WHERE player_id = 859;
+UPDATE players SET league = '1. United States' WHERE player_id = 860;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 861;
+UPDATE players SET league = '1. Argentina' WHERE player_id = 862;
+UPDATE players SET league = '1. Argentina' WHERE player_id = 863;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 864;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 865;
+UPDATE players SET league = '2. England' WHERE player_id = 866;
+UPDATE players SET league = '1. Russia' WHERE player_id = 867;
+UPDATE players SET league = '1. Argentina' WHERE player_id = 868;
+UPDATE players SET league = '1. United States' WHERE player_id = 869;
+UPDATE players SET league = '1. France' WHERE player_id = 870;
+UPDATE players SET league = '1. Paraguay' WHERE player_id = 871;
+UPDATE players SET league = '1. United States' WHERE player_id = 872;
+UPDATE players SET league = '1. Paraguay' WHERE player_id = 873;
+UPDATE players SET league = '1. England' WHERE player_id = 874;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 875;
+UPDATE players SET league = '1. United Arab Emirates' WHERE player_id = 876;
+UPDATE players SET league = '1. Argentina' WHERE player_id = 877;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 878;
+UPDATE players SET league = '1. United States' WHERE player_id = 879;
+UPDATE players SET league = '1. Paraguay' WHERE player_id = 880;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 881;
+UPDATE players SET league = '1. Italy' WHERE player_id = 882;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 883;
+UPDATE players SET league = '1. Paraguay' WHERE player_id = 884;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 885;
+UPDATE players SET league = '1. Spain' WHERE player_id = 886;
+UPDATE players SET league = '1. Italy' WHERE player_id = 887;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 888;
+UPDATE players SET league = '1. Spain' WHERE player_id = 889;
+UPDATE players SET league = '1. England' WHERE player_id = 890;
+UPDATE players SET league = '1. England' WHERE player_id = 891;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 892;
+UPDATE players SET league = '1. England' WHERE player_id = 893;
+UPDATE players SET league = '1. Spain' WHERE player_id = 894;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 895;
+UPDATE players SET league = '1. Italy' WHERE player_id = 896;
+UPDATE players SET league = '1. France' WHERE player_id = 897;
+UPDATE players SET league = '1. England' WHERE player_id = 898;
+UPDATE players SET league = '1. France' WHERE player_id = 899;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 900;
+UPDATE players SET league = '1. England' WHERE player_id = 901;
+UPDATE players SET league = '1. France' WHERE player_id = 902;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 903;
+UPDATE players SET league = '1. England' WHERE player_id = 904;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 905;
+UPDATE players SET league = '1. England' WHERE player_id = 906;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 907;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 908;
+UPDATE players SET league = '1. Spain' WHERE player_id = 909;
+UPDATE players SET league = '1. France' WHERE player_id = 910;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 911;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 912;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 913;
+UPDATE players SET league = '2. Spain' WHERE player_id = 914;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 915;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 916;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 917;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 918;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 919;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 920;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 921;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 922;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 923;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 924;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 925;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 926;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 927;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 928;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 929;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 930;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 931;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 932;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 933;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 934;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 935;
+UPDATE players SET league = '1. Qatar' WHERE player_id = 936;
+UPDATE players SET league = '1. France' WHERE player_id = 937;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 938;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 939;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 940;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 941;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 942;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 943;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 944;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 945;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 946;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 947;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 948;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 949;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 950;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 951;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 952;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 953;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 954;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 955;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 956;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 957;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 958;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 959;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 960;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 961;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 962;
+UPDATE players SET league = '1. Italy' WHERE player_id = 963;
+UPDATE players SET league = '1. England' WHERE player_id = 964;
+UPDATE players SET league = '1. Scotland' WHERE player_id = 965;
+UPDATE players SET league = '2. England' WHERE player_id = 966;
+UPDATE players SET league = '1. Italy' WHERE player_id = 967;
+UPDATE players SET league = '1. England' WHERE player_id = 968;
+UPDATE players SET league = '1. England' WHERE player_id = 969;
+UPDATE players SET league = '1. Scotland' WHERE player_id = 970;
+UPDATE players SET league = '1. England' WHERE player_id = 971;
+UPDATE players SET league = '1. Scotland' WHERE player_id = 972;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 973;
+UPDATE players SET league = '1. England' WHERE player_id = 974;
+UPDATE players SET league = '2. England' WHERE player_id = 975;
+UPDATE players SET league = '2. England' WHERE player_id = 976;
+UPDATE players SET league = '1. Scotland' WHERE player_id = 977;
+UPDATE players SET league = '1. England' WHERE player_id = 978;
+UPDATE players SET league = '1. Croatia' WHERE player_id = 979;
+UPDATE players SET league = '2. England' WHERE player_id = 980;
+UPDATE players SET league = '1. Italy' WHERE player_id = 981;
+UPDATE players SET league = '1. England' WHERE player_id = 982;
+UPDATE players SET league = '1. Scotland' WHERE player_id = 983;
+UPDATE players SET league = '1. England' WHERE player_id = 984;
+UPDATE players SET league = '1. Scotland' WHERE player_id = 985;
+UPDATE players SET league = '1. Scotland' WHERE player_id = 986;
+UPDATE players SET league = '2. England' WHERE player_id = 987;
+UPDATE players SET league = '1. Scotland' WHERE player_id = 988;
+UPDATE players SET league = '1. France' WHERE player_id = 989;
+UPDATE players SET league = '1. Spain' WHERE player_id = 990;
+UPDATE players SET league = '1. Italy' WHERE player_id = 991;
+UPDATE players SET league = '1. England' WHERE player_id = 992;
+UPDATE players SET league = '1. France' WHERE player_id = 993;
+UPDATE players SET league = '1. France' WHERE player_id = 994;
+UPDATE players SET league = '1. France' WHERE player_id = 995;
+UPDATE players SET league = '1. England' WHERE player_id = 996;
+UPDATE players SET league = '1. France' WHERE player_id = 997;
+UPDATE players SET league = '1. England' WHERE player_id = 998;
+UPDATE players SET league = '1. Spain' WHERE player_id = 999;
+UPDATE players SET league = '1. Germany' WHERE player_id = 1000;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 1001;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 1002;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 1003;
+UPDATE players SET league = '1. England' WHERE player_id = 1004;
+UPDATE players SET league = '1. France' WHERE player_id = 1005;
+UPDATE players SET league = '1. France' WHERE player_id = 1006;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 1007;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 1008;
+UPDATE players SET league = '1. England' WHERE player_id = 1009;
+UPDATE players SET league = '1. France' WHERE player_id = 1010;
+UPDATE players SET league = '1. Germany' WHERE player_id = 1011;
+UPDATE players SET league = '1. England' WHERE player_id = 1012;
+UPDATE players SET league = '1. England' WHERE player_id = 1013;
+UPDATE players SET league = '1. Israel' WHERE player_id = 1014;
+UPDATE players SET league = '1. South Africa' WHERE player_id = 1015;
+UPDATE players SET league = '1. South Africa' WHERE player_id = 1016;
+UPDATE players SET league = '1. South Africa' WHERE player_id = 1017;
+UPDATE players SET league = '1. South Africa' WHERE player_id = 1018;
+UPDATE players SET league = '1. England' WHERE player_id = 1019;
+UPDATE players SET league = '1. South Africa' WHERE player_id = 1020;
+UPDATE players SET league = '1. Norway' WHERE player_id = 1021;
+UPDATE players SET league = '1. South Africa' WHERE player_id = 1022;
+UPDATE players SET league = '1. United States' WHERE player_id = 1023;
+UPDATE players SET league = '1. Cyprus' WHERE player_id = 1024;
+UPDATE players SET league = '1. South Africa' WHERE player_id = 1025;
+UPDATE players SET league = '1. South Africa' WHERE player_id = 1026;
+UPDATE players SET league = '1. United States' WHERE player_id = 1027;
+UPDATE players SET league = '1. South Africa' WHERE player_id = 1028;
+UPDATE players SET league = '1. South Africa' WHERE player_id = 1029;
+UPDATE players SET league = '1. South Africa' WHERE player_id = 1030;
+UPDATE players SET league = '1. South Africa' WHERE player_id = 1031;
+UPDATE players SET league = '1. South Africa' WHERE player_id = 1032;
+UPDATE players SET league = '1. South Africa' WHERE player_id = 1033;
+UPDATE players SET league = '2. Germany' WHERE player_id = 1034;
+UPDATE players SET league = '1. South Africa' WHERE player_id = 1035;
+UPDATE players SET league = '1. South Africa' WHERE player_id = 1036;
+UPDATE players SET league = '1. South Africa' WHERE player_id = 1037;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 1038;
+UPDATE players SET league = '1. South Africa' WHERE player_id = 1039;
+UPDATE players SET league = '1. South Africa' WHERE player_id = 1040;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1041;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1042;
+UPDATE players SET league = '1. England' WHERE player_id = 1043;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1044;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1045;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1046;
+UPDATE players SET league = '1. Germany' WHERE player_id = 1047;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1048;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1049;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1050;
+UPDATE players SET league = '1. England' WHERE player_id = 1051;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1052;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1053;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1054;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1055;
+UPDATE players SET league = '1. England' WHERE player_id = 1056;
+UPDATE players SET league = '1. England' WHERE player_id = 1057;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1058;
+UPDATE players SET league = '1. England' WHERE player_id = 1059;
+UPDATE players SET league = '1. England' WHERE player_id = 1060;
+UPDATE players SET league = '1. France' WHERE player_id = 1061;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1062;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1063;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1064;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1065;
+UPDATE players SET league = '1. England' WHERE player_id = 1066;
+UPDATE players SET league = '1. Sweden' WHERE player_id = 1067;
+UPDATE players SET league = '1. England' WHERE player_id = 1068;
+UPDATE players SET league = '1. England' WHERE player_id = 1069;
+UPDATE players SET league = '2. Germany' WHERE player_id = 1070;
+UPDATE players SET league = '1. England' WHERE player_id = 1071;
+UPDATE players SET league = '1. England' WHERE player_id = 1072;
+UPDATE players SET league = '1. England' WHERE player_id = 1073;
+UPDATE players SET league = '1. England' WHERE player_id = 1074;
+UPDATE players SET league = '1. Italy' WHERE player_id = 1075;
+UPDATE players SET league = '1. England' WHERE player_id = 1076;
+UPDATE players SET league = '1. United States' WHERE player_id = 1077;
+UPDATE players SET league = '2. England' WHERE player_id = 1078;
+UPDATE players SET league = '1. Italy' WHERE player_id = 1079;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 1080;
+UPDATE players SET league = '1. England' WHERE player_id = 1081;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 1082;
+UPDATE players SET league = '1. Sweden' WHERE player_id = 1083;
+UPDATE players SET league = '1. Scotland' WHERE player_id = 1084;
+UPDATE players SET league = '1. Cyprus' WHERE player_id = 1085;
+UPDATE players SET league = '1. Germany' WHERE player_id = 1086;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1087;
+UPDATE players SET league = '1. Sweden' WHERE player_id = 1088;
+UPDATE players SET league = '1. Germany' WHERE player_id = 1089;
+UPDATE players SET league = '1. Germany' WHERE player_id = 1090;
+UPDATE players SET league = '2. England' WHERE player_id = 1091;
+UPDATE players SET league = '1. Belgium' WHERE player_id = 1092;
+UPDATE players SET league = '1. Italy' WHERE player_id = 1093;
+UPDATE players SET league = '1. Italy' WHERE player_id = 1094;
+UPDATE players SET league = '1. England' WHERE player_id = 1095;
+UPDATE players SET league = '1. Germany' WHERE player_id = 1096;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1097;
+UPDATE players SET league = '1. Germany' WHERE player_id = 1098;
+UPDATE players SET league = '1. France' WHERE player_id = 1099;
+UPDATE players SET league = '1. Switzerland' WHERE player_id = 1100;
+UPDATE players SET league = '1. Italy' WHERE player_id = 1101;
+UPDATE players SET league = '2. Germany' WHERE player_id = 1102;
+UPDATE players SET league = '1. Germany' WHERE player_id = 1103;
+UPDATE players SET league = '1. Italy' WHERE player_id = 1104;
+UPDATE players SET league = '1. Switzerland' WHERE player_id = 1105;
+UPDATE players SET league = '1. Germany' WHERE player_id = 1106;
+UPDATE players SET league = '1. Germany' WHERE player_id = 1107;
+UPDATE players SET league = '1. Germany' WHERE player_id = 1108;
+UPDATE players SET league = '1. France' WHERE player_id = 1109;
+UPDATE players SET league = '1. England' WHERE player_id = 1110;
+UPDATE players SET league = '1. England' WHERE player_id = 1111;
+UPDATE players SET league = '1. Germany' WHERE player_id = 1112;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1113;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1114;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1115;
+UPDATE players SET league = '1. Germany' WHERE player_id = 1116;
+UPDATE players SET league = '1. England' WHERE player_id = 1117;
+UPDATE players SET league = '1. France' WHERE player_id = 1118;
+UPDATE players SET league = '1. France' WHERE player_id = 1119;
+UPDATE players SET league = '1. Denmark' WHERE player_id = 1120;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 1121;
+UPDATE players SET league = '1. France' WHERE player_id = 1122;
+UPDATE players SET league = '1. Tunisia' WHERE player_id = 1123;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 1124;
+UPDATE players SET league = '2. England' WHERE player_id = 1125;
+UPDATE players SET league = '1. Switzerland' WHERE player_id = 1126;
+UPDATE players SET league = '1. Tunisia' WHERE player_id = 1127;
+UPDATE players SET league = '1. Tunisia' WHERE player_id = 1128;
+UPDATE players SET league = '1. Tunisia' WHERE player_id = 1129;
+UPDATE players SET league = '1. Tunisia' WHERE player_id = 1130;
+UPDATE players SET league = '1. United States' WHERE player_id = 1131;
+UPDATE players SET league = '1. Germany' WHERE player_id = 1132;
+UPDATE players SET league = '1. Tunisia' WHERE player_id = 1133;
+UPDATE players SET league = '1. Germany' WHERE player_id = 1134;
+UPDATE players SET league = '1. Switzerland' WHERE player_id = 1135;
+UPDATE players SET league = '1. Russia' WHERE player_id = 1136;
+UPDATE players SET league = '1. England' WHERE player_id = 1137;
+UPDATE players SET league = '2. Sweden' WHERE player_id = 1138;
+UPDATE players SET league = '1. Slovenia' WHERE player_id = 1139;
+UPDATE players SET league = '2. Germany' WHERE player_id = 1140;
+UPDATE players SET league = '1. Germany' WHERE player_id = 1141;
+UPDATE players SET league = '1. France' WHERE player_id = 1142;
+UPDATE players SET league = '1. Scotland' WHERE player_id = 1143;
+UPDATE players SET league = '1. Switzerland' WHERE player_id = 1144;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 1145;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 1146;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 1147;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 1148;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 1149;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 1150;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 1151;
+UPDATE players SET league = '1. England' WHERE player_id = 1152;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 1153;
+UPDATE players SET league = '1. Italy' WHERE player_id = 1154;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 1155;
+UPDATE players SET league = '1. Italy' WHERE player_id = 1156;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 1157;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 1158;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 1159;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1160;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 1161;
+UPDATE players SET league = '1. Germany' WHERE player_id = 1162;
+UPDATE players SET league = '1. England' WHERE player_id = 1163;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 1164;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 1165;
+UPDATE players SET league = '1. Germany' WHERE player_id = 1166;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 1167;
+UPDATE players SET league = '1. Germany' WHERE player_id = 1168;
+UPDATE players SET league = '1. Italy' WHERE player_id = 1169;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 1170;
+UPDATE players SET league = '1. England' WHERE player_id = 1171;
+UPDATE players SET league = '1. England' WHERE player_id = 1172;
+UPDATE players SET league = '1. United States' WHERE player_id = 1173;
+UPDATE players SET league = '1. France' WHERE player_id = 1174;
+UPDATE players SET league = '1. United States' WHERE player_id = 1175;
+UPDATE players SET league = '1. United States' WHERE player_id = 1176;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 1177;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1178;
+UPDATE players SET league = '1. United States' WHERE player_id = 1179;
+UPDATE players SET league = '1. Italy' WHERE player_id = 1180;
+UPDATE players SET league = '1. France' WHERE player_id = 1181;
+UPDATE players SET league = '1. Netherlands' WHERE player_id = 1182;
+UPDATE players SET league = '1. Italy' WHERE player_id = 1183;
+UPDATE players SET league = '1. United States' WHERE player_id = 1184;
+UPDATE players SET league = '1. Germany' WHERE player_id = 1185;
+UPDATE players SET league = '1. England' WHERE player_id = 1186;
+UPDATE players SET league = '1. England' WHERE player_id = 1187;
+UPDATE players SET league = '1. United States' WHERE player_id = 1188;
+UPDATE players SET league = '1. United States' WHERE player_id = 1189;
+UPDATE players SET league = '1. Germany' WHERE player_id = 1190;
+UPDATE players SET league = '1. Germany' WHERE player_id = 1191;
+UPDATE players SET league = '1. Scotland' WHERE player_id = 1192;
+UPDATE players SET league = '1. United States' WHERE player_id = 1193;
+UPDATE players SET league = '1. France' WHERE player_id = 1194;
+UPDATE players SET league = '2. England' WHERE player_id = 1195;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 1196;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 1197;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 1198;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1199;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 1200;
+UPDATE players SET league = '1. England' WHERE player_id = 1201;
+UPDATE players SET league = '1. England' WHERE player_id = 1202;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 1203;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 1204;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 1205;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 1206;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1207;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 1208;
+UPDATE players SET league = '1. Colombia' WHERE player_id = 1209;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 1210;
+UPDATE players SET league = '1. Saudi Arabia' WHERE player_id = 1211;
+UPDATE players SET league = '1. Italy' WHERE player_id = 1212;
+UPDATE players SET league = '1. Greece' WHERE player_id = 1213;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 1214;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 1215;
+UPDATE players SET league = '1. Mexico' WHERE player_id = 1216;
+UPDATE players SET league = '1. England' WHERE player_id = 1217;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1218;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 1219;
+UPDATE players SET league = '1. Brazil' WHERE player_id = 1220;
+UPDATE players SET league = '1. Spain' WHERE player_id = 1221;
+UPDATE players SET league = '1. Portugal' WHERE player_id = 1222;
+UPDATE players SET league = '1. United Arab Emirates' WHERE player_id = 1223;
+UPDATE players SET league = '1. Uzbekistan' WHERE player_id = 1224;
+UPDATE players SET league = '1. Uzbekistan' WHERE player_id = 1225;
+UPDATE players SET league = '1. Iran' WHERE player_id = 1226;
+UPDATE players SET league = '1. Uzbekistan' WHERE player_id = 1227;
+UPDATE players SET league = '1. Uzbekistan' WHERE player_id = 1228;
+UPDATE players SET league = '1. Uzbekistan' WHERE player_id = 1229;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 1230;
+UPDATE players SET league = '1. United Arab Emirates' WHERE player_id = 1231;
+UPDATE players SET league = '1. Iran' WHERE player_id = 1232;
+UPDATE players SET league = '1. Uzbekistan' WHERE player_id = 1233;
+UPDATE players SET league = '1. Uzbekistan' WHERE player_id = 1234;
+UPDATE players SET league = '1. Uzbekistan' WHERE player_id = 1235;
+UPDATE players SET league = '1. Uzbekistan' WHERE player_id = 1236;
+UPDATE players SET league = '1. England' WHERE player_id = 1237;
+UPDATE players SET league = '1. Uzbekistan' WHERE player_id = 1238;
+UPDATE players SET league = '1. Uzbekistan' WHERE player_id = 1239;
+UPDATE players SET league = '1. Uzbekistan' WHERE player_id = 1240;
+UPDATE players SET league = '1. Uzbekistan' WHERE player_id = 1241;
+UPDATE players SET league = '1. Iran' WHERE player_id = 1242;
+UPDATE players SET league = '1. Turkey' WHERE player_id = 1243;
+UPDATE players SET league = '1. United Arab Emirates' WHERE player_id = 1244;
+UPDATE players SET league = '1. Uzbekistan' WHERE player_id = 1245;
+UPDATE players SET league = '1. Uzbekistan' WHERE player_id = 1246;
+UPDATE players SET league = '1. Iran' WHERE player_id = 1247;
+UPDATE players SET league = '1. Uzbekistan' WHERE player_id = 1248;
 
 
 -- ============================================================
@@ -1810,6 +3094,58 @@ UPDATE teams SET base_camp = 'Irvine, California'              WHERE team_id = '
 UPDATE teams SET base_camp = 'Atlanta, Georgia'                WHERE team_id = 'UZB';
 
 
+-- fbref_team_id crosswalk (static reference data — national-team squad-page hex, added 2026-07-08)
+-- Sourced from a single Firecrawl links-format fetch of the FBref fixtures page (squad nav
+-- links included on that page for all 48 teams) — regex-extracted, never LLM-identified.
+UPDATE teams SET fbref_team_id = '1e2dba57' WHERE team_id = 'ALG';
+UPDATE teams SET fbref_team_id = 'f9fddd6e' WHERE team_id = 'ARG';
+UPDATE teams SET fbref_team_id = 'b90bf4f9' WHERE team_id = 'AUS';
+UPDATE teams SET fbref_team_id = 'd5121f10' WHERE team_id = 'AUT';
+UPDATE teams SET fbref_team_id = '361422b9' WHERE team_id = 'BEL';
+UPDATE teams SET fbref_team_id = '6c5ef1c3' WHERE team_id = 'BIH';
+UPDATE teams SET fbref_team_id = '304635c3' WHERE team_id = 'BRA';
+UPDATE teams SET fbref_team_id = '9c6d90a0' WHERE team_id = 'CAN';
+UPDATE teams SET fbref_team_id = '24772b12' WHERE team_id = 'CIV';
+UPDATE teams SET fbref_team_id = '9be9f315' WHERE team_id = 'COD';
+UPDATE teams SET fbref_team_id = 'ab73cfe5' WHERE team_id = 'COL';
+UPDATE teams SET fbref_team_id = '31fa6fa6' WHERE team_id = 'CPV';
+UPDATE teams SET fbref_team_id = '7b08e376' WHERE team_id = 'CRO';
+UPDATE teams SET fbref_team_id = 'e0f5893a' WHERE team_id = 'CUW';
+UPDATE teams SET fbref_team_id = '2740937c' WHERE team_id = 'CZE';
+UPDATE teams SET fbref_team_id = '123acaf8' WHERE team_id = 'ECU';
+UPDATE teams SET fbref_team_id = 'b8889750' WHERE team_id = 'EGY';
+UPDATE teams SET fbref_team_id = '1862c019' WHERE team_id = 'ENG';
+UPDATE teams SET fbref_team_id = 'b561dd30' WHERE team_id = 'ESP';
+UPDATE teams SET fbref_team_id = 'b1b36dcd' WHERE team_id = 'FRA';
+UPDATE teams SET fbref_team_id = 'c1e40422' WHERE team_id = 'GER';
+UPDATE teams SET fbref_team_id = '9349828d' WHERE team_id = 'GHA';
+UPDATE teams SET fbref_team_id = '61828292' WHERE team_id = 'HAI';
+UPDATE teams SET fbref_team_id = '6a08f71e' WHERE team_id = 'IRN';
+UPDATE teams SET fbref_team_id = 'ec843efd' WHERE team_id = 'IRQ';
+UPDATE teams SET fbref_team_id = '3e22f0fa' WHERE team_id = 'JOR';
+UPDATE teams SET fbref_team_id = 'ffcf1690' WHERE team_id = 'JPN';
+UPDATE teams SET fbref_team_id = '473f0fbf' WHERE team_id = 'KOR';
+UPDATE teams SET fbref_team_id = '6e84edac' WHERE team_id = 'KSA';
+UPDATE teams SET fbref_team_id = 'af41ccda' WHERE team_id = 'MAR';
+UPDATE teams SET fbref_team_id = 'b009a548' WHERE team_id = 'MEX';
+UPDATE teams SET fbref_team_id = '5bb5024a' WHERE team_id = 'NED';
+UPDATE teams SET fbref_team_id = '599eba19' WHERE team_id = 'NOR';
+UPDATE teams SET fbref_team_id = '259855f0' WHERE team_id = 'NZL';
+UPDATE teams SET fbref_team_id = '6061a82d' WHERE team_id = 'PAN';
+UPDATE teams SET fbref_team_id = 'd2043442' WHERE team_id = 'PAR';
+UPDATE teams SET fbref_team_id = '4a1b4ea8' WHERE team_id = 'POR';
+UPDATE teams SET fbref_team_id = '9b696ed1' WHERE team_id = 'QAT';
+UPDATE teams SET fbref_team_id = '506f1741' WHERE team_id = 'RSA';
+UPDATE teams SET fbref_team_id = '602d3994' WHERE team_id = 'SCO';
+UPDATE teams SET fbref_team_id = '9ab5c684' WHERE team_id = 'SEN';
+UPDATE teams SET fbref_team_id = '81021a70' WHERE team_id = 'SUI';
+UPDATE teams SET fbref_team_id = '296f69e7' WHERE team_id = 'SWE';
+UPDATE teams SET fbref_team_id = 'a7c7562a' WHERE team_id = 'TUN';
+UPDATE teams SET fbref_team_id = 'ac6bcf92' WHERE team_id = 'TUR';
+UPDATE teams SET fbref_team_id = '870e020f' WHERE team_id = 'URU';
+UPDATE teams SET fbref_team_id = '0f66725b' WHERE team_id = 'USA';
+UPDATE teams SET fbref_team_id = 'cd389e75' WHERE team_id = 'UZB';
+
 -- fbref_match_id crosswalk (static reference data — mirrors live DB, added 2026-07-04)
 -- Required by fbref_load.py/fbref_batch.py match resolution; without it a rebuild breaks the pipeline.
 UPDATE matches SET fbref_match_id = '3c1e3816' WHERE match_id = 1;
@@ -1884,3 +3220,27 @@ UPDATE matches SET fbref_match_id = '3dac8725' WHERE match_id = 69;
 UPDATE matches SET fbref_match_id = '28a6d770' WHERE match_id = 70;
 UPDATE matches SET fbref_match_id = 'd7e30dec' WHERE match_id = 71;
 UPDATE matches SET fbref_match_id = 'a051b2ea' WHERE match_id = 72;
+UPDATE matches SET fbref_match_id = 'c4104726' WHERE match_id = 73;   -- R32: South Africa 0-1 Canada (Jun 28), backfilled 2026-07-08
+-- R32 (remaining 15) + R16 (6 of 8) crosswalk, backfilled 2026-07-08 from a fresh FBref fixtures-page fetch
+-- match_id 95-96 (Jul 7 R16) intentionally omitted — not yet linked on FBref's fixtures page as of this fetch
+UPDATE matches SET fbref_match_id = '89da405b' WHERE match_id = 74;
+UPDATE matches SET fbref_match_id = 'bebca560' WHERE match_id = 75;
+UPDATE matches SET fbref_match_id = '58289f35' WHERE match_id = 76;
+UPDATE matches SET fbref_match_id = 'da47849b' WHERE match_id = 77;
+UPDATE matches SET fbref_match_id = 'd280258e' WHERE match_id = 78;
+UPDATE matches SET fbref_match_id = '5eca3d3a' WHERE match_id = 79;
+UPDATE matches SET fbref_match_id = '520a5665' WHERE match_id = 80;
+UPDATE matches SET fbref_match_id = '89aea7f3' WHERE match_id = 81;
+UPDATE matches SET fbref_match_id = 'cf968279' WHERE match_id = 82;
+UPDATE matches SET fbref_match_id = '87717b95' WHERE match_id = 83;
+UPDATE matches SET fbref_match_id = '288fba4d' WHERE match_id = 84;
+UPDATE matches SET fbref_match_id = 'b2f307a9' WHERE match_id = 85;
+UPDATE matches SET fbref_match_id = '3ccca695' WHERE match_id = 86;
+UPDATE matches SET fbref_match_id = '675b328b' WHERE match_id = 87;
+UPDATE matches SET fbref_match_id = 'd4ac0040' WHERE match_id = 88;
+UPDATE matches SET fbref_match_id = '8ad9833e' WHERE match_id = 89;
+UPDATE matches SET fbref_match_id = 'b709bfa1' WHERE match_id = 90;
+UPDATE matches SET fbref_match_id = 'dabafdc1' WHERE match_id = 91;
+UPDATE matches SET fbref_match_id = '3ed2ad56' WHERE match_id = 92;
+UPDATE matches SET fbref_match_id = 'fe9daeb3' WHERE match_id = 93;
+UPDATE matches SET fbref_match_id = 'ac3ca9ea' WHERE match_id = 94;

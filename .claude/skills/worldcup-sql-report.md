@@ -7,21 +7,27 @@ Domain knowledge for worldcup26.db queries. Read alongside CLAUDE.md.
 ## Schema Quick Reference
 
 ```
-teams        — team_id (PK, 3-letter FIFA code), country, confederation,
-               group_name ('A'–'L'), fifa_ranking, appearances (prior WC
-               tournaments excl. WC26; 0 = first-timer), best_finish
-               (NULL for first-timers), coach, host (1 = co-host
-               MEX/USA/CAN), base_camp, market_value_m
+teams        — team_id (PK, 3-letter FIFA code), fbref_team_id (UNIQUE,
+               FBref squad-page hex; crosswalked for all 48 teams
+               2026-07-08), country, confederation, group_name ('A'–'L'),
+               fifa_ranking, appearances (prior WC tournaments excl. WC26;
+               0 = first-timer), best_finish (NULL for first-timers), coach,
+               host (1 = co-host MEX/USA/CAN), base_camp, market_value_m
 
-players      — player_id (PK AUTOINCREMENT), team_id (FK), shirt_number,
-               name, position (GK/DF/MF/FW, combos like FW-MF), footed
-               (Left/Right), birthday ('YYYY-MM-DD'), birthplace, league,
-               club, matches_played, matches_started, minutes_played,
-               goals, assists, yellow_cards, red_cards
+players      — player_id (PK AUTOINCREMENT), fbref_id (UNIQUE, FBref
+               player id — stable join key), team_id (FK), shirt_number,
+               name (indexed), position (GK/DF/MF/FW, combos like FW-MF),
+               goalkeeper_flag (INTEGER DEFAULT 0, derived from
+               `position LIKE '%GK%'` — normalizes combo positions like
+               'GK,DF' once instead of scattering that LIKE across scripts),
+               birthday ('YYYY-MM-DD'), birthplace, league, club,
+               matches_played, matches_started, minutes_played, goals,
+               assists, yellow_cards, red_cards
                (career NT stats, from FBref NT pages, excl. WC26 — nullable
                until backfilled)
 
-matches      — match_id (PK AUTOINCREMENT), fifa_match_no (UNIQUE),
+matches      — match_id (PK AUTOINCREMENT), fbref_match_id (UNIQUE, FBref
+               match hex — pipeline join key), fifa_match_no (UNIQUE),
                team_home (FK, NULL if knockout team not yet known),
                team_away (FK, NULL if knockout team not yet known),
                goals_home (NULL = not yet played), goals_away,
@@ -33,11 +39,11 @@ matches      — match_id (PK AUTOINCREMENT), fifa_match_no (UNIQUE),
                ('YYYY-MM-DD'), match_time ('HH:MM' local), stadium, city,
                attendance, referee
 
-player_stats — stat_id (PK AUTOINCREMENT), player_id (FK), match_id (FK),
-               minutes_played, goals, assists, pk_made, pk_att, shots,
-               shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn,
-               offsides, crosses, tackles_won, interceptions, own_goals,
-               pk_won, pk_conceded — all INTEGER DEFAULT 0
+player_stats — stat_id (PK AUTOINCREMENT), player_id (FK), match_id (FK,
+               indexed), minutes_played, goals, assists, pk_made, pk_att,
+               shots, shots_on_goal, yellow_cards, red_cards, fouls,
+               fouls_drawn, offsides, crosses, tackles_won, interceptions,
+               own_goals, pk_won, pk_conceded — all INTEGER DEFAULT 0
                UNIQUE (player_id, match_id). Column order matches FBref
                Summary tab left-to-right.
 
@@ -48,6 +54,19 @@ goalkeeper_stats — stat_id (PK AUTOINCREMENT), player_id (FK), match_id (FK),
                CAST(saves AS REAL) / NULLIF(shots_on_target_against, 0)
                A GK also appears in player_stats with outfield columns —
                that's intended, don't dedupe across the two tables.
+
+metadata     — singleton table, one row, updated in place (no PK).
+               schema_version (semver, e.g. '1.0.0') and api_version (NULL
+               until wc26_api.py ships) are human/seed-authored — only
+               change on schema/API changes. last_sync (ISO 8601 timestamp),
+               last_matchday (max match_date among played matches as of
+               that run), and records_imported (rows written by the LAST
+               run only — a delta, never cumulative) are owned by the
+               wc26-daily-update task and updated every run. Full
+               field-ownership table lives in CLAUDE.md — read it before
+               writing anything that touches this table, the delta-not-
+               cumulative distinction on records_imported is easy to get
+               backwards.
 ```
 
 ---
@@ -172,11 +191,10 @@ If you wouldn't publish it as the official Group A table, it's not done.
 
 ---
 
-## Known Issues — confirm before relying on these
-
-- The old proxy note ("golden-boot uses `players.intl_goals` until `player_stats` is populated", "Cristiano Ronaldo missing from seed data") predates the current schema and the FBref load pipeline documented in CLAUDE.md. `player_stats` is the real source now — **confirm current row counts before assuming the proxy is still needed**, and delete this note once confirmed dead.
-- CLAUDE.md's FBref Pipeline section resolves identity via `players.fbref_id` and `matches.fbref_match_id`, but neither column appears in CLAUDE.md's own Database Schema block above the pipeline section — worth reconciling in CLAUDE.md itself, not just here.
-
----
-
 *Rewritten 2026-07-06 to match the current CLAUDE.md schema — added `pk_home/away`, `corners_home/away`, `possession_home/away`, `match_time`, `attendance`, `referee` to `matches`; added `shirt_number`, `footed`, `birthday`, `birthplace`, `league`, `matches_played/started`, career stat columns to `players`; replaced `age`/`caps`/`intl_goals` (not in current schema); added `appearances`/`best_finish` to `teams`, removed `squad_size`/`avg_age` (not in current schema); added full `player_stats` column list; added `goalkeeper_stats` (was entirely absent); fixed the `group_name IS NOT NULL` → `!= 'knock-out'` bug; added `worldcup26_results.sql` throughout the seed/live rules and rebuild command (was not mentioned at all in the previous version).*
+
+*Updated 2026-07-08 for the pre-Phase-4 schema freeze — confirmed `player_stats` row counts (2263 rows) so the old golden-boot proxy note is dead and removed; added `teams.fbref_team_id`, `players.fbref_id` UNIQUE, `matches.fbref_match_id` UNIQUE (now documented here and in CLAUDE.md, resolving the prior reconciliation gap); dropped `players.footed` (never populated — no reader/writer in any script); added `idx_players_name` and `idx_player_stats_match_id`; added the `metadata` singleton table.*
+
+*Updated 2026-07-08 (same day, second pass) — DBeaver inspection caught that `fbref_match_id`/`fbref_team_id` existed as columns but were mostly/entirely NULL; backfilled `matches.fbref_match_id` to 94/96 (2 R16 matches from Jul 7 not yet linked on FBref's fixtures page, left NULL rather than guessed) and `teams.fbref_team_id` to 48/48, both via a single Firecrawl `links`-format fetch each plus deterministic local regex — no LLM extraction. Added `players.goalkeeper_flag`, derived from `position` at seed time.*
+
+*Updated 2026-07-08 (third pass) — dropped `players.height_cm` and `weight_kg`: confirmed absent from every FBref squad/roster page checked this session (zero occurrences across two full team fetches), same unreliable-bio-box treatment `footed` already got. `players.league` (same "pending: player page" tag) stays — its backfill is a separate, still-open thread, paused pending the players 26-cap contamination fix, not settled by this drop.*
