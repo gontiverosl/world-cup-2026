@@ -2984,3 +2984,33 @@ UPDATE matches SET goals_home=3, goals_away=2, corners_home=6, corners_away=1, p
 -- match_id 96: Switzerland 0-0 Colombia AET, Switzerland won penalty shootout 4-3 (R16, Jul 7)
 UPDATE matches SET goals_home=0, goals_away=0, corners_home=3, corners_away=7, possession_home=53.0, possession_away=47.0, attendance=52497, referee='Iván Barton' WHERE match_id=96;
 UPDATE matches SET pk_home=4, pk_away=3 WHERE match_id=96;
+
+-- Step 2: QF bracket resolution (Jul 10 daily update)
+
+-- match_id 97: France vs Morocco (QF, Jul 9)
+UPDATE matches SET team_home='FRA', team_away='MAR' WHERE match_id=97;
+
+-- match_id 98: Belgium vs Spain (QF, Jul 10)
+UPDATE matches SET team_home='BEL', team_away='ESP' WHERE match_id=98;
+
+-- match_id 99: England vs Norway (QF, Jul 11)
+UPDATE matches SET team_home='ENG', team_away='NOR' WHERE match_id=99;
+
+-- match_id 100: Switzerland vs Argentina (QF, Jul 11)
+UPDATE matches SET team_home='SUI', team_away='ARG' WHERE match_id=100;
+
+-- Step 4: Match results (Jul 9)
+
+-- match_id 97: France 2-0 Morocco (QF, Jul 9)
+UPDATE matches SET goals_home=2, goals_away=0, corners_home=5, corners_away=5, possession_home=48.0, possession_away=52.0, attendance=63811, referee='Facundo Tello' WHERE match_id=97;
+
+-- Step 4: Match results (Jul 10-11 daily update)
+
+-- match_id 98: Belgium 1-2 Spain (QF, Jul 10)
+UPDATE matches SET goals_home=1, goals_away=2, corners_home=1, corners_away=5, possession_home=32.0, possession_away=68.0, attendance=70492, referee='Michael Oliver' WHERE match_id=98;
+
+-- match_id 99: England 2-1 Norway (QF, Jul 11, England won after extra time)
+UPDATE matches SET goals_home=2, goals_away=1, corners_home=4, corners_away=7, possession_home=52.0, possession_away=48.0, attendance=64478, referee='Clément Turpin' WHERE match_id=99;
+
+-- match_id 100: Switzerland 1-3 Argentina (QF, Jul 11, Argentina won after extra time)
+UPDATE matches SET goals_home=1, goals_away=3, corners_home=2, corners_away=8, possession_home=41.0, possession_away=59.0, attendance=69045, referee='João Pinheiro' WHERE match_id=100;
