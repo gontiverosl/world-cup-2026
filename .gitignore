@@ -1,25 +1,38 @@
+# --- Secrets (NEVER commit; public repo) ---
+.env
+.env.*
+
 # --- Python ---
 __pycache__/
 *.pyc
+.venv/
 
 # --- Generated outputs (regenerable from the DB) ---
 *.xlsx
 *.log
 
-# --- Generated outputs (regenerable via fbref_fetch.py) ---
+# --- Acquired HTML (regenerable via Firecrawl ACQUIRE, S7a) ---
 results/raw/
+
+# --- SQLite side files (transient; live DB itself IS tracked) ---
 *.db-journal
+*.db-wal
+*.db-shm
+
+# --- Scratch / test DBs (VERIFY rebuilds, throwaway writes) ---
+scratch*.db*
+test_write.db*
 
 # --- Claude Code project settings (local only) ---
 .claude/settings.local.json
 
-# --- Editor / tooling noise ---
+# --- Editor / OS noise ---
 Scripts/
 .~lock.*#
+Thumbs.db
+desktop.ini
 
 # --- NOTE ---
 # worldcup26.db is intentionally TRACKED (not ignored) — it is a GitHub
 # candidate per project decision. The seed (worldcup26_seed.sql) and the
 # results/ CSVs are also tracked as source data.
-
-test_write.db*

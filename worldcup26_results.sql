@@ -3014,3 +3014,6 @@ UPDATE matches SET goals_home=2, goals_away=1, corners_home=4, corners_away=7, p
 
 -- match_id 100: Switzerland 1-3 Argentina (QF, Jul 11, Argentina won after extra time)
 UPDATE matches SET goals_home=1, goals_away=3, corners_home=2, corners_away=8, possession_home=41.0, possession_away=59.0, attendance=69045, referee='João Pinheiro' WHERE match_id=100;
+
+-- match_id 101: SF bracket resolved (W97 vs W98 = France vs Spain), Jul 14 — result not yet played as of this run
+UPDATE matches SET team_home='FRA', team_away='ESP' WHERE match_id=101;
