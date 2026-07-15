@@ -1,398 +1,118 @@
--- WC26 daily update 2026-06-22: match scores June 11-20
+-- ============================================================
+-- worldcup26_results.sql — GENERATED ARTIFACT, DO NOT HAND-EDIT
+--
+-- Regenerated wholesale from the live DB by wc26_regenerate.py.
+-- Any manual edit here is lost on the next run. To change data:
+-- change the live DB, then regenerate.
+--
+-- Rebuild: sqlite3 worldcup26.db < worldcup26_seed.sql \
+--            && sqlite3 worldcup26.db < worldcup26_results.sql
+-- ============================================================
 
-UPDATE matches SET
-    goals_home=2, goals_away=0,
-    corners_home=3, corners_away=1,
-    possession_home=61.0, possession_away=40.0,
-    attendance=80824, referee='Wilton Sampaio'
-WHERE match_id=1;
-
-UPDATE matches SET
-    goals_home=2, goals_away=1,
-    corners_home=4, corners_away=5,
-    possession_home=62.0, possession_away=38.0,
-    attendance=44985, referee='Amin Omar'
-WHERE match_id=2;
-
-UPDATE matches SET
-    goals_home=1, goals_away=1,
-    corners_home=9, corners_away=4,
-    possession_home=61.0, possession_away=39.0,
-    attendance=43002, referee='Facundo Tello'
-WHERE match_id=7;
-
-UPDATE matches SET
-    goals_home=4, goals_away=1,
-    corners_home=3, corners_away=1,
-    possession_home=65.0, possession_away=35.0,
-    attendance=70492, referee='Danny Makkelie'
-WHERE match_id=19;
-
-UPDATE matches SET
-    goals_home=1, goals_away=1,
-    corners_home=3, corners_away=10,
-    possession_home=32.0, possession_away=68.0,
-    attendance=67966, referee='Said Martínez'
-WHERE match_id=8;
-
-UPDATE matches SET
-    goals_home=2, goals_away=0,
-    corners_home=5, corners_away=8,
-    possession_home=28.0, possession_away=72.0,
-    attendance=52497, referee='Jesús Valenzuela'
-WHERE match_id=20;
-
-UPDATE matches SET
-    goals_home=1, goals_away=1,
-    corners_home=6, corners_away=2,
-    possession_home=51.0, possession_away=49.0,
-    attendance=80663, referee='Slavko Vinčič'
-WHERE match_id=13;
-
-UPDATE matches SET
-    goals_home=0, goals_away=1,
-    corners_home=4, corners_away=3,
-    possession_home=54.0, possession_away=46.0,
-    attendance=64146, referee='Mustapha Ghorbal'
-WHERE match_id=14;
-
-UPDATE matches SET
-    goals_home=7, goals_away=1,
-    corners_home=8, corners_away=1,
-    possession_home=65.0, possession_away=35.0,
-    attendance=68021, referee='Jalal Jiyed'
-WHERE match_id=25;
-
-UPDATE matches SET
-    goals_home=1, goals_away=0,
-    corners_home=3, corners_away=5,
-    possession_home=48.0, possession_away=52.0,
-    attendance=68274, referee='François Letexier'
-WHERE match_id=26;
-
-UPDATE matches SET
-    goals_home=2, goals_away=2,
-    corners_home=5, corners_away=4,
-    possession_home=60.0, possession_away=40.0,
-    attendance=69285, referee='Ismail Elfath'
-WHERE match_id=31;
-
-UPDATE matches SET
-    goals_home=5, goals_away=1,
-    corners_home=4, corners_away=2,
-    possession_home=49.0, possession_away=51.0,
-    attendance=50987, referee='Yael Falcón'
-WHERE match_id=32;
-
-UPDATE matches SET
-    goals_home=1, goals_away=1,
-    corners_home=2, corners_away=7,
-    possession_home=54.0, possession_away=46.0,
-    attendance=66775, referee='Ramon Abatti'
-WHERE match_id=37;
-
-UPDATE matches SET
-    goals_home=0, goals_away=0,
-    corners_home=11, corners_away=1,
-    possession_home=74.0, possession_away=26.0,
-    attendance=67640, referee='Adham Makhadmeh'
-WHERE match_id=43;
-
-UPDATE matches SET
-    goals_home=2, goals_away=2,
-    corners_home=4, corners_away=1,
-    possession_home=48.0, possession_away=52.0,
-    attendance=70108, referee='César Arturo Ramos'
-WHERE match_id=38;
-
-UPDATE matches SET
-    goals_home=1, goals_away=1,
-    corners_home=4, corners_away=14,
-    possession_home=33.0, possession_away=67.0,
-    attendance=62764, referee='Maurizio Mariani'
-WHERE match_id=44;
-
-UPDATE matches SET
-    goals_home=3, goals_away=1,
-    corners_home=6, corners_away=4,
-    possession_home=54.0, possession_away=46.0,
-    attendance=80545, referee='Alireza Faghani'
-WHERE match_id=49;
-
-UPDATE matches SET
-    goals_home=1, goals_away=4,
-    corners_home=2, corners_away=5,
-    possession_home=39.0, possession_away=61.0,
-    attendance=63106, referee='Pierre Ghislain Atcho'
-WHERE match_id=50;
-
-UPDATE matches SET
-    goals_home=3, goals_away=0,
-    corners_home=2, corners_away=2,
-    possession_home=48.0, possession_away=52.0,
-    attendance=69045, referee='Szymon Marciniak'
-WHERE match_id=55;
-
-UPDATE matches SET
-    goals_home=3, goals_away=1,
-    corners_home=4, corners_away=3,
-    possession_home=63.0, possession_away=37.0,
-    attendance=68527, referee='Dahane Beida'
-WHERE match_id=56;
-
-UPDATE matches SET
-    goals_home=1, goals_away=1,
-    corners_home=5, corners_away=4,
-    possession_home=75.0, possession_away=25.0,
-    attendance=68777, referee='Abdulrahman Ibrahim Al Jassim'
-WHERE match_id=61;
-
-UPDATE matches SET
-    goals_home=4, goals_away=2,
-    corners_home=8, corners_away=2,
-    possession_home=52.0, possession_away=48.0,
-    attendance=70389, referee='Clément Turpin'
-WHERE match_id=67;
-
-UPDATE matches SET
-    goals_home=1, goals_away=0,
-    corners_home=2, corners_away=2,
-    possession_home=38.0, possession_away=62.0,
-    attendance=42942, referee='Glenn Nyberg'
-WHERE match_id=68;
-
-UPDATE matches SET
-    goals_home=1, goals_away=3,
-    corners_home=3, corners_away=4,
-    possession_home=39.0, possession_away=62.0,
-    attendance=80824, referee='Anthony Taylor'
-WHERE match_id=62;
-
-UPDATE matches SET
-    goals_home=1, goals_away=1,
-    corners_home=5, corners_away=5,
-    possession_home=38.0, possession_away=62.0,
-    attendance=67442, referee='Tori Penso'
-WHERE match_id=4;
-
-UPDATE matches SET
-    goals_home=4, goals_away=1,
-    corners_home=7, corners_away=3,
-    possession_home=62.0, possession_away=38.0,
-    attendance=70026, referee='João Pinheiro'
-WHERE match_id=10;
-
-UPDATE matches SET
-    goals_home=6, goals_away=0,
-    corners_home=19, corners_away=1,
-    possession_home=79.0, possession_away=21.0,
-    attendance=52497, referee='Cristián Garay'
-WHERE match_id=9;
-
-UPDATE matches SET
-    goals_home=1, goals_away=0,
-    corners_home=0, corners_away=2,
-    possession_home=42.0, possession_away=58.0,
-    attendance=45522, referee='Gustavo Tejera'
-WHERE match_id=3;
-
-UPDATE matches SET
-    goals_home=2, goals_away=0,
-    corners_home=7, corners_away=4,
-    possession_home=62.0, possession_away=38.0,
-    attendance=66925, referee='Felix Zwayer'
-WHERE match_id=21;
-
-UPDATE matches SET
-    goals_home=0, goals_away=1,
-    corners_home=2, corners_away=5,
-    possession_home=41.0, possession_away=59.0,
-    attendance=64146, referee='Ilgiz Tantashev'
-WHERE match_id=16;
-
-UPDATE matches SET
-    goals_home=0, goals_away=1,
-    corners_home=12, corners_away=0,
-    possession_home=79.0, possession_away=22.0,
-    attendance=68827, referee='Iván Barton'
-WHERE match_id=22;
-
-UPDATE matches SET
-    goals_home=3, goals_away=0,
-    corners_home=4, corners_away=4,
-    possession_home=57.0, possession_away=43.0,
-    attendance=68324, referee='Alejandro Hernández'
-WHERE match_id=15;
-
-UPDATE matches SET
-    goals_home=5, goals_away=1,
-    corners_home=2, corners_away=5,
-    possession_home=51.0, possession_away=49.0,
-    attendance=68777, referee='Michael Oliver'
-WHERE match_id=33;
-
-UPDATE matches SET
-    goals_home=2, goals_away=1,
-    corners_home=8, corners_away=3,
-    possession_home=59.0, possession_away=41.0,
-    attendance=43036, referee='Juan Gabriel Benítez'
-WHERE match_id=27;
-
-UPDATE matches SET
-    goals_home=0, goals_away=0,
-    corners_home=9, corners_away=0,
-    possession_home=75.0, possession_away=25.0,
-    attendance=68598, referee='Ma Ning'
-WHERE match_id=28;
-
-UPDATE matches SET
-    goals_home=0, goals_away=4,
-    corners_home=3, corners_away=5,
-    possession_home=38.0, possession_away=62.0,
-    attendance=51243, referee='István Kovács'
-WHERE match_id=34;
-
-
--- daily-update 2026-06-22: June 21 Group Stage Matchday 2 results
-UPDATE matches SET
-    goals_home=4, goals_away=0,
-    corners_home=6, corners_away=1,
-    possession_home=67.0, possession_away=33.0,
-    attendance=68239, referee='Raphael Claus'
-WHERE match_id=45;
-
-UPDATE matches SET
-    goals_home=0, goals_away=0,
-    corners_home=4, corners_away=2,
-    possession_home=70.0, possession_away=30.0,
-    attendance=70317, referee='Darío Herrera'
-WHERE match_id=39;
-
-UPDATE matches SET
-    goals_home=2, goals_away=2,
-    corners_home=11, corners_away=4,
-    possession_home=65.0, possession_away=35.0,
-    attendance=64003, referee='Espen Eskås'
-WHERE match_id=46;
-
-UPDATE matches SET
-    goals_home=1, goals_away=3,
-    corners_home=4, corners_away=3,
-    possession_home=44.0, possession_away=56.0,
-    attendance=52497, referee='Omar Mohamed Al Ali'
-WHERE match_id=40;
--- Daily update 2026-06-23: Group stage matchday 2 results (June 22 matches)
-UPDATE matches SET
-    goals_home=2, goals_away=0,
-    corners_home=1, corners_away=3,
-    possession_home=54.0, possession_away=46.0,
-    attendance=70649, referee='Amin Omar'
-WHERE match_id=57;
-
-UPDATE matches SET
-    goals_home=3, goals_away=0,
-    corners_home=4, corners_away=2,
-    possession_home=56.0, possession_away=44.0,
-    attendance=68324, referee='Drew Fischer'
-WHERE match_id=51;
-
-UPDATE matches SET
-    goals_home=3, goals_away=2,
-    corners_home=5, corners_away=4,
-    possession_home=42.0, possession_away=58.0,
-    attendance=80663, referee='Wilton Sampaio'
-WHERE match_id=52;
-
-UPDATE matches SET
-    goals_home=1, goals_away=2,
-    corners_home=1, corners_away=10,
-    possession_home=28.0, possession_away=72.0,
-    attendance=68371, referee='Slavko Vinčič'
-WHERE match_id=58;
-
--- Daily update 2026-06-24: June 23 match results (verified via FBref)
--- match_id 63: POR 5-0 UZB (DB home=POR, away=UZB)
-UPDATE matches SET goals_home=5, goals_away=0, corners_home=3, corners_away=2, possession_home=66.0, possession_away=34.0, attendance=68777, referee='Jalal Jayed' WHERE match_id=63;
--- match_id 64: COD 0-1 COL (DB home=COD, away=COL; FBref listed Colombia first)
-UPDATE matches SET goals_home=1, goals_away=0, corners_home=5, corners_away=4, possession_home=64.0, possession_away=37.0, attendance=45358, referee='Maurizio Mariani' WHERE match_id=64;
--- match_id 69: ENG 0-0 GHA (DB home=ENG, away=GHA)
-UPDATE matches SET goals_home=0, goals_away=0, corners_home=9, corners_away=2, possession_home=79.0, possession_away=21.0, attendance=63983, referee='Said Martínez' WHERE match_id=69;
--- match_id 70: CRO 1-0 PAN (DB home=CRO, away=PAN; FBref listed Panama first)
-UPDATE matches SET goals_home=0, goals_away=1, corners_home=7, corners_away=2, possession_home=42.0, possession_away=58.0, attendance=43036, referee='Pierre Ghislain Atcho' WHERE match_id=70;
-
--- Daily update 2026-06-25: Group stage matchday 3 (June 24 matches)
+-- matches — scores + knockout bracket assignments (ORDER BY match_id)
+UPDATE matches SET goals_home=2, goals_away=0, corners_home=3, corners_away=1, possession_home=61.0, possession_away=40.0, attendance=80824, referee='Wilton Sampaio' WHERE match_id=1;
+UPDATE matches SET goals_home=2, goals_away=1, corners_home=4, corners_away=5, possession_home=62.0, possession_away=38.0, attendance=44985, referee='Amin Omar' WHERE match_id=2;
+UPDATE matches SET goals_home=1, goals_away=0, corners_home=0, corners_away=2, possession_home=42.0, possession_away=58.0, attendance=45522, referee='Gustavo Tejera' WHERE match_id=3;
+UPDATE matches SET goals_home=1, goals_away=1, corners_home=5, corners_away=5, possession_home=38.0, possession_away=62.0, attendance=67442, referee='Tori Penso' WHERE match_id=4;
 UPDATE matches SET goals_home=0, goals_away=3, corners_home=5, corners_away=1, possession_home=52.0, possession_away=48.0, attendance=80824, referee='Yael Falcón' WHERE match_id=5;
 UPDATE matches SET goals_home=1, goals_away=0, corners_home=4, corners_away=6, possession_home=32.0, possession_away=69.0, attendance=51243, referee='Facundo Tello' WHERE match_id=6;
+UPDATE matches SET goals_home=1, goals_away=1, corners_home=9, corners_away=4, possession_home=61.0, possession_away=39.0, attendance=43002, referee='Facundo Tello' WHERE match_id=7;
+UPDATE matches SET goals_home=1, goals_away=1, corners_home=3, corners_away=10, possession_home=32.0, possession_away=68.0, attendance=67966, referee='Said Martínez' WHERE match_id=8;
+UPDATE matches SET goals_home=6, goals_away=0, corners_home=19, corners_away=1, possession_home=79.0, possession_away=21.0, attendance=52497, referee='Cristián Garay' WHERE match_id=9;
+UPDATE matches SET goals_home=4, goals_away=1, corners_home=7, corners_away=3, possession_home=62.0, possession_away=38.0, attendance=70026, referee='João Pinheiro' WHERE match_id=10;
 UPDATE matches SET goals_home=2, goals_away=1, corners_home=2, corners_away=7, possession_home=55.0, possession_away=45.0, attendance=52497, referee='Ramon Abatti' WHERE match_id=11;
 UPDATE matches SET goals_home=3, goals_away=1, corners_home=5, corners_away=5, possession_home=55.0, possession_away=46.0, attendance=66925, referee='Jesús Valenzuela' WHERE match_id=12;
+UPDATE matches SET goals_home=1, goals_away=1, corners_home=6, corners_away=2, possession_home=51.0, possession_away=49.0, attendance=80663, referee='Slavko Vinčič' WHERE match_id=13;
+UPDATE matches SET goals_home=0, goals_away=1, corners_home=4, corners_away=3, possession_home=54.0, possession_away=46.0, attendance=64146, referee='Mustapha Ghorbal' WHERE match_id=14;
+UPDATE matches SET goals_home=3, goals_away=0, corners_home=4, corners_away=4, possession_home=57.0, possession_away=43.0, attendance=68324, referee='Alejandro Hernández' WHERE match_id=15;
+UPDATE matches SET goals_home=0, goals_away=1, corners_home=2, corners_away=5, possession_home=41.0, possession_away=59.0, attendance=64146, referee='Ilgiz Tantashev' WHERE match_id=16;
 UPDATE matches SET goals_home=0, goals_away=3, corners_home=7, corners_away=6, possession_home=46.0, possession_away=54.0, attendance=64478, referee='César Arturo Ramos' WHERE match_id=17;
 UPDATE matches SET goals_home=4, goals_away=2, corners_home=9, corners_away=1, possession_home=69.0, possession_away=31.0, attendance=68239, referee='Danny Makkelie' WHERE match_id=18;
-
--- Daily update 2026-06-26: Group stage matchday 3 (June 25 matches, verified via FBref)
--- match_id=30: CUW 0-2 CIV (DB home=CUW, away=CIV; matches FBref)
-UPDATE matches SET goals_home=0, goals_away=2, corners_home=4, corners_away=6, possession_home=37.0, possession_away=63.0, attendance=68324, referee='Glenn Nyberg' WHERE match_id=30;
--- match_id=29: GER 1-2 ECU (DB home=GER, away=ECU; FBref listed ECU first at MetLife)
-UPDATE matches SET goals_home=2, goals_away=1, corners_home=3, corners_away=2, possession_home=39.0, possession_away=61.0, attendance=80663, referee='Tori Penso' WHERE match_id=29;
--- match_id=36: JPN 1-1 SWE (DB home=JPN, away=SWE; matches FBref)
-UPDATE matches SET goals_home=1, goals_away=1, corners_home=2, corners_away=8, possession_home=52.0, possession_away=48.0, attendance=70137, referee='Iván Barton' WHERE match_id=36;
--- match_id=35: NED 3-1 TUN (DB home=NED, away=TUN; FBref listed TUN first at Arrowhead)
-UPDATE matches SET goals_home=1, goals_away=3, corners_home=4, corners_away=6, possession_home=29.0, possession_away=72.0, attendance=68391, referee='Katia García' WHERE match_id=35;
--- match_id=24: PAR 0-0 AUS (DB home=PAR, away=AUS; matches FBref)
-UPDATE matches SET goals_home=0, goals_away=0, corners_home=1, corners_away=3, possession_home=44.0, possession_away=56.0, attendance=68827, referee='Clément Turpin' WHERE match_id=24;
--- match_id=23: USA 2-3 TUR (DB home=USA, away=TUR; FBref listed TUR first at SoFi)
+UPDATE matches SET goals_home=4, goals_away=1, corners_home=3, corners_away=1, possession_home=65.0, possession_away=35.0, attendance=70492, referee='Danny Makkelie' WHERE match_id=19;
+UPDATE matches SET goals_home=2, goals_away=0, corners_home=5, corners_away=8, possession_home=28.0, possession_away=72.0, attendance=52497, referee='Jesús Valenzuela' WHERE match_id=20;
+UPDATE matches SET goals_home=2, goals_away=0, corners_home=7, corners_away=4, possession_home=62.0, possession_away=38.0, attendance=66925, referee='Felix Zwayer' WHERE match_id=21;
+UPDATE matches SET goals_home=0, goals_away=1, corners_home=12, corners_away=0, possession_home=79.0, possession_away=22.0, attendance=68827, referee='Iván Barton' WHERE match_id=22;
 UPDATE matches SET goals_home=3, goals_away=2, corners_home=2, corners_away=9, possession_home=48.0, possession_away=53.0, attendance=70492, referee='Mustapha Ghorbal' WHERE match_id=23;
-
--- daily-update 2026-06-28: Group stage matchday 3, June 26 results
--- NOR vs FRA
-UPDATE matches SET goals_home=1, goals_away=4, corners_home=4, corners_away=5, possession_home=43.0, possession_away=57.0, attendance=64146, referee='Michael Oliver' WHERE match_id=53;
--- SEN vs IRQ
-UPDATE matches SET goals_home=5, goals_away=0, corners_home=12, corners_away=3, possession_home=69.0, possession_away=31.0, attendance=43036, referee='Anthony Taylor' WHERE match_id=54;
--- URU vs ESP
-UPDATE matches SET goals_home=0, goals_away=1, corners_home=1, corners_away=6, possession_home=33.0, possession_away=67.0, attendance=45065, referee='Ismail Elfath' WHERE match_id=47;
--- CPV vs KSA
-UPDATE matches SET goals_home=0, goals_away=0, corners_home=4, corners_away=2, possession_home=51.0, possession_away=49.0, attendance=68278, referee='François Letexier' WHERE match_id=48;
--- EGY vs IRN
+UPDATE matches SET goals_home=0, goals_away=0, corners_home=1, corners_away=3, possession_home=44.0, possession_away=56.0, attendance=68827, referee='Clément Turpin' WHERE match_id=24;
+UPDATE matches SET goals_home=7, goals_away=1, corners_home=8, corners_away=1, possession_home=65.0, possession_away=35.0, attendance=68021, referee='Jalal Jiyed' WHERE match_id=25;
+UPDATE matches SET goals_home=1, goals_away=0, corners_home=3, corners_away=5, possession_home=48.0, possession_away=52.0, attendance=68274, referee='François Letexier' WHERE match_id=26;
+UPDATE matches SET goals_home=2, goals_away=1, corners_home=8, corners_away=3, possession_home=59.0, possession_away=41.0, attendance=43036, referee='Juan Gabriel Benítez' WHERE match_id=27;
+UPDATE matches SET goals_home=0, goals_away=0, corners_home=9, corners_away=0, possession_home=75.0, possession_away=25.0, attendance=68598, referee='Ma Ning' WHERE match_id=28;
+UPDATE matches SET goals_home=2, goals_away=1, corners_home=3, corners_away=2, possession_home=39.0, possession_away=61.0, attendance=80663, referee='Tori Penso' WHERE match_id=29;
+UPDATE matches SET goals_home=0, goals_away=2, corners_home=4, corners_away=6, possession_home=37.0, possession_away=63.0, attendance=68324, referee='Glenn Nyberg' WHERE match_id=30;
+UPDATE matches SET goals_home=2, goals_away=2, corners_home=5, corners_away=4, possession_home=60.0, possession_away=40.0, attendance=69285, referee='Ismail Elfath' WHERE match_id=31;
+UPDATE matches SET goals_home=5, goals_away=1, corners_home=4, corners_away=2, possession_home=49.0, possession_away=51.0, attendance=50987, referee='Yael Falcón' WHERE match_id=32;
+UPDATE matches SET goals_home=5, goals_away=1, corners_home=2, corners_away=5, possession_home=51.0, possession_away=49.0, attendance=68777, referee='Michael Oliver' WHERE match_id=33;
+UPDATE matches SET goals_home=0, goals_away=4, corners_home=3, corners_away=5, possession_home=38.0, possession_away=62.0, attendance=51243, referee='István Kovács' WHERE match_id=34;
+UPDATE matches SET goals_home=1, goals_away=3, corners_home=4, corners_away=6, possession_home=29.0, possession_away=72.0, attendance=68391, referee='Katia García' WHERE match_id=35;
+UPDATE matches SET goals_home=1, goals_away=1, corners_home=2, corners_away=8, possession_home=52.0, possession_away=48.0, attendance=70137, referee='Iván Barton' WHERE match_id=36;
+UPDATE matches SET goals_home=1, goals_away=1, corners_home=2, corners_away=7, possession_home=54.0, possession_away=46.0, attendance=66775, referee='Ramon Abatti' WHERE match_id=37;
+UPDATE matches SET goals_home=2, goals_away=2, corners_home=4, corners_away=1, possession_home=48.0, possession_away=52.0, attendance=70108, referee='César Arturo Ramos' WHERE match_id=38;
+UPDATE matches SET goals_home=0, goals_away=0, corners_home=4, corners_away=2, possession_home=70.0, possession_away=30.0, attendance=70317, referee='Darío Herrera' WHERE match_id=39;
+UPDATE matches SET goals_home=1, goals_away=3, corners_home=4, corners_away=3, possession_home=44.0, possession_away=56.0, attendance=52497, referee='Omar Mohamed Al Ali' WHERE match_id=40;
+UPDATE matches SET goals_home=1, goals_away=5, corners_home=5, corners_away=8, possession_home=45.0, possession_away=55.0, attendance=52497, referee='Adham Makhadmeh' WHERE match_id=41;
 UPDATE matches SET goals_home=1, goals_away=1, corners_home=8, corners_away=2, possession_home=61.0, possession_away=39.0, attendance=66925, referee='Szymon Marciniak' WHERE match_id=42;
+UPDATE matches SET goals_home=0, goals_away=0, corners_home=11, corners_away=1, possession_home=74.0, possession_away=26.0, attendance=67640, referee='Adham Makhadmeh' WHERE match_id=43;
+UPDATE matches SET goals_home=1, goals_away=1, corners_home=4, corners_away=14, possession_home=33.0, possession_away=67.0, attendance=62764, referee='Maurizio Mariani' WHERE match_id=44;
+UPDATE matches SET goals_home=4, goals_away=0, corners_home=6, corners_away=1, possession_home=67.0, possession_away=33.0, attendance=68239, referee='Raphael Claus' WHERE match_id=45;
+UPDATE matches SET goals_home=2, goals_away=2, corners_home=11, corners_away=4, possession_home=65.0, possession_away=35.0, attendance=64003, referee='Espen Eskås' WHERE match_id=46;
+UPDATE matches SET goals_home=0, goals_away=1, corners_home=1, corners_away=6, possession_home=33.0, possession_away=67.0, attendance=45065, referee='Ismail Elfath' WHERE match_id=47;
+UPDATE matches SET goals_home=0, goals_away=0, corners_home=4, corners_away=2, possession_home=51.0, possession_away=49.0, attendance=68278, referee='François Letexier' WHERE match_id=48;
+UPDATE matches SET goals_home=3, goals_away=1, corners_home=6, corners_away=4, possession_home=54.0, possession_away=46.0, attendance=80545, referee='Alireza Faghani' WHERE match_id=49;
+UPDATE matches SET goals_home=1, goals_away=4, corners_home=2, corners_away=5, possession_home=39.0, possession_away=61.0, attendance=63106, referee='Pierre Ghislain Atcho' WHERE match_id=50;
+UPDATE matches SET goals_home=3, goals_away=0, corners_home=4, corners_away=2, possession_home=56.0, possession_away=44.0, attendance=68324, referee='Drew Fischer' WHERE match_id=51;
+UPDATE matches SET goals_home=3, goals_away=2, corners_home=5, corners_away=4, possession_home=42.0, possession_away=58.0, attendance=80663, referee='Wilton Sampaio' WHERE match_id=52;
+UPDATE matches SET goals_home=1, goals_away=4, corners_home=4, corners_away=5, possession_home=43.0, possession_away=57.0, attendance=64146, referee='Michael Oliver' WHERE match_id=53;
+UPDATE matches SET goals_home=5, goals_away=0, corners_home=12, corners_away=3, possession_home=69.0, possession_away=31.0, attendance=43036, referee='Anthony Taylor' WHERE match_id=54;
+UPDATE matches SET goals_home=3, goals_away=0, corners_home=2, corners_away=2, possession_home=48.0, possession_away=52.0, attendance=69045, referee='Szymon Marciniak' WHERE match_id=55;
+UPDATE matches SET goals_home=3, goals_away=1, corners_home=4, corners_away=3, possession_home=63.0, possession_away=37.0, attendance=68527, referee='Dahane Beida' WHERE match_id=56;
+UPDATE matches SET goals_home=2, goals_away=0, corners_home=1, corners_away=3, possession_home=54.0, possession_away=46.0, attendance=70649, referee='Amin Omar' WHERE match_id=57;
+UPDATE matches SET goals_home=1, goals_away=2, corners_home=1, corners_away=10, possession_home=28.0, possession_away=72.0, attendance=68371, referee='Slavko Vinčič' WHERE match_id=58;
+UPDATE matches SET goals_home=1, goals_away=3, corners_home=2, corners_away=6, possession_home=27.0, possession_away=73.0, attendance=70649, referee='István Kovács' WHERE match_id=59;
+UPDATE matches SET goals_home=3, goals_away=3, corners_home=0, corners_away=3, possession_home=65.0, possession_away=35.0, attendance=69045, referee='Ilgiz Tantashev' WHERE match_id=60;
+UPDATE matches SET goals_home=1, goals_away=1, corners_home=5, corners_away=4, possession_home=75.0, possession_away=25.0, attendance=68777, referee='Abdulrahman Ibrahim Al Jassim' WHERE match_id=61;
+UPDATE matches SET goals_home=1, goals_away=3, corners_home=3, corners_away=4, possession_home=39.0, possession_away=62.0, attendance=80824, referee='Anthony Taylor' WHERE match_id=62;
+UPDATE matches SET goals_home=5, goals_away=0, corners_home=3, corners_away=2, possession_home=66.0, possession_away=34.0, attendance=68777, referee='Jalal Jayed' WHERE match_id=63;
+UPDATE matches SET goals_home=1, goals_away=0, corners_home=5, corners_away=4, possession_home=64.0, possession_away=37.0, attendance=45358, referee='Maurizio Mariani' WHERE match_id=64;
+UPDATE matches SET goals_home=0, goals_away=0, corners_home=5, corners_away=2, possession_home=55.0, possession_away=45.0, attendance=64478, referee='Alireza Faghani' WHERE match_id=65;
+UPDATE matches SET goals_home=3, goals_away=1, corners_home=2, corners_away=4, possession_home=58.0, possession_away=42.0, attendance=68239, referee='Felix Zwayer' WHERE match_id=66;
+UPDATE matches SET goals_home=4, goals_away=2, corners_home=8, corners_away=2, possession_home=52.0, possession_away=48.0, attendance=70389, referee='Clément Turpin' WHERE match_id=67;
+UPDATE matches SET goals_home=1, goals_away=0, corners_home=2, corners_away=2, possession_home=38.0, possession_away=62.0, attendance=42942, referee='Glenn Nyberg' WHERE match_id=68;
+UPDATE matches SET goals_home=0, goals_away=0, corners_home=9, corners_away=2, possession_home=79.0, possession_away=21.0, attendance=63983, referee='Said Martínez' WHERE match_id=69;
+UPDATE matches SET goals_home=0, goals_away=1, corners_home=7, corners_away=2, possession_home=42.0, possession_away=58.0, attendance=43036, referee='Pierre Ghislain Atcho' WHERE match_id=70;
+UPDATE matches SET goals_home=0, goals_away=2, corners_home=3, corners_away=7, possession_home=33.0, possession_away=67.0, attendance=80663, referee='Abdulrahman Ibrahim Al Jassim' WHERE match_id=71;
+UPDATE matches SET goals_home=2, goals_away=1, corners_home=3, corners_away=2, possession_home=53.0, possession_away=47.0, attendance=68324, referee='Drew Fischer' WHERE match_id=72;
+UPDATE matches SET team_home='RSA', team_away='CAN', goals_home=0, goals_away=1, corners_home=1, corners_away=4, possession_home=58.0, possession_away=42.0, attendance=69237, referee='João Pinheiro' WHERE match_id=73;
+UPDATE matches SET team_home='GER', team_away='PAR', goals_home=1, goals_away=1, pk_home=3, pk_away=4, corners_home=16, corners_away=6, possession_home=75.0, possession_away=25.0, attendance=63945, referee='Jalal Jayed' WHERE match_id=74;
+UPDATE matches SET team_home='NED', team_away='MAR', goals_home=1, goals_away=1, pk_home=2, pk_away=3, corners_home=5, corners_away=8, possession_home=30.0, possession_away=70.0, attendance=51243, referee='Wilton Sampaio' WHERE match_id=75;
+UPDATE matches SET team_home='BRA', team_away='JPN', goals_home=2, goals_away=1, pk_home=2, pk_away=3, corners_home=6, corners_away=2, possession_home=69.0, possession_away=31.0, attendance=68777, referee='Maurizio Mariani' WHERE match_id=76;
+UPDATE matches SET team_home='FRA', team_away='SWE', goals_home=3, goals_away=0, corners_home=9, corners_away=1, possession_home=61.0, possession_away=39.0, attendance=80663, referee='Danny Makkelie' WHERE match_id=77;
+UPDATE matches SET team_home='CIV', team_away='NOR', goals_home=1, goals_away=2, corners_home=14, corners_away=3, possession_home=47.0, possession_away=53.0, attendance=69665, referee='Jesús Valenzuela' WHERE match_id=78;
+UPDATE matches SET team_home='MEX', team_away='ECU', goals_home=2, goals_away=0, corners_home=3, corners_away=8, possession_home=43.0, possession_away=57.0, attendance=80824, referee='Slavko Vinčič' WHERE match_id=79;
+UPDATE matches SET team_home='ENG', team_away='COD', goals_home=2, goals_away=1, corners_home=5, corners_away=3, possession_home=60.0, possession_away=40.0, attendance=68239, referee='Adham Makhadmeh' WHERE match_id=80;
+UPDATE matches SET team_home='USA', team_away='BIH', goals_home=2, goals_away=0, corners_home=4, corners_away=3, possession_home=48.0, possession_away=52.0, attendance=68827, referee='Raphael Claus' WHERE match_id=81;
+UPDATE matches SET team_home='BEL', team_away='SEN', goals_home=3, goals_away=2, corners_home=4, corners_away=2, possession_home=52.0, possession_away=48.0, attendance=66925, referee='Said Martínez' WHERE match_id=82;
+UPDATE matches SET team_home='POR', team_away='CRO', goals_home=2, goals_away=1, corners_home=9, corners_away=5, possession_home=61.0, possession_away=40.0, attendance=43036, referee='Espen Eskås' WHERE match_id=83;
+UPDATE matches SET team_home='ESP', team_away='AUT', goals_home=3, goals_away=0, corners_home=9, corners_away=0, possession_home=65.0, possession_away=36.0, attendance=70492, referee='Glenn Nyberg' WHERE match_id=84;
+UPDATE matches SET team_home='SUI', team_away='ALG', goals_home=2, goals_away=0, corners_home=4, corners_away=2, possession_home=45.0, possession_away=55.0, attendance=52497, referee='Yael Falcón' WHERE match_id=85;
+UPDATE matches SET team_home='AUS', team_away='EGY', goals_home=1, goals_away=1, pk_home=2, pk_away=4, corners_home=4, corners_away=7, possession_home=42.0, possession_away=58.0, attendance=70244, referee='Gustavo Tejera' WHERE match_id=86;
+UPDATE matches SET team_home='ARG', team_away='CPV', goals_home=3, goals_away=2, corners_home=8, corners_away=8, possession_home=64.0, possession_away=37.0, attendance=64478, referee='Drew Fischer' WHERE match_id=87;
+UPDATE matches SET team_home='COL', team_away='GHA', goals_home=1, goals_away=0, corners_home=3, corners_away=2, possession_home=61.0, possession_away=39.0, attendance=69045, referee='Clément Turpin' WHERE match_id=88;
+UPDATE matches SET team_home='PAR', team_away='FRA', goals_home=0, goals_away=1, corners_home=2, corners_away=12, possession_home=24.0, possession_away=76.0, attendance=68324, referee='Ilgiz Tantashev' WHERE match_id=89;
+UPDATE matches SET team_home='CAN', team_away='MAR', goals_home=0, goals_away=3, corners_home=11, corners_away=1, possession_home=45.0, possession_away=55.0, attendance=68777, referee='Michael Oliver' WHERE match_id=90;
+UPDATE matches SET team_home='BRA', team_away='NOR', goals_home=1, goals_away=2, corners_home=5, corners_away=5, possession_home=34.0, possession_away=66.0, attendance=80663, referee='Ismail Elfath' WHERE match_id=91;
+UPDATE matches SET team_home='MEX', team_away='ENG', goals_home=2, goals_away=3, corners_home=12, corners_away=2, possession_home=67.0, possession_away=33.0, attendance=80824, referee='Alireza Faghani' WHERE match_id=92;
+UPDATE matches SET team_home='POR', team_away='ESP', goals_home=0, goals_away=1, corners_home=3, corners_away=7, possession_home=45.0, possession_away=56.0, attendance=70649, referee='Anthony Taylor' WHERE match_id=93;
+UPDATE matches SET team_home='USA', team_away='BEL', goals_home=1, goals_away=4, corners_home=3, corners_away=5, possession_home=56.0, possession_away=44.0, attendance=66925, referee='Adham Makhadmeh' WHERE match_id=94;
+UPDATE matches SET team_home='ARG', team_away='EGY', goals_home=3, goals_away=2, corners_home=6, corners_away=1, possession_home=64.0, possession_away=36.0, attendance=68239, referee='François Letexier' WHERE match_id=95;
+UPDATE matches SET team_home='SUI', team_away='COL', goals_home=0, goals_away=0, pk_home=4, pk_away=3, corners_home=3, corners_away=7, possession_home=53.0, possession_away=47.0, attendance=52497, referee='Iván Barton' WHERE match_id=96;
+UPDATE matches SET team_home='FRA', team_away='MAR', goals_home=2, goals_away=0, corners_home=5, corners_away=5, possession_home=48.0, possession_away=52.0, attendance=63811, referee='Facundo Tello' WHERE match_id=97;
+UPDATE matches SET team_home='BEL', team_away='ESP', goals_home=1, goals_away=2, corners_home=1, corners_away=5, possession_home=32.0, possession_away=68.0, attendance=70492, referee='Michael Oliver' WHERE match_id=98;
+UPDATE matches SET team_home='ENG', team_away='NOR', goals_home=2, goals_away=1, corners_home=4, corners_away=7, possession_home=52.0, possession_away=48.0, attendance=64478, referee='Clément Turpin' WHERE match_id=99;
+UPDATE matches SET team_home='SUI', team_away='ARG', goals_home=1, goals_away=3, corners_home=2, corners_away=8, possession_home=41.0, possession_away=59.0, attendance=69045, referee='João Pinheiro' WHERE match_id=100;
+UPDATE matches SET team_home='FRA', team_away='ESP' WHERE match_id=101;
 
--- match 25 (a2c54ed9 GER vs CUW): player_stats + goalkeeper_stats
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (511, 25, 90, 2, 0, 1, 1, 4, 2, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (529, 25, 90, 0, 1, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1, 2, 1, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (515, 25, 63, 1, 0, 0, 0, 3, 1, 0, 0, 2, 2, 0, 0, 2, 0, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (528, 25, 27, 1, 2, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (523, 25, 90, 0, 0, 0, 0, 3, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (520, 25, 90, 0, 0, 0, 0, 3, 1, 0, 0, 6, 1, 0, 0, 3, 0, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (517, 25, 72, 1, 0, 0, 0, 4, 3, 0, 0, 1, 1, 0, 0, 2, 0, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (509, 25, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (508, 25, 72, 1, 1, 0, 0, 2, 1, 0, 0, 2, 0, 0, 5, 1, 1, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (521, 25, 18, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (524, 25, 90, 1, 0, 0, 0, 2, 2, 0, 0, 2, 1, 0, 0, 1, 3, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (526, 25, 72, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (522, 25, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (513, 25, 82, 0, 2, 0, 0, 0, 0, 0, 0, 0, 2, 0, 4, 0, 1, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (505, 25, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (516, 25, 90, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (362, 25, 45, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (347, 25, 45, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (365, 25, 64, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 0, 0, 0, 0, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (366, 25, 26, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (353, 25, 82, 0, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 0, 0, 0, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (363, 25, 8, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (348, 25, 90, 0, 0, 0, 0, 1, 0, 0, 0, 2, 2, 0, 1, 2, 5, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (349, 25, 90, 0, 0, 0, 0, 2, 0, 0, 0, 1, 2, 0, 2, 1, 0, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (354, 25, 90, 1, 0, 0, 0, 2, 1, 0, 0, 1, 1, 0, 1, 0, 4, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (359, 25, 90, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 0, 0, 0, 2, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (369, 25, 90, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 3, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (350, 25, 90, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 1, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (358, 25, 90, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 1, 0, 0, 0);
-INSERT OR REPLACE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (371, 25, 90, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-INSERT OR REPLACE INTO goalkeeper_stats (player_id, match_id, minutes_played, shots_on_target_against, goals_against, saves) VALUES (516, 25, 90, 2, 1, 1);
-INSERT OR REPLACE INTO goalkeeper_stats (player_id, match_id, minutes_played, shots_on_target_against, goals_against, saves) VALUES (371, 25, 90, 11, 7, 4);
-
-
--- ============================================================
--- player_stats + goalkeeper_stats — generated by generate_inserts.py
--- ============================================================
-
+-- player_stats (ORDER BY match_id, player_id)
 INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (719, 1, 90, 0, 1, 0, 0, 0, 0, 0, 0, 2, 2, 0, 4, 1, 0, 0, 0, 0);
 INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (720, 1, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0);
 INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (721, 1, 25, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0);
@@ -2656,7 +2376,38 @@ INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, 
 INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (553, 72, 70, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3, 2, 0, 0, 0, 0);
 INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (554, 72, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0);
 INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (556, 72, 6, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (210, 73, 58, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (211, 73, 74, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (213, 73, 90, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (214, 73, 90, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (215, 73, 90, 0, 0, 0, 0, 2, 1, 0, 0, 2, 0, 0, 0, 0, 1, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (216, 73, 21, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (217, 73, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (218, 73, 32, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (219, 73, 90, 1, 0, 0, 0, 2, 1, 0, 0, 0, 1, 0, 7, 2, 1, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (221, 73, 90, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (225, 73, 90, 0, 0, 0, 0, 0, 0, 0, 0, 4, 3, 0, 0, 4, 0, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (226, 73, 69, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 2, 0, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (228, 73, 69, 0, 0, 0, 0, 3, 2, 0, 0, 1, 2, 0, 0, 1, 0, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (230, 73, 58, 0, 0, 0, 0, 0, 0, 1, 0, 3, 2, 0, 0, 1, 3, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (231, 73, 21, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 0, 1, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (232, 73, 32, 0, 0, 0, 0, 0, 0, 1, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (1016, 73, 90, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1, 0, 3, 1, 1, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (1022, 73, 85, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (1024, 73, 85, 0, 0, 0, 0, 0, 0, 0, 0, 2, 3, 0, 0, 1, 1, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (1026, 73, 45, 0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 1, 0, 1, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (1027, 73, 90, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 1, 1, 2, 1, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (1028, 73, 90, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 2, 0, 3, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (1029, 73, 45, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (1030, 73, 90, 0, 0, 0, 0, 2, 1, 0, 0, 0, 1, 0, 1, 2, 1, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (1031, 73, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (1032, 73, 90, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 3, 4, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (1034, 73, 90, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (1035, 73, 5, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (1038, 73, 90, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 5, 2, 0, 0, 0);
+INSERT OR IGNORE INTO player_stats (player_id, match_id, minutes_played, goals, assists, pk_made, pk_att, shots, shots_on_goal, yellow_cards, red_cards, fouls, fouls_drawn, offsides, crosses, tackles_won, interceptions, own_goals, pk_won, pk_conceded) VALUES (1039, 73, 90, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
+-- goalkeeper_stats (ORDER BY match_id, player_id)
 INSERT OR IGNORE INTO goalkeeper_stats (player_id, match_id, minutes_played, shots_on_target_against, goals_against, saves) VALUES (737, 1, 90, 2, 0, 2);
 INSERT OR IGNORE INTO goalkeeper_stats (player_id, match_id, minutes_played, shots_on_target_against, goals_against, saves) VALUES (1059, 1, 90, 4, 2, 2);
 INSERT OR IGNORE INTO goalkeeper_stats (player_id, match_id, minutes_played, shots_on_target_against, goals_against, saves) VALUES (385, 2, 90, 6, 2, 4);
@@ -2806,214 +2557,8 @@ INSERT OR IGNORE INTO goalkeeper_stats (player_id, match_id, minutes_played, sho
 INSERT OR IGNORE INTO goalkeeper_stats (player_id, match_id, minutes_played, shots_on_target_against, goals_against, saves) VALUES (871, 71, 90, 6, 2, 4);
 INSERT OR IGNORE INTO goalkeeper_stats (player_id, match_id, minutes_played, shots_on_target_against, goals_against, saves) VALUES (331, 72, 90, 1, 1, 0);
 INSERT OR IGNORE INTO goalkeeper_stats (player_id, match_id, minutes_played, shots_on_target_against, goals_against, saves) VALUES (533, 72, 90, 4, 2, 2);
+INSERT OR IGNORE INTO goalkeeper_stats (player_id, match_id, minutes_played, shots_on_target_against, goals_against, saves) VALUES (214, 73, 90, 1, 0, 1);
+INSERT OR IGNORE INTO goalkeeper_stats (player_id, match_id, minutes_played, shots_on_target_against, goals_against, saves) VALUES (1039, 73, 90, 6, 1, 5);
 
--- daily-update 2026-06-30: group stage Jun 26-27 (final round), R32 Jun 28-29
-UPDATE matches SET team_home='RSA', team_away='CAN' WHERE match_id=73;
-UPDATE matches SET team_home='BRA', team_away='JPN' WHERE match_id=74;
-UPDATE matches SET team_home='GER', team_away='PAR' WHERE match_id=75;
-UPDATE matches SET team_home='NED', team_away='MAR' WHERE match_id=76;
-UPDATE matches SET goals_home=1, goals_away=4, corners_home=4, corners_away=5, possession_home=43.0, possession_away=57.0, attendance=64146, referee='Michael Oliver' WHERE match_id=53;
-UPDATE matches SET goals_home=5, goals_away=0, corners_home=12, corners_away=3, possession_home=69.0, possession_away=31.0, attendance=43036, referee='Anthony Taylor' WHERE match_id=54;
-UPDATE matches SET goals_home=0, goals_away=1, corners_home=1, corners_away=6, possession_home=33.0, possession_away=67.0, attendance=45065, referee='Ismail Elfath' WHERE match_id=47;
-UPDATE matches SET goals_home=0, goals_away=0, corners_home=4, corners_away=2, possession_home=51.0, possession_away=49.0, attendance=68278, referee='François Letexier' WHERE match_id=48;
-UPDATE matches SET goals_home=1, goals_away=1, corners_home=8, corners_away=2, possession_home=61.0, possession_away=39.0, attendance=66925, referee='Szymon Marciniak' WHERE match_id=42;
-UPDATE matches SET goals_home=1, goals_away=5, corners_home=5, corners_away=8, possession_home=45.0, possession_away=55.0, attendance=52497, referee='Adham Makhadmeh' WHERE match_id=41;
-UPDATE matches SET goals_home=0, goals_away=2, corners_home=3, corners_away=7, possession_home=33.0, possession_away=67.0, attendance=80663, referee='Abdulrahman Ibrahim Al Jassim' WHERE match_id=71;
-UPDATE matches SET goals_home=2, goals_away=1, corners_home=3, corners_away=2, possession_home=53.0, possession_away=47.0, attendance=68324, referee='Drew Fischer' WHERE match_id=72;
-UPDATE matches SET goals_home=3, goals_away=1, corners_home=2, corners_away=4, possession_home=58.0, possession_away=42.0, attendance=68239, referee='Felix Zwayer' WHERE match_id=66;
-UPDATE matches SET goals_home=0, goals_away=0, corners_home=5, corners_away=2, possession_home=55.0, possession_away=45.0, attendance=64478, referee='Alireza Faghani' WHERE match_id=65;
-UPDATE matches SET goals_home=3, goals_away=3, corners_home=0, corners_away=3, possession_home=65.0, possession_away=35.0, attendance=69045, referee='Ilgiz Tantashev' WHERE match_id=60;
-UPDATE matches SET goals_home=1, goals_away=3, corners_home=2, corners_away=6, possession_home=27.0, possession_away=73.0, attendance=70649, referee='István Kovács' WHERE match_id=59;
-UPDATE matches SET goals_home=0, goals_away=1, corners_home=1, corners_away=4, possession_home=58.0, possession_away=42.0, attendance=69237, referee='João Pinheiro' WHERE match_id=73;
-UPDATE matches SET goals_home=2, goals_away=1, corners_home=6, corners_away=2, possession_home=69.0, possession_away=31.0, attendance=68777, referee='Maurizio Mariani' WHERE match_id=74;
-UPDATE matches SET goals_home=1, goals_away=1, corners_home=16, corners_away=6, possession_home=75.0, possession_away=25.0, attendance=63945, referee='Jalal Jayed' WHERE match_id=75;
-UPDATE matches SET pk_home=3, pk_away=4 WHERE match_id=75;
-UPDATE matches SET goals_home=1, goals_away=1, corners_home=5, corners_away=8, possession_home=30.0, possession_away=70.0, attendance=51243, referee='Wilton Sampaio' WHERE match_id=76;
-UPDATE matches SET pk_home=2, pk_away=3 WHERE match_id=76;
-
--- ============================================================
--- 2026-07-02 daily-update: Group L finals (Jun 27) + R32 team
--- assignments and results (Jun 28 – Jul 1)
--- ============================================================
-
--- Step 2: Knockout team assignments (R32)
-UPDATE matches SET team_home='RSA', team_away='CAN' WHERE match_id=73;
-UPDATE matches SET team_home='GER', team_away='PAR' WHERE match_id=74;
-UPDATE matches SET team_home='NED', team_away='MAR' WHERE match_id=75;
-UPDATE matches SET team_home='BRA', team_away='JPN' WHERE match_id=76;
-UPDATE matches SET team_home='FRA', team_away='SWE' WHERE match_id=77;
-UPDATE matches SET team_home='CIV', team_away='NOR' WHERE match_id=78;
-UPDATE matches SET team_home='MEX', team_away='ECU' WHERE match_id=79;
-UPDATE matches SET team_home='ENG', team_away='COD' WHERE match_id=80;
-UPDATE matches SET team_home='USA', team_away='BIH' WHERE match_id=81;
-UPDATE matches SET team_home='BEL', team_away='SEN' WHERE match_id=82;
-UPDATE matches SET team_home='POR', team_away='CRO' WHERE match_id=83;
-UPDATE matches SET team_home='ESP', team_away='AUT' WHERE match_id=84;
-UPDATE matches SET team_home='SUI', team_away='ALG' WHERE match_id=85;
-
--- Step 4: Match results
-
--- match_id 71: Panama 0-2 England (Group L, Jun 27)
-UPDATE matches SET goals_home=0, goals_away=2, corners_home=3, corners_away=7, possession_home=33.0, possession_away=67.0, attendance=80663, referee='Abdulrahman Ibrahim Al Jassim' WHERE match_id=71;
-
--- match_id 72: Croatia 2-1 Ghana (Group L, Jun 27)
-UPDATE matches SET goals_home=2, goals_away=1, corners_home=3, corners_away=2, possession_home=53.0, possession_away=47.0, attendance=68324, referee='Drew Fischer' WHERE match_id=72;
-
--- match_id 73: South Africa 0-1 Canada (R32, Jun 28)
-UPDATE matches SET goals_home=0, goals_away=1, corners_home=1, corners_away=4, possession_home=58.0, possession_away=42.0, attendance=69237, referee='João Pinheiro' WHERE match_id=73;
-
--- match_id 74: Germany 1-1 Paraguay AET; Paraguay wins 4-3 on PKs (R32, Jun 29)
-UPDATE matches SET goals_home=1, goals_away=1, corners_home=16, corners_away=6, possession_home=75.0, possession_away=25.0, attendance=63945, referee='Jalal Jayed' WHERE match_id=74;
-UPDATE matches SET pk_home=3, pk_away=4 WHERE match_id=74;
-
--- match_id 75: Netherlands 1-1 Morocco AET; Morocco wins 3-2 on PKs (R32, Jun 29)
-UPDATE matches SET goals_home=1, goals_away=1, corners_home=5, corners_away=8, possession_home=30.0, possession_away=70.0, attendance=51243, referee='Wilton Sampaio' WHERE match_id=75;
-UPDATE matches SET pk_home=2, pk_away=3 WHERE match_id=75;
-
--- match_id 76: Brazil 2-1 Japan (R32, Jun 29)
-UPDATE matches SET goals_home=2, goals_away=1, corners_home=6, corners_away=2, possession_home=69.0, possession_away=31.0, attendance=68777, referee='Maurizio Mariani' WHERE match_id=76;
-
--- match_id 77: France 3-0 Sweden (R32, Jun 30)
-UPDATE matches SET goals_home=3, goals_away=0, corners_home=9, corners_away=1, possession_home=61.0, possession_away=39.0, attendance=80663, referee='Danny Makkelie' WHERE match_id=77;
-
--- match_id 78: Côte d'Ivoire 1-2 Norway (R32, Jun 30)
-UPDATE matches SET goals_home=1, goals_away=2, corners_home=14, corners_away=3, possession_home=47.0, possession_away=53.0, attendance=69665, referee='Jesús Valenzuela' WHERE match_id=78;
-
--- match_id 79: Mexico 2-0 Ecuador (R32, Jun 30)
-UPDATE matches SET goals_home=2, goals_away=0, corners_home=3, corners_away=8, possession_home=43.0, possession_away=57.0, attendance=80824, referee='Slavko Vinčič' WHERE match_id=79;
-
--- match_id 80: England 2-1 Congo DR (R32, Jul 1)
-UPDATE matches SET goals_home=2, goals_away=1, corners_home=5, corners_away=3, possession_home=60.0, possession_away=40.0, attendance=68239, referee='Adham Makhadmeh' WHERE match_id=80;
-
--- match_id 81: United States 2-0 Bosnia & Herz. (R32, Jul 1)
-UPDATE matches SET goals_home=2, goals_away=0, corners_home=4, corners_away=3, possession_home=48.0, possession_away=52.0, attendance=68827, referee='Raphael Claus' WHERE match_id=81;
-
--- match_id 82: Belgium 3-2 Senegal AET (R32, Jul 1)
-UPDATE matches SET goals_home=3, goals_away=2, corners_home=4, corners_away=2, possession_home=52.0, possession_away=48.0, attendance=66925, referee='Said Martínez' WHERE match_id=82;
-
--- ============================================================
--- 2026-07-03 daily-update: R32 team assignments (Jul 3) +
--- R32 results (Jul 2: match_ids 83-85)
--- ============================================================
-
--- Step 2: Knockout team assignments (R32, Jul 3)
-UPDATE matches SET team_home='AUS', team_away='EGY' WHERE match_id=86;
-UPDATE matches SET team_home='ARG', team_away='CPV' WHERE match_id=87;
-UPDATE matches SET team_home='COL', team_away='GHA' WHERE match_id=88;
-
--- Step 4: Match results (Jul 2)
-
--- match_id 83: Portugal 2-1 Croatia (R32, Jul 2)
-UPDATE matches SET goals_home=2, goals_away=1, corners_home=9, corners_away=5, possession_home=61.0, possession_away=40.0, attendance=43036, referee='Espen Eskås' WHERE match_id=83;
-
--- match_id 84: Spain 3-0 Austria (R32, Jul 2)
-UPDATE matches SET goals_home=3, goals_away=0, corners_home=9, corners_away=0, possession_home=65.0, possession_away=36.0, attendance=70492, referee='Glenn Nyberg' WHERE match_id=84;
-
--- match_id 85: Switzerland 2-0 Algeria (R32, Jul 2)
-UPDATE matches SET goals_home=2, goals_away=0, corners_home=4, corners_away=2, possession_home=45.0, possession_away=55.0, attendance=52497, referee='Yael Falcón' WHERE match_id=85;
-
--- ============================================================
--- 2026-07-04 daily-update: R32 results (Jul 3: match_ids 86-88)
---   + R16 team assignments (Jul 4: match_ids 89-90)
--- ============================================================
-
--- Step 2: Knockout team assignments (R16, Jul 4)
-UPDATE matches SET team_home='PAR', team_away='FRA' WHERE match_id=89;
-UPDATE matches SET team_home='CAN', team_away='MAR' WHERE match_id=90;
-
--- Step 4: Match results (Jul 3)
-
--- match_id 86: Australia 1-1 Egypt (R32, Jul 3) — Egypt wins 4-2 on pens
-UPDATE matches SET goals_home=1, goals_away=1, corners_home=4, corners_away=7, possession_home=42.0, possession_away=58.0, attendance=70244, referee='Gustavo Tejera' WHERE match_id=86;
-UPDATE matches SET pk_home=2, pk_away=4 WHERE match_id=86;
-
--- match_id 87: Argentina 3-2 Cabo Verde AET (R32, Jul 3)
-UPDATE matches SET goals_home=3, goals_away=2, corners_home=8, corners_away=8, possession_home=64.0, possession_away=37.0, attendance=64478, referee='Drew Fischer' WHERE match_id=87;
-
--- match_id 88: Colombia 1-0 Ghana (R32, Jul 3)
-UPDATE matches SET goals_home=1, goals_away=0, corners_home=3, corners_away=2, possession_home=61.0, possession_away=39.0, attendance=69045, referee='Clément Turpin' WHERE match_id=88;
-
--- ============================================================
--- 2026-07-06 daily-update: R16 results (Jul 5: match_ids 91-92)
--- ============================================================
-
--- match_id 91: Brazil 1-2 Norway (R16, Jul 5)
-UPDATE matches SET goals_home=1, goals_away=2, corners_home=5, corners_away=5, possession_home=34.0, possession_away=66.0, attendance=80663, referee='Ismail Elfath' WHERE match_id=91;
-
--- match_id 92: Mexico 2-3 England (R16, Jul 5)
-UPDATE matches SET goals_home=2, goals_away=3, corners_home=12, corners_away=2, possession_home=67.0, possession_away=33.0, attendance=80824, referee='Alireza Faghani' WHERE match_id=92;
-
--- ============================================================
--- 2026-07-05 daily-update: R16 results (Jul 4: match_ids 89-90)
---   + R16 team assignments (match_ids 91-96)
--- NOTE: the 2026-07-04 statements above had been appended to this
--- file but never committed to the live DB (interrupted run left a
--- hot journal); they were re-applied to the DB on 2026-07-05.
--- ============================================================
-
--- Step 2: Knockout team assignments (R16, Jul 5-7; bracket fully
--- determined after R32, pairings verified on FBref fixtures page)
-UPDATE matches SET team_home='BRA', team_away='NOR' WHERE match_id=91;
-UPDATE matches SET team_home='MEX', team_away='ENG' WHERE match_id=92;
-UPDATE matches SET team_home='POR', team_away='ESP' WHERE match_id=93;
-UPDATE matches SET team_home='USA', team_away='BEL' WHERE match_id=94;
-UPDATE matches SET team_home='ARG', team_away='EGY' WHERE match_id=95;
-UPDATE matches SET team_home='SUI', team_away='COL' WHERE match_id=96;
-
--- Step 4: Match results (Jul 4)
-
--- match_id 89: Paraguay 0-1 France (R16, Jul 4)
-UPDATE matches SET goals_home=0, goals_away=1, corners_home=2, corners_away=12, possession_home=24.0, possession_away=76.0, attendance=68324, referee='Ilgiz Tantashev' WHERE match_id=89;
-
--- match_id 90: Canada 0-3 Morocco (R16, Jul 4)
-UPDATE matches SET goals_home=0, goals_away=3, corners_home=11, corners_away=1, possession_home=45.0, possession_away=55.0, attendance=68777, referee='Michael Oliver' WHERE match_id=90;
-
--- Step 4: Match results (Jul 6)
-
--- match_id 93: Portugal 0-1 Spain (R16, Jul 6)
-UPDATE matches SET goals_home=0, goals_away=1, corners_home=3, corners_away=7, possession_home=45.0, possession_away=56.0, attendance=70649, referee='Anthony Taylor' WHERE match_id=93;
-
--- match_id 94: United States 1-4 Belgium (R16, Jul 6)
-UPDATE matches SET goals_home=1, goals_away=4, corners_home=3, corners_away=5, possession_home=56.0, possession_away=44.0, attendance=66925, referee='Adham Makhadmeh' WHERE match_id=94;
-
--- Step 4: Match results (Jul 7)
-
--- match_id 95: Argentina 3-2 Egypt (R16, Jul 7)
-UPDATE matches SET goals_home=3, goals_away=2, corners_home=6, corners_away=1, possession_home=64.0, possession_away=36.0, attendance=68239, referee='François Letexier' WHERE match_id=95;
-
--- match_id 96: Switzerland 0-0 Colombia AET, Switzerland won penalty shootout 4-3 (R16, Jul 7)
-UPDATE matches SET goals_home=0, goals_away=0, corners_home=3, corners_away=7, possession_home=53.0, possession_away=47.0, attendance=52497, referee='Iván Barton' WHERE match_id=96;
-UPDATE matches SET pk_home=4, pk_away=3 WHERE match_id=96;
-
--- Step 2: QF bracket resolution (Jul 10 daily update)
-
--- match_id 97: France vs Morocco (QF, Jul 9)
-UPDATE matches SET team_home='FRA', team_away='MAR' WHERE match_id=97;
-
--- match_id 98: Belgium vs Spain (QF, Jul 10)
-UPDATE matches SET team_home='BEL', team_away='ESP' WHERE match_id=98;
-
--- match_id 99: England vs Norway (QF, Jul 11)
-UPDATE matches SET team_home='ENG', team_away='NOR' WHERE match_id=99;
-
--- match_id 100: Switzerland vs Argentina (QF, Jul 11)
-UPDATE matches SET team_home='SUI', team_away='ARG' WHERE match_id=100;
-
--- Step 4: Match results (Jul 9)
-
--- match_id 97: France 2-0 Morocco (QF, Jul 9)
-UPDATE matches SET goals_home=2, goals_away=0, corners_home=5, corners_away=5, possession_home=48.0, possession_away=52.0, attendance=63811, referee='Facundo Tello' WHERE match_id=97;
-
--- Step 4: Match results (Jul 10-11 daily update)
-
--- match_id 98: Belgium 1-2 Spain (QF, Jul 10)
-UPDATE matches SET goals_home=1, goals_away=2, corners_home=1, corners_away=5, possession_home=32.0, possession_away=68.0, attendance=70492, referee='Michael Oliver' WHERE match_id=98;
-
--- match_id 99: England 2-1 Norway (QF, Jul 11, England won after extra time)
-UPDATE matches SET goals_home=2, goals_away=1, corners_home=4, corners_away=7, possession_home=52.0, possession_away=48.0, attendance=64478, referee='Clément Turpin' WHERE match_id=99;
-
--- match_id 100: Switzerland 1-3 Argentina (QF, Jul 11, Argentina won after extra time)
-UPDATE matches SET goals_home=1, goals_away=3, corners_home=2, corners_away=8, possession_home=41.0, possession_away=59.0, attendance=69045, referee='João Pinheiro' WHERE match_id=100;
-
--- match_id 101: SF bracket resolved (W97 vs W98 = France vs Spain), Jul 14 — result not yet played as of this run
-UPDATE matches SET team_home='FRA', team_away='ESP' WHERE match_id=101;
+-- metadata singleton
+UPDATE metadata SET last_sync='2026-07-15T04:06:05Z', last_matchday='2026-07-11', records_imported=2444;

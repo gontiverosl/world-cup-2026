@@ -1,4 +1,15 @@
 """
+ARCHIVED 2026-07-14 (S7a) — superseded by wc26_regenerate.py. Do not run.
+
+Kept to document the bug that motivated the rewrite: this appends, so running it
+twice duplicated the block in worldcup26_results.sql (see the warning below — the
+safety was a comment telling a human to be careful, not a property of the code).
+It also emitted stats ONLY, so the file's match UPDATEs stayed hand-maintained.
+wc26_regenerate.py regenerates the whole file from live DB state instead, which is
+idempotent by construction.
+
+--- original docstring below ---
+
 generate_inserts.py — export ALL player_stats + goalkeeper_stats rows as
 INSERT OR IGNORE statements and append them to worldcup26_results.sql.
 

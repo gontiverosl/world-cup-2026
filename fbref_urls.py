@@ -1,7 +1,7 @@
 """
 fbref_urls.py — all 73 played WC26 match URLs (group stage + R32 Jun 28).
 Scraped from FBref schedule page 2026-06-29.
-Used by: fbref_downloader.py (future), fbref_batch.py reference.
+Used by: fbref_acquire.py (pass these URLs to /update-results) as the URL/hex registry.
 """
 
 MATCH_URLS = [

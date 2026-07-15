@@ -1,4 +1,12 @@
 """
+ARCHIVED 2026-07-14 (S7a) — superseded by wc26_update.py. Do not run.
+
+Its pending-match detection was sound and lives on in wc26_update.py's
+get_pending_matches(). What it lacked: it stopped at LOAD, so REGENERATE and the
+rebuild check stayed manual afterthoughts, and it had no whole-match atomicity guard.
+
+--- original docstring below ---
+
 fbref_batch.py — parse + load all match HTMLs that have been fetched but not yet loaded.
 
 Usage:

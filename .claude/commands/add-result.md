@@ -42,4 +42,6 @@ Record a match result in `worldcup26.db`. Input: **$ARGUMENTS** (either `<match_
 
 4. **Verify:** confirm `rowcount == 1`, then re-SELECT the row to show the new score. Remind that corrections to seeded data also belong in `worldcup26_seed.sql`.
 
+5. **Mirror it to `worldcup26_results.sql` by running `/update-results` with no arguments.** This UPDATE only touched the live DB. `results.sql` is a generated artifact — never hand-append the statement — and it stays stale (drifted from the DB) until a regenerate runs. `/update-results` regenerates + verifies the rebuild. A result isn't recorded until that passes.
+
 `?` placeholders only — never f-strings. Don't run the UPDATE until the matched row is confirmed.

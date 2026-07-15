@@ -21,7 +21,7 @@ Guidance for Claude Code working in this repository.
 
 World Cup 2026 (WC26) — a live SQLite database of the FIFA World Cup 2026 (Jun 11 – Jul 19, 2026), built and grown session by session. Phase 4 data-visualization capstone. Target: LinkedIn posts built with Python, SQL, FastAPI, pandas, Plotly, and Tableau Public. The DB grows daily as match results come in.
 
-**State at S7 kickoff:** schema frozen (v1.0.0, S6 closed 2026-07-08, rebuild check 8/8). S7 = results script + migrating player/GK stats acquisition to Firecrawl.
+**State after S7a (2026-07-14):** schema frozen (v1.0.0, S6 closed 2026-07-08). Results layer rebuilt — `wc26_update.py` owns acquire→verify, `results.sql` is now generated, ACQUIRE runs on the Firecrawl API (Cloudflare cleared via the direct API path; the MCP path 403s). S7b = backfill the 27 played matches still missing stats, then first chart + LinkedIn post.
 
 Project hub: `building/world-cup-2026/WC26 Main.md` in brain — status, roadmap, cross-project links. **This file is the truth for schema and conventions; the hub is the truth for status and roadmap. Never duplicate one into the other.**
 
@@ -40,9 +40,11 @@ Project hub: `building/world-cup-2026/WC26 Main.md` in brain — status, roadmap
   |---|---|---|---|
   | `schema_version` | Human, seed-authored | Only on schema changes | Bump when seed `CREATE TABLE`s change |
   | `api_version` | Human, seed-authored | Only on API changes | NULL until `wc26_api.py` ships |
-  | `last_sync` | `wc26-daily-update` task | Every run | ISO 8601 timestamp, not a bare date |
-  | `last_matchday` | `wc26-daily-update` task | Every run | `MAX(match_date)` among played matches |
-  | `records_imported` | `wc26-daily-update` task | Every run | **This-run delta**, never cumulative |
+  | `last_sync` | `wc26_update.py` | Every run | ISO 8601 timestamp, not a bare date |
+  | `last_matchday` | `wc26_update.py` | Every run | `MAX(match_date)` among played matches |
+  | `records_imported` | `wc26_update.py` | Every run | **Snapshot**: total `player_stats` + `goalkeeper_stats` rows now present |
+
+  `records_imported` was redefined in S7a (2026-07-14): it used to be a this-run delta, which stopped meaning anything once every run regenerates the whole file. It is now a snapshot total. The three task-owned fields are written to the **live DB** by `wc26_update.py`; `wc26_regenerate.py` only serializes them into results.sql. `schema_version`/`api_version` are seed-authored and never restated in results.sql — a results file must not be able to override a schema bump.
 
 ## Stack
 
@@ -72,8 +74,8 @@ Shared base — keep identical across all repos:
 
 **Two-file data model:**
 - `worldcup26_seed.sql` = pure structural baseline — schema + reference data + NULL score placeholders. Never scores or stats. Seed edits only for structural corrections (wrong bracket position, wrong date, schema change).
-- `worldcup26_results.sql` = accumulates **all** dynamic data; exactly three statement types: `UPDATE matches` (goals/pk/corners/possession/attendance/referee post-match; team_home/away for knockout brackets pre-match), `INSERT INTO player_stats`, `INSERT INTO goalkeeper_stats`. `teams` and `players` never appear here.
-- Every dynamic change: apply to the live DB **and** append to results.sql — always both. Rebuild = seed then results; rebuilding intentionally wipes and replays all dynamic data.
+- `worldcup26_results.sql` = **generated artifact** carrying all dynamic data; exactly four statement types: `UPDATE matches` (goals/pk/corners/possession/attendance/referee post-match; team_home/away for knockout brackets pre-match), `INSERT OR IGNORE INTO player_stats`, `INSERT OR IGNORE INTO goalkeeper_stats`, and one `UPDATE metadata`. `teams` and `players` never appear here.
+- **The live DB is the source of truth; results.sql is derived from it** (S7a, 2026-07-14 — it is no longer hand-appended). Every dynamic change: apply to the live DB, then run `/update-results` to regenerate + verify. Rebuild = seed then results; rebuilding intentionally wipes and replays all dynamic data.
 
 **Query rules:**
 - `goals_home`/`goals_away` are NULL until played — standings and stats queries filter `WHERE goals_home IS NOT NULL`.
@@ -84,10 +86,12 @@ Shared base — keep identical across all repos:
 
 ## Acquisition (FBref × Cloudflare)
 
-**Never `requests`/`curl`/`httpx`** — FBref 403s all script access. **Firecrawl MCP is the production fetch method.**
+**Never `requests`/`curl`/`httpx` against fbref.com** — FBref 403s all direct script access. Fetch via **Firecrawl**; `requests` against `api.firecrawl.dev` is fine (see the pipeline section).
 
-- **Match results — working, migrating:** handled by the external `wc26-daily-update` scheduled skill (Cowork, cron `0 0 * * *`) via `firecrawl_scrape` JSON extraction. It UPDATEs `matches` (result, corners, possession, attendance, referee) + appends to results.sql + maintains `metadata`. It does **not** load player/GK stats. Migrating to a Claude Code systemd timer on the Merry per the permission matrix — see `Drill_Spec_Merry_Daily_Update` in brain; the Cowork task stays live until cutover.
-- **Player/GK stats — broken, S7 scope:** this repo's acquire step was Chrome-saved HTML → `results/raw/`; Chrome was uninstalled 2026-07-08. **S7 migrates acquire to Firecrawl.** No `requests`-based workarounds in the meantime. Guard against Firecrawl LLM-extraction hallucination — prefer deterministic extraction (raw HTML / links format + regex) where possible.
+- **Which Firecrawl path works (proven 2026-07-14):** the **direct API** (`fbref_acquire.py`) fetches match pages cleanly. The **Firecrawl MCP** 403s on the same pages ("Just a moment...", stealth + enhanced proxies both blocked, `waitFor` silently ignored). Scripts can't call MCP anyway — the API path is the production method for stats.
+- **Comment-seam myth, settled:** FBref match pages serve `stats_*_summary` / `keeper_stats_*` **uncommented in the DOM**. Firecrawl's `formats:["html"]` output parses byte-identically to the old Chrome saves (A/B'd on `c4104726`: 30 players / 2 keepers, all 18 stat columns equal). No un-commenting seam needed for match pages. Set `onlyMainContent:false` — main-content extraction would strip the tables.
+- **Player/GK stats — working (S7a):** `/update-results <url>`. Raw HTML + regex only; **never Firecrawl LLM extraction** (hallucination risk).
+- **Match results — `wc26-daily-update` retired 2026-07-15.** Match results now flow exclusively through `/update-results`.
 
 ## Data integrity invariants (never violate)
 
@@ -107,24 +111,33 @@ must return zero rows. Row count alone is insufficient (a non-squad player can o
 
 ## FBref pipeline (stats layer)
 
-Fills `player_stats`/`goalkeeper_stats`. Four layers — acquire is the only one that touches the network; everything downstream is local and idempotent.
+Fills `player_stats`/`goalkeeper_stats` and owns `worldcup26_results.sql`. **`wc26_update.py` orchestrates the whole path — run `/update-results`, not the nodes by hand** (nodes are individually runnable for debugging only). ACQUIRE is the only node that touches the network; everything downstream is local and idempotent.
 
 ```
-1. ACQUIRE  ⚠ S7 rebuild target (was Chrome → results/raw/{hex}.html; broken 2026-07-08)
-            fbref_urls.py  — URL/hex registry from the FBref schedule page
-2. PARSE    fbref_parse.py {hex} → results/{hex}_players.csv + {hex}_keepers.csv
-            Finds ALL stats_*_summary + keeper_stats_* tables (both teams, regex on table id).
-            Extracts fbref_id from data-append-csv BEFORE read_html; stamps team_id + hex on every row.
-3. LOAD     fbref_load.py {hex} → INSERT OR REPLACE into player_stats + goalkeeper_stats (live DB)
-            fbref_batch.py — parse+load every match acquired but not yet loaded (resumable)
-4. MIRROR   generate_inserts.py — exports stat rows as INSERT OR IGNORE, appends to results.sql
-            ⚠ run ONCE per batch — re-running duplicates lines in the .sql
+   /update-results <url> ...  →  wc26_update.py
+       ACQUIRE → PARSE → LOAD → metadata → REGENERATE → VERIFY
+       └─ incremental (new matches only) ─┘  └─ always full, from live DB ─┘
+
+1. ACQUIRE     fbref_acquire.py <url|hex> ... → results/raw/{hex}.html
+               Firecrawl API (requests → api.firecrawl.dev; key from gitignored .env).
+               formats:["html"], onlyMainContent:false, proxy:"auto", waitFor.
+               Raw HTML only — no LLM extraction. fbref_urls.py = URL/hex registry.
+2. PARSE       fbref_parse.py {hex} → results/{hex}_players.csv + {hex}_keepers.csv
+               Finds ALL stats_*_summary + keeper_stats_* tables (both teams, regex on table id).
+               Extracts fbref_id from data-append-csv BEFORE read_html; stamps team_id + hex.
+3. LOAD        fbref_load.py {hex} → INSERT OR REPLACE into player_stats + goalkeeper_stats
+4. REGENERATE  wc26_regenerate.py → rewrites worldcup26_results.sql WHOLESALE from live DB
+5. VERIFY      wc26_verify.py → scratch rebuild from seed+results, diffed against live
 ```
 
+- **`worldcup26_results.sql` is a GENERATED ARTIFACT — never hand-edit it.** The next run overwrites it. To change data: change the live DB, then regenerate. Any manual live-DB change (e.g. a knockout bracket resolution) must be followed by a bare `/update-results` or the file drifts from the DB.
+- **REGENERATE is a pure serializer** — reads live DB, writes the file, computes nothing. No bracket logic inside it. Its selection rule is **not** "played matches": it is *any `matches` row whose live state differs from the seed placeholder* — score present **OR** knockout teams resolved. A played-only rule would silently drop resolved-but-unplayed brackets, which rebuild as NULL teams with no error.
+- **Deterministic ordering is the contract:** `matches` by `match_id`; `player_stats`/`goalkeeper_stats` by `(match_id, player_id)`. Regenerating twice from unchanged live state is byte-identical. That's why no clock lives inside the serializer — `wc26_update.py` writes `last_sync` to the live DB, REGENERATE only serializes it.
 - **Identity resolution — never join on names.** Players resolve via `players.fbref_id`; matches via `matches.fbref_match_id` (URL hex; `fbref_map_matches.py` populates it, SLUG_TO_CODE for non-obvious codes). Name joins broke on accent drift. A missing crosswalk row = load skipped + logged, never a wrong id.
-- **Idempotency:** loader is `INSERT OR REPLACE` (FBref revises stats post-match; stat_id churn is harmless). The results.sql mirror is `INSERT OR IGNORE`.
-- **Standing verification (after every batch):** rebuild seed+results into a scratch DB, compare row counts (`matches` played, `player_stats`, `goalkeeper_stats`) against live. Catches both lockstep failure modes: stats loaded without score UPDATEs, and results.sql UPDATEs never applied live.
-- **After each stats batch:** `UPDATE metadata SET last_sync=…, last_matchday=…, records_imported=…` in live DB + append to results.sql.
+- **Idempotency:** loader is `INSERT OR REPLACE` (FBref revises stats post-match; stat_id churn is harmless — nothing references it, and VERIFY excludes it from digests). The results.sql stat mirror is `INSERT OR IGNORE`.
+- **Match-level atomicity:** a page yielding fewer than two summary/keeper tables is a **match failure** — skip the whole match, log it. Never half-load; one team's stats loaded alone reads as "the other team didn't play".
+- **VERIFY's two checks are different in kind:** live vs scratch rebuild must be **exact** (row digests, not just counts — counts miss value drift). The 2026-07-13 baseline (2,263 / 149 / 100 played) is a **monotonic floor** — counts never decrease — never an equality target; it goes stale the moment a match loads. After the final (Jul 19) the floor becomes the fixed expected final counts.
+- **`requests` against `api.firecrawl.dev` is allowed** and does not violate the rule below — that rule is about hitting fbref.com directly. Firecrawl performs the FBref fetch; `fbref_acquire.py` only talks to Firecrawl's API. If a fetch 403s, the sanctioned fallback is a manual browser-save into `results/raw/` — never a `requests` workaround against fbref.com.
 
 ## Prohibited (never do)
 
@@ -167,21 +180,26 @@ Domain knowledge — always read before writing code or queries:
 world-cup-2026/
 ├── worldcup26.db            — SQLite database (live, grows daily, tracked in git)
 ├── worldcup26_seed.sql      — pure structural baseline (schema + reference data + NULL placeholders)
-├── worldcup26_results.sql   — dynamic data accumulator (score UPDATEs + stat INSERTs)
+├── worldcup26_results.sql   — GENERATED artifact (never hand-edit) — regenerated from live DB
+├── wc26_update.py           — ⭐ the UPD node: acquire→parse→load→metadata→regenerate→verify
+├── fbref_acquire.py         — ACQUIRE: Firecrawl API → results/raw/{hex}.html
+├── fbref_parse.py           — PARSE: raw HTML → per-match players/keepers CSVs
+├── fbref_load.py            — LOAD: CSVs → player_stats + goalkeeper_stats
+├── wc26_regenerate.py       — REGENERATE: live DB → worldcup26_results.sql (pure serializer)
+├── wc26_verify.py           — VERIFY: scratch rebuild from seed+results, diffed against live
 ├── fbref_urls.py            — FBref match URL/hex registry
-├── fbref_fetch.py           — dead reference (requests → 403; kept to document why)
-├── fbref_move.py            — dead (Chrome-era Downloads/ mover; retire or repurpose in S7)
-├── fbref_parse.py           — raw HTML → per-match players/keepers CSVs
-├── fbref_load.py            — CSVs → player_stats + goalkeeper_stats
-├── fbref_batch.py           — parse+load all acquired-but-unloaded matches
 ├── fbref_map_matches.py     — populates matches.fbref_match_id from URL slugs
-├── generate_inserts.py      — mirrors stat rows into worldcup26_results.sql
+├── fbref_fetch.py           — dead reference (requests → fbref.com → 403; kept to document why)
 ├── wc26_standings.py        — group standings from played matches
 ├── wc26_viz.py              — Plotly viz (money vs goals scatter)
 ├── CLAUDE.md                — this file
-├── results/                 — per-match CSVs; results/raw/ = acquired HTML (S7: Firecrawl)
+├── .env                     — FIRECRAWL_API_KEY (gitignored — public repo)
+├── archive/                 — superseded scripts, kept to document what broke and why
+│   ├── generate_inserts.py  — dead (append-only, non-idempotent) → wc26_regenerate.py
+│   └── fbref_batch.py       — dead (stopped at LOAD) → wc26_update.py
+├── results/                 — per-match CSVs; results/raw/ = acquired HTML (gitignored)
 ├── .claude/
-│   ├── commands/            — slash commands (/wrap lives here)
+│   ├── commands/            — slash commands (/update-results, /wrap live here)
 │   └── skills/              — domain knowledge files
 └── [session files]          — wc26_report.py, wc26_api.py (planned)
 ```

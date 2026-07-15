@@ -60,13 +60,16 @@ metadata     — singleton table, one row, updated in place (no PK).
                until wc26_api.py ships) are human/seed-authored — only
                change on schema/API changes. last_sync (ISO 8601 timestamp),
                last_matchday (max match_date among played matches as of
-               that run), and records_imported (rows written by the LAST
-               run only — a delta, never cumulative) are owned by the
-               wc26-daily-update task and updated every run. Full
-               field-ownership table lives in CLAUDE.md — read it before
-               writing anything that touches this table, the delta-not-
-               cumulative distinction on records_imported is easy to get
-               backwards.
+               that run), and records_imported (SNAPSHOT — total
+               player_stats + goalkeeper_stats rows currently present, NOT
+               a per-run delta) are owned by wc26_update.py and updated
+               every run. Full field-ownership table lives in CLAUDE.md —
+               read it before writing anything that touches this table, the
+               snapshot-not-delta distinction on records_imported is easy
+               to get backwards.
+               wc26_update.py writes these three to the LIVE DB;
+               wc26_regenerate.py is a pure serializer and only mirrors
+               them into results.sql — never compute them there.
 ```
 
 ---
@@ -196,5 +199,7 @@ If you wouldn't publish it as the official Group A table, it's not done.
 *Updated 2026-07-08 for the pre-Phase-4 schema freeze — confirmed `player_stats` row counts (2263 rows) so the old golden-boot proxy note is dead and removed; added `teams.fbref_team_id`, `players.fbref_id` UNIQUE, `matches.fbref_match_id` UNIQUE (now documented here and in CLAUDE.md, resolving the prior reconciliation gap); dropped `players.footed` (never populated — no reader/writer in any script); added `idx_players_name` and `idx_player_stats_match_id`; added the `metadata` singleton table.*
 
 *Updated 2026-07-08 (same day, second pass) — DBeaver inspection caught that `fbref_match_id`/`fbref_team_id` existed as columns but were mostly/entirely NULL; backfilled `matches.fbref_match_id` to 94/96 (2 R16 matches from Jul 7 not yet linked on FBref's fixtures page, left NULL rather than guessed) and `teams.fbref_team_id` to 48/48, both via a single Firecrawl `links`-format fetch each plus deterministic local regex — no LLM extraction. Added `players.goalkeeper_flag`, derived from `position` at seed time.*
+
+*Updated 2026-07-15 (S7a) — `records_imported` redefined from a per-run delta to a SNAPSHOT total (`player_stats` + `goalkeeper_stats` rows present); the delta definition stopped meaning anything once `worldcup26_results.sql` became a wholesale-regenerated artifact. Metadata ownership moved from the `wc26-daily-update` Cowork task (retired 2026-07-15) to `wc26_update.py`, which writes the live DB — `wc26_regenerate.py` only serializes. Note `worldcup26_seed.sql`'s metadata comments still describe the old delta semantics and the retired task: known-stale, left alone under the seed freeze, due for the post-tournament pass.*
 
 *Updated 2026-07-08 (third pass) — dropped `players.height_cm` and `weight_kg`: confirmed absent from every FBref squad/roster page checked this session (zero occurrences across two full team fetches), same unreliable-bio-box treatment `footed` already got. `players.league` (same "pending: player page" tag) stays — its backfill is a separate, still-open thread, paused pending the players 26-cap contamination fix, not settled by this drop.*
