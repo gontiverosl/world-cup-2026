@@ -1,0 +1,31 @@
+Player,#,Pos,Age,Min,Gls,Ast,PK,PKatt,Sh,SoT,CrdY,CrdR,Fls,Fld,Off,Crs,TklW,Int,OG,PKwon,PKcon,fbref_id,team_id,match_id
+Vinicius Júnior,7.0,FW,25-358,90,0,0,0,0,2,1,0,0,0,1,0,1,1,0,0,0,0,7111d552,304635c3,dabafdc1
+Matheus Cunha,9.0,FW,27-039,57,0,0,0,0,1,0,0,0,0,1,0,1,0,1,0,0,0,dc62b55d,304635c3,dabafdc1
+Endrick,19.0,FW,19-349,33,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,a2728fbf,304635c3,dabafdc1
+Gabriel Martinelli,22.0,LW,25-017,66,0,0,0,0,0,0,0,0,1,1,0,0,0,1,0,0,0,48a5a5d6,304635c3,dabafdc1
+Neymar,10.0,"FW,MF",34-150,24,1,0,1,1,2,1,1,0,1,0,0,3,0,0,0,0,0,69384e5d,304635c3,dabafdc1
+Rayan,26.0,RW,19-336,66,0,0,0,0,2,1,0,0,2,0,1,1,0,1,0,0,0,288647fc,304635c3,dabafdc1
+Danilo Santos,18.0,MF,25-067,24,0,0,0,0,0,0,0,0,0,0,0,0,2,1,0,0,0,a816dbfb,304635c3,dabafdc1
+Casemiro,5.0,CM,34-132,90,0,0,0,0,1,0,0,0,1,2,0,3,0,1,0,0,0,4d224fe8,304635c3,dabafdc1
+Bruno Guimarães,8.0,CM,28-231,78,0,0,0,1,2,1,0,0,1,0,0,2,1,0,0,0,0,82518f62,304635c3,dabafdc1
+Éderson Silva,2.0,MF,26-363,12,0,0,0,0,1,0,0,0,0,0,0,2,0,0,0,0,0,a9202def,304635c3,dabafdc1
+Douglas Santos,16.0,LB,32-105,90,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,0,c50e5bba,304635c3,dabafdc1
+Gabriel Magalhães,3.0,CB,28-198,90,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,67ac5bb8,304635c3,dabafdc1
+Marquinhos,4.0,CB,32-052,90,0,0,0,0,0,0,0,0,0,1,0,0,0,2,0,0,0,d5f2f82b,304635c3,dabafdc1
+Danilo,13.0,RB,34-355,90,0,0,0,0,1,0,0,0,1,0,0,3,2,1,0,0,0,94b2001f,304635c3,dabafdc1
+Alisson,1.0,GK,33-276,90,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7a2e46a8,304635c3,dabafdc1
+Erling Haaland,9.0,FW,25-349,90,2,0,0,0,4,3,0,0,1,0,0,0,0,1,0,0,0,1f44ac21,599eba19,dabafdc1
+Antonio Nusa,20.0,FW,21-079,45,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,4ab12002,599eba19,dabafdc1
+Andreas Schjelderup,21.0,"FW,MF",22-034,45,0,2,0,0,1,1,0,0,0,0,0,2,1,1,0,0,0,a427724f,599eba19,dabafdc1
+Alexander Sørloth,7.0,FW,30-212,45,0,0,0,0,0,0,0,0,0,0,1,3,0,0,0,0,0,e92cd3f7,599eba19,dabafdc1
+Oscar Bobb,22.0,"FW,MF",22-358,45,0,0,0,0,0,0,0,0,0,1,0,0,1,0,0,0,0,eed2427e,599eba19,dabafdc1
+Patrick Berg,6.0,CM,28-223,90,0,0,0,0,1,0,0,0,0,1,0,1,2,0,0,0,0,e4114f5d,599eba19,dabafdc1
+Martin Ødegaard,10.0,CM,27-200,90,0,0,0,0,3,1,0,0,0,1,0,3,0,0,0,0,0,79300479,599eba19,dabafdc1
+Sander Berge,8.0,DM,28-141,90,0,0,0,0,0,0,0,0,0,1,0,0,0,2,0,0,0,d0b6129f,599eba19,dabafdc1
+David Møller Wolfe,5.0,LB,24-073,89,0,0,0,0,0,0,0,0,0,1,0,2,1,0,0,0,0,9affc5f2,599eba19,dabafdc1
+Leo Østigård,4.0,"DF,FW",26-219,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,b35a7399,599eba19,dabafdc1
+Torbjørn Heggem,17.0,CB,27-174,90,0,0,0,0,0,0,0,0,1,0,0,0,2,0,0,0,0,834fea76,599eba19,dabafdc1
+Kristoffer Ajer,3.0,CB,28-079,90,0,0,0,0,0,0,0,0,1,0,0,0,1,1,0,0,0,a8c0acb7,599eba19,dabafdc1
+Julian Ryerson,26.0,RB,28-230,62,0,0,0,0,0,0,0,0,2,0,0,1,1,0,0,0,0,009a4f60,599eba19,dabafdc1
+Fredrik Aursnes,14.0,"DF,MF",30-207,28,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,f0677ed7,599eba19,dabafdc1
+Ørjan Nyland,1.0,GK,35-298,90,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,bdedffac,599eba19,dabafdc1
