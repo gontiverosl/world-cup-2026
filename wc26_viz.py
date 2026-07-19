@@ -59,6 +59,26 @@ WHERE t.market_value_m IS NOT NULL
 ORDER BY t.market_value_m DESC
 """
 
+EFFICIENCY_QUERY = """
+WITH tot AS (
+    SELECT ps.player_id,
+           SUM(ps.shots)          AS shots,
+           SUM(ps.shots_on_goal)  AS sot,
+           SUM(ps.goals)          AS goals,
+           SUM(ps.minutes_played) AS minutes
+    FROM player_stats ps
+    GROUP BY ps.player_id
+)
+SELECT p.name, t.country, t.confederation,
+       tot.shots, tot.sot, tot.goals, tot.minutes
+FROM tot
+JOIN players p ON tot.player_id = p.player_id
+JOIN teams   t ON p.team_id     = t.team_id
+WHERE tot.shots >= 8            -- 59 players: readable density (>=6 clutters, >=10 too thin)
+ORDER BY tot.shots DESC
+"""
+
+
 # One distinct color per confederation — readable on white
 CONF_COLORS = {
     "UEFA":     "#1f77b4",
@@ -199,16 +219,159 @@ def money_vs_goals(df):
     return fig
 
 
+def load_efficiency_data():
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        df = pd.read_sql(EFFICIENCY_QUERY, conn)   # query FIRST, conn SECOND
+    finally:
+        if conn:
+            conn.close()
+    logging.info(f"finishing_efficiency: loaded {len(df)} players.")
+    return df
+
+
+def pick_efficiency_labels(df):
+    """Return up to 4 story-worthy players to annotate:
+    - clinical: best goals-per-shot
+    - wasteful: most shots among players with <=1 goal
+    - volume: most raw shots
+    - scorer: most goals
+    """
+    d = df.copy()
+    d["goals_per_shot"] = d["goals"] / d["shots"]
+
+    picks = {}
+    picks["clinical"] = d.loc[d["goals_per_shot"].idxmax()]
+    wasteful_pool = d[d["goals"] <= 1]
+    if not wasteful_pool.empty:
+        picks["wasteful"] = wasteful_pool.loc[wasteful_pool["shots"].idxmax()]
+    picks["volume"] = d.loc[d["shots"].idxmax()]
+    picks["scorer"] = d.loc[d["goals"].idxmax()]
+
+    # Deduplicate — one player can win multiple categories
+    seen, unique = set(), []
+    for label, row in picks.items():
+        if row["name"] not in seen:
+            seen.add(row["name"])
+            unique.append((label, row))
+    return unique
+
+
+def efficiency_scatter(df):
+    """Scatter: shots (x) vs goals (y), bubble = minutes, coloured by confederation.
+    A dashed guide line marks the tournament-average conversion rate — points above
+    it are clinical finishers, points below are wasteful."""
+    conf_order = ["UEFA", "CONMEBOL", "AFC", "CAF", "CONCACAF", "OFC"]
+    color_seq  = [CONF_COLORS[c] for c in conf_order if c in df["confederation"].unique()]
+
+    fig = px.scatter(
+        df,
+        x="shots",
+        y="goals",
+        size="minutes",
+        size_max=28,
+        color="confederation",
+        category_orders={"confederation": conf_order},
+        color_discrete_sequence=color_seq,
+        hover_name="name",
+        hover_data={
+            "country": True,
+            "shots": True,
+            "sot": True,
+            "goals": True,
+            "minutes": True,
+            "confederation": False,
+        },
+        labels={
+            "shots": "Shots — tournament total",
+            "goals": "Goals — tournament total",
+        },
+        title="Shots vs goals — finishing efficiency (through Round of 16)",
+        height=600,
+    )
+
+    fig.update_traces(marker=dict(opacity=0.8, line=dict(width=0.5, color="white")))
+
+    # Tournament-average conversion guide line: goals = conv * shots.
+    conv  = df["goals"].sum() / df["shots"].sum()
+    x_max = df["shots"].max()
+    fig.add_shape(
+        type="line", x0=0, y0=0, x1=x_max, y1=conv * x_max,
+        line=dict(color="#bbbbbb", width=1, dash="dash"), layer="below",
+    )
+    # Label sits mid-line in the empty lower-left, angled along the slope —
+    # keeps it clear of the dense point cloud and the right-edge annotations.
+    mid_x = x_max * 0.28
+    fig.add_annotation(
+        x=mid_x, y=conv * mid_x, xanchor="center", yanchor="bottom",
+        text=f"tournament avg — {conv * 100:.0f}% of shots scored",
+        showarrow=False, textangle=-8, font=dict(size=10, color="#999"),
+    )
+
+    fig.update_layout(
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        font=dict(family="Arial, sans-serif", size=13, color="#333"),
+        title=dict(font=dict(size=18, color="#111"), x=0.03, y=0.97),
+        legend=dict(title="", orientation="v", x=1.01, y=0.98, font=dict(size=12)),
+        xaxis=dict(title_font=dict(size=13), showgrid=True, gridcolor="#efefef",
+                   zeroline=False, dtick=2),
+        yaxis=dict(title_font=dict(size=13), showgrid=True, gridcolor="#efefef",
+                   zeroline=False, dtick=1),
+        margin=dict(l=60, r=180, t=80, b=60),
+    )
+
+    # Annotate the story-worthy players (text in ink tokens, not the series colour)
+    label_positions = {
+        "clinical": (45, -30),
+        "wasteful": (0,  35),
+        "volume":   (50,  20),
+        "scorer":   (-45, -35),
+    }
+    for label, row in pick_efficiency_labels(df):
+        ax, ay = label_positions.get(label, (45, -30))
+        fig.add_annotation(
+            x=row["shots"], y=row["goals"], text=row["name"],
+            showarrow=True, arrowhead=2, arrowcolor="#999", arrowsize=0.8, arrowwidth=1,
+            ax=ax, ay=ay, font=dict(size=11, color="#222"),
+            bgcolor="rgba(255,255,255,0.85)", bordercolor="#ccc", borderwidth=0.8, borderpad=4,
+        )
+
+    return fig
+
+
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
 
-    df = load_money_data()
-    fig = money_vs_goals(df)
+    # Chart 1 — money vs goals (group stage)
+    money_df  = load_money_data()
+    money_fig = money_vs_goals(money_df)
+    money_path = os.path.join(OUT_DIR, "money_vs_goals.html")
+    money_fig.write_html(money_path)
+    logging.info(f"money_vs_goals: chart written to {money_path}.")
 
-    out_path = os.path.join(OUT_DIR, "money_vs_goals.html")
-    fig.write_html(out_path)
-    logging.info(f"money_vs_goals: chart written to {out_path}.")
-    print(f"Done — open in browser: {out_path}")
+    # Chart 2 — finishing efficiency (group + knockout, 94-match dataset)
+    eff_df   = load_efficiency_data()
+    eff_fig  = efficiency_scatter(eff_df)
+    eff_html = os.path.join(OUT_DIR, "finishing_efficiency.html")
+    eff_fig.write_html(eff_html)
+    logging.info(f"finishing_efficiency: {len(eff_df)} players -> {eff_html}.")
+
+    # Best-effort static PNG (needs kaleido; the HTML is the guaranteed asset)
+    eff_png = os.path.join(OUT_DIR, "finishing_efficiency.png")
+    try:
+        eff_fig.write_image(eff_png, width=1000, height=600, scale=2)
+        logging.info(f"finishing_efficiency: static PNG written to {eff_png}.")
+        png_note = eff_png
+    except Exception as e:
+        logging.warning(f"finishing_efficiency: PNG export skipped ({e}).")
+        png_note = "(PNG skipped — kaleido not installed)"
+
+    print("Done — charts written:")
+    print(f"  {money_path}")
+    print(f"  {eff_html}")
+    print(f"  {png_note}")
 
 
 if __name__ == "__main__":
