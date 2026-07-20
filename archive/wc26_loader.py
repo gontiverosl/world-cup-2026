@@ -1,3 +1,4 @@
+"""ARCHIVED 2026-07-20 (S7b) — superseded by the FBref pipeline (fbref_load.py + wc26_update.py). Do not run; kept for provenance."""
 import csv
 import logging
 import os

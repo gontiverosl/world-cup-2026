@@ -52,7 +52,7 @@ Python 3.14 · pandas · openpyxl · SQLite (stdlib + CLI) · FastAPI (planned: 
 
 ```
 Rebuild DB:  sqlite3 worldcup26.db < worldcup26_seed.sql && sqlite3 worldcup26.db < worldcup26_results.sql
-Run script:  python3 wc26_standings.py
+Run script:  python3 wc26_viz.py
 SQLite CLI:  sqlite3 worldcup26.db
 ```
 
@@ -121,7 +121,7 @@ Fills `player_stats`/`goalkeeper_stats` and owns `worldcup26_results.sql`. **`wc
 1. ACQUIRE     fbref_acquire.py <url|hex> ... → results/raw/{hex}.html
                Firecrawl API (requests → api.firecrawl.dev; key from gitignored .env).
                formats:["html"], onlyMainContent:false, proxy:"auto", waitFor.
-               Raw HTML only — no LLM extraction. fbref_urls.py = URL/hex registry.
+               Raw HTML only — no LLM extraction. Pass match URLs directly; acquire derives the hex.
 2. PARSE       fbref_parse.py {hex} → results/{hex}_players.csv + {hex}_keepers.csv
                Finds ALL stats_*_summary + keeper_stats_* tables (both teams, regex on table id).
                Extracts fbref_id from data-append-csv BEFORE read_html; stamps team_id + hex.
@@ -133,7 +133,7 @@ Fills `player_stats`/`goalkeeper_stats` and owns `worldcup26_results.sql`. **`wc
 - **`worldcup26_results.sql` is a GENERATED ARTIFACT — never hand-edit it.** The next run overwrites it. To change data: change the live DB, then regenerate. Any manual live-DB change (e.g. a knockout bracket resolution) must be followed by a bare `/update-results` or the file drifts from the DB.
 - **REGENERATE is a pure serializer** — reads live DB, writes the file, computes nothing. No bracket logic inside it. Its selection rule is **not** "played matches": it is *any `matches` row whose live state differs from the seed placeholder* — score present **OR** knockout teams resolved. A played-only rule would silently drop resolved-but-unplayed brackets, which rebuild as NULL teams with no error.
 - **Deterministic ordering is the contract:** `matches` by `match_id`; `player_stats`/`goalkeeper_stats` by `(match_id, player_id)`. Regenerating twice from unchanged live state is byte-identical. That's why no clock lives inside the serializer — `wc26_update.py` writes `last_sync` to the live DB, REGENERATE only serializes it.
-- **Identity resolution — never join on names.** Players resolve via `players.fbref_id`; matches via `matches.fbref_match_id` (URL hex; `fbref_map_matches.py` populates it, SLUG_TO_CODE for non-obvious codes). Name joins broke on accent drift. A missing crosswalk row = load skipped + logged, never a wrong id.
+- **Identity resolution — never join on names.** Players resolve via `players.fbref_id`; matches via `matches.fbref_match_id` (URL hex, set directly on the live DB when a match is resolved). Name joins broke on accent drift. A missing crosswalk row = load skipped + logged, never a wrong id.
 - **Idempotency:** loader is `INSERT OR REPLACE` (FBref revises stats post-match; stat_id churn is harmless — nothing references it, and VERIFY excludes it from digests). The results.sql stat mirror is `INSERT OR IGNORE`.
 - **Match-level atomicity:** a page yielding fewer than two summary/keeper tables is a **match failure** — skip the whole match, log it. Never half-load; one team's stats loaded alone reads as "the other team didn't play".
 - **VERIFY's two checks are different in kind:** live vs scratch rebuild must be **exact** (row digests, not just counts — counts miss value drift). The 2026-07-13 baseline (2,263 / 149 / 100 played) is a **monotonic floor** — counts never decrease — never an equality target; it goes stale the moment a match loads. After the final (Jul 19) the floor becomes the fixed expected final counts.
@@ -187,16 +187,17 @@ world-cup-2026/
 ├── fbref_load.py            — LOAD: CSVs → player_stats + goalkeeper_stats
 ├── wc26_regenerate.py       — REGENERATE: live DB → worldcup26_results.sql (pure serializer)
 ├── wc26_verify.py           — VERIFY: scratch rebuild from seed+results, diffed against live
-├── fbref_urls.py            — FBref match URL/hex registry
-├── fbref_map_matches.py     — populates matches.fbref_match_id from URL slugs
 ├── fbref_fetch.py           — dead reference (requests → fbref.com → 403; kept to document why)
-├── wc26_standings.py        — group standings from played matches
 ├── wc26_viz.py              — Plotly viz (money-vs-goals, finishing-efficiency, LinkedIn dark charts)
 ├── CLAUDE.md                — this file
 ├── .env                     — FIRECRAWL_API_KEY (gitignored — public repo)
 ├── archive/                 — superseded scripts, kept to document what broke and why
 │   ├── generate_inserts.py  — dead (append-only, non-idempotent) → wc26_regenerate.py
-│   └── fbref_batch.py       — dead (stopped at LOAD) → wc26_update.py
+│   ├── fbref_batch.py       — dead (stopped at LOAD) → wc26_update.py
+│   ├── wc26_loader.py       — dead (early CSV loader) → fbref_load.py + wc26_update.py
+│   ├── fbref_urls.py        — dead (static URL registry, never imported) → URLs passed to /update-results
+│   ├── fbref_map_matches.py — dead (stale 94-match slug map) → direct fbref_match_id UPDATEs
+│   └── wc26_standings.py    — dead (standalone) → group-standings skill
 ├── results/                 — per-match CSVs; results/raw/ = acquired HTML (gitignored)
 ├── .claude/
 │   ├── commands/            — slash commands (/update-results, /wrap live here)

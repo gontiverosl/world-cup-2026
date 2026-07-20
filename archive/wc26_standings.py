@@ -1,3 +1,4 @@
+"""ARCHIVED 2026-07-20 (S7b) — superseded by the group-standings skill (.claude/commands/group-standings.md, inline SQL). Do not run; kept for provenance."""
 import sqlite3
 import pandas as pd
 import os
