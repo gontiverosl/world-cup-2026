@@ -68,10 +68,10 @@ fbref_acquire.py          ACQUIRE — raw HTML via Firecrawl API
 fbref_parse.py            PARSE — deterministic HTML → CSV
 fbref_load.py             LOAD — CSV → DB, idempotent
 wc26_regenerate.py        REGENERATE — DB → results.sql
-verify.py                 VERIFY — rebuild + invariant checks
+wc26_verify.py            VERIFY — rebuild + invariant checks
 wc26_update.py            orchestrator (/update-results)
 wc26_viz.py               Plotly visualizations
-results/                  raw HTML, per-match CSVs, chart output
+results/                  per-match CSVs (tracked); raw HTML + chart output (generated, gitignored)
 ```
 
 ## Quickstart
