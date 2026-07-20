@@ -5,7 +5,7 @@ Guidance for Claude Code working in this repository.
 ## Operating model
 
 - **Claude Code lives in this repo** — executes, commits, tests, ships.
-- **Claude Cowork lives in brain** (`C:\Users\gonti\brain`) — plans, reviews, orchestrates.
+- **Claude Cowork lives in brain** (`C:\Users\<you>\brain`) — plans, reviews, orchestrates.
 - **Germán steers the wheel.**
 - **Claude Code never edits brain vault files — ever.** Brain is read-only context; all vault edits come from Cowork or Germán.
 
@@ -21,7 +21,7 @@ Guidance for Claude Code working in this repository.
 
 World Cup 2026 (WC26) — a live SQLite database of the FIFA World Cup 2026 (Jun 11 – Jul 19, 2026), built and grown session by session. Phase 4 data-visualization capstone. Target: LinkedIn posts built with Python, SQL, FastAPI, pandas, Plotly, and Tableau Public. The DB grows daily as match results come in.
 
-**State after S7a (2026-07-14):** schema frozen (v1.0.0, S6 closed 2026-07-08). Results layer rebuilt — `wc26_update.py` owns acquire→verify, `results.sql` is now generated, ACQUIRE runs on the Firecrawl API (Cloudflare cleared via the direct API path; the MCP path 403s). S7b = backfill the 27 played matches still missing stats, then first chart + LinkedIn post.
+**State after S7b (2026-07-20):** schema at v1.1.0 (11 all-NULL career-NT columns dropped from `players`; S6 froze v1.0.0 2026-07-08). Tournament complete — **Spain champions**; all 104 matches played and loaded (104/104 with stats). Results layer: `wc26_update.py` owns acquire→verify, `results.sql` is generated, ACQUIRE runs on the Firecrawl API (Cloudflare cleared via the direct API path; the MCP path 403s). The stale-`player_id` attribution bug (from the S6 26-cap `players` renumber) was fixed by a full stats reload; VERIFY now also enforces team-membership + goals-reconcile invariants. Three charts ship from `wc26_viz.py` (money-vs-goals, finishing-efficiency, LinkedIn dark).
 
 Project hub: `building/world-cup-2026/WC26 Main.md` in brain — status, roadmap, cross-project links. **This file is the truth for schema and conventions; the hub is the truth for status and roadmap. Never duplicate one into the other.**
 
@@ -191,7 +191,7 @@ world-cup-2026/
 ├── fbref_map_matches.py     — populates matches.fbref_match_id from URL slugs
 ├── fbref_fetch.py           — dead reference (requests → fbref.com → 403; kept to document why)
 ├── wc26_standings.py        — group standings from played matches
-├── wc26_viz.py              — Plotly viz (money vs goals scatter)
+├── wc26_viz.py              — Plotly viz (money-vs-goals, finishing-efficiency, LinkedIn dark charts)
 ├── CLAUDE.md                — this file
 ├── .env                     — FIRECRAWL_API_KEY (gitignored — public repo)
 ├── archive/                 — superseded scripts, kept to document what broke and why
