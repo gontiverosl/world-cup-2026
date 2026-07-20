@@ -73,18 +73,7 @@ CREATE TABLE players (
     birthplace      TEXT,
     league          TEXT,                  -- raw "{tier}. {country}" from FBref roster page (e.g. '1. England');
                                             -- NOT a resolved competition name yet -- tier+country only
-    club            TEXT,
-    matches_played  INTEGER,               -- career NT (excl WC26); pending
-    matches_started INTEGER,               -- pending
-    minutes_played  INTEGER,               -- pending
-    goals           INTEGER,               -- pending
-    assists         INTEGER,               -- pending
-    pk              INTEGER,               -- pending
-    pk_att          INTEGER,               -- pending
-    shots           INTEGER,               -- pending
-    shots_on_target INTEGER,               -- pending
-    yellow_cards    INTEGER,               -- pending
-    red_cards       INTEGER                -- pending
+    club            TEXT
 );
 
 CREATE INDEX idx_players_name ON players(name);
@@ -197,7 +186,7 @@ CREATE TABLE metadata (
 -- placeholders. records_imported is NULL because no run had instrumented a per-run delta count
 -- before this session — 0 or a guessed number here would misrepresent that gap, so NULL it is.
 INSERT INTO metadata (schema_version, api_version, last_sync, last_matchday, records_imported)
-VALUES ('1.0.0', NULL, '2026-07-08T20:02:14Z', '2026-07-07', NULL);
+VALUES ('1.1.0', NULL, '2026-07-08T20:02:14Z', '2026-07-07', NULL);
 
 -- ============================================================
 -- SEED: teams (all 48 — real groups, confederations, rankings)

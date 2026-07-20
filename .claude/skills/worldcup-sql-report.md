@@ -20,11 +20,7 @@ players      — player_id (PK AUTOINCREMENT), fbref_id (UNIQUE, FBref
                goalkeeper_flag (INTEGER DEFAULT 0, derived from
                `position LIKE '%GK%'` — normalizes combo positions like
                'GK,DF' once instead of scattering that LIKE across scripts),
-               birthday ('YYYY-MM-DD'), birthplace, league, club,
-               matches_played, matches_started, minutes_played, goals,
-               assists, yellow_cards, red_cards
-               (career NT stats, from FBref NT pages, excl. WC26 — nullable
-               until backfilled)
+               birthday ('YYYY-MM-DD'), birthplace, league, club
 
 matches      — match_id (PK AUTOINCREMENT), fbref_match_id (UNIQUE, FBref
                match hex — pipeline join key), fifa_match_no (UNIQUE),
@@ -203,3 +199,5 @@ If you wouldn't publish it as the official Group A table, it's not done.
 *Updated 2026-07-15 (S7a) — `records_imported` redefined from a per-run delta to a SNAPSHOT total (`player_stats` + `goalkeeper_stats` rows present); the delta definition stopped meaning anything once `worldcup26_results.sql` became a wholesale-regenerated artifact. Metadata ownership moved from the `wc26-daily-update` Cowork task (retired 2026-07-15) to `wc26_update.py`, which writes the live DB — `wc26_regenerate.py` only serializes. Note `worldcup26_seed.sql`'s metadata comments still describe the old delta semantics and the retired task: known-stale, left alone under the seed freeze, due for the post-tournament pass.*
 
 *Updated 2026-07-08 (third pass) — dropped `players.height_cm` and `weight_kg`: confirmed absent from every FBref squad/roster page checked this session (zero occurrences across two full team fetches), same unreliable-bio-box treatment `footed` already got. `players.league` (same "pending: player page" tag) stays — its backfill is a separate, still-open thread, paused pending the players 26-cap contamination fix, not settled by this drop.*
+
+*Updated 2026-07-20 (schema v1.1.0) — dropped the 11 all-NULL career-NT columns from `players` (`matches_played`, `matches_started`, `minutes_played`, `goals`, `assists`, `pk`, `pk_att`, `shots`, `shots_on_target`, `yellow_cards`, `red_cards`): never populated (seed `INSERT INTO players` never listed them), no live reader, and every stat is WC26-scoped and derivable via `GROUP BY` on `player_stats`. Same-named columns in `player_stats`/`goalkeeper_stats` are untouched. Minor bump `schema_version` 1.0.0 → 1.1.0, no ADR.*
