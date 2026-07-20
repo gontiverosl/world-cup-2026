@@ -1,3 +1,4 @@
+"""ARCHIVED 2026-07-20 (S7b) — superseded by direct fbref_match_id UPDATEs on the live DB (the knockout-resolution pattern); its MATCHES list only covered 94 matches. Do not run; kept for provenance."""
 import os
 import sqlite3
 import logging

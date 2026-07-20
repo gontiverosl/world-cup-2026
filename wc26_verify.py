@@ -63,6 +63,56 @@ COUNT_QUERIES = {
     "matches_played": "SELECT COUNT(*) FROM matches WHERE goals_home IS NOT NULL",
 }
 
+# Integrity invariants (S7b, 2026-07-20) — added after the stale-player_id attribution bug:
+# group/early-R32 stats were loaded before the S6 26-cap renumber of `players`, so their
+# player_id FKs pointed at the wrong people. EQUALITY only proves live == results.sql; it
+# cannot see that a player_id is the WRONG person. These check truth, not reproducibility.
+INTEGRITY_QUERIES = {
+    # The check that catches the stale-FK class: every stat row's player must belong to one
+    # of that match's two teams. A permutation conserves per-match sums (so goals-reconcile
+    # alone would miss it), but membership cannot be permuted away.
+    "player_team_membership": """
+        SELECT ps.match_id, p.name, p.team_id
+        FROM player_stats ps
+        JOIN players p ON p.player_id = ps.player_id
+        JOIN matches m ON m.match_id = ps.match_id
+        WHERE p.team_id NOT IN (m.team_home, m.team_away)
+    """,
+    "keeper_team_membership": """
+        SELECT gs.match_id, p.name, p.team_id
+        FROM goalkeeper_stats gs
+        JOIN players p ON p.player_id = gs.player_id
+        JOIN matches m ON m.match_id = gs.match_id
+        WHERE p.team_id NOT IN (m.team_home, m.team_away)
+    """,
+}
+
+# Goals must reconcile to the scoreline, modulo own goals (FBref doesn't credit an OG to a
+# scorer). A HAVING hit means a goal is attributed to no player in the DB.
+# NB: HAVING repeats the aggregate expressions rather than reusing the SELECT aliases. A bare
+# `own_goals` in HAVING would resolve to the raw player_stats.own_goals column (an arbitrary
+# row of the group), NOT the SUM — SQLite binds the real column over the output alias. The
+# alias is likewise named own_goal_total so it can never shadow the column downstream.
+GOALS_RECONCILE_QUERY = """
+    SELECT m.fifa_match_no,
+           m.goals_home + m.goals_away   AS score,
+           COALESCE(SUM(ps.goals), 0)    AS stat_goals,
+           COALESCE(SUM(ps.own_goals),0) AS own_goal_total
+    FROM matches m
+    LEFT JOIN player_stats ps ON ps.match_id = m.match_id
+    WHERE m.goals_home IS NOT NULL
+    GROUP BY m.match_id
+    HAVING (m.goals_home + m.goals_away - COALESCE(SUM(ps.goals), 0))
+           != COALESCE(SUM(ps.own_goals), 0)
+    ORDER BY m.fifa_match_no
+"""
+
+# Known, separately-tracked reconciliation gaps that are NOT attribution bugs, keyed by
+# fifa_match_no. Match 15 (KSA 1-1 URU): scorer Abdulelah Al-Amri (fbref_id fd0affe3) is
+# absent from `players` (a 26-cap roster gap), so LOAD drops his goal. Allowlisted so a
+# REAL new reconciliation failure still fails loudly. Remove once the KSA squad is fixed.
+KNOWN_GOAL_GAPS = {15}
+
 logging.basicConfig(
     filename=LOG_PATH,
     level=logging.INFO,
@@ -119,6 +169,20 @@ def check_floor(counts):
     return [(n, counts[n], f) for n, f in FLOOR.items() if counts[n] < f]
 
 
+def check_truth(db_path):
+    """Attribution invariants against the LIVE DB. Returns (membership, recon_rows):
+    membership maps check name → list of offending rows; recon_rows are the goal-gap rows."""
+    conn = None
+    try:
+        conn = sqlite3.connect(db_path)
+        membership = {name: conn.execute(q).fetchall() for name, q in INTEGRITY_QUERIES.items()}
+        recon_rows = conn.execute(GOALS_RECONCILE_QUERY).fetchall()
+        return membership, recon_rows
+    finally:
+        if conn:
+            conn.close()
+
+
 def main():
     results_sql = RESULTS_SQL
     if "--results" in sys.argv:
@@ -138,6 +202,11 @@ def main():
     mismatches = compare(live_digests, scratch_digests)
     below_floor = check_floor(live_counts)
 
+    membership, recon_rows = check_truth(DB_PATH)
+    recon_blocking = [r for r in recon_rows if r[0] not in KNOWN_GOAL_GAPS]
+    recon_known = [r for r in recon_rows if r[0] in KNOWN_GOAL_GAPS]
+    membership_bad = {name: rows for name, rows in membership.items() if rows}
+
     print("\n--- VERIFY: live vs scratch rebuild (must be exact) ---")
     for name in DIGEST_QUERIES:
         status = "MISMATCH" if name in mismatches else "ok"
@@ -149,15 +218,29 @@ def main():
         status = "BELOW FLOOR" if actual < floor else "ok"
         print(f"  {name:18} live={actual:<6} floor={floor:<6} {status}")
 
-    if mismatches or below_floor:
+    print("\n--- VERIFY: attribution integrity (truth, not reproducibility) ---")
+    for name in INTEGRITY_QUERIES:
+        rows = membership.get(name, [])
+        status = "ok" if not rows else f"{len(rows)} FOREIGN ROW(S)"
+        print(f"  {name:24} {status}")
+    recon_status = "ok" if not recon_blocking else f"{len(recon_blocking)} UNEXPLAINED"
+    print(f"  {'goals_reconcile':24} {recon_status}")
+    for fno, score, sg, og in recon_known:
+        print(f"    known gap (allowlisted): match {fno} score={score} stat_goals={sg} own_goals={og}")
+
+    if mismatches or below_floor or membership_bad or recon_blocking:
         for name in mismatches:
             logging.error(f"verify: {name} differs between live and scratch rebuild.")
         for name, actual, floor in below_floor:
             logging.error(f"verify: {name}={actual} below floor {floor}.")
+        for name, rows in membership_bad.items():
+            logging.error(f"verify: {name} — {len(rows)} stat row(s) belong to a non-match team.")
+        for fno, score, sg, og in recon_blocking:
+            logging.error(f"verify: match {fno} goals do not reconcile: score={score} stat={sg} og={og}.")
         print("\nVERIFY FAILED — investigate before trusting worldcup26_results.sql.")
         sys.exit(1)
 
-    logging.info("verify: live == scratch rebuild, all counts at or above floor.")
+    logging.info("verify: live == scratch rebuild, counts at/above floor, attribution integrity ok.")
     print("\nVERIFY PASSED — seed + results rebuilds live exactly.")
 
 

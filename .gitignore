@@ -10,6 +10,9 @@ __pycache__/
 # --- Generated outputs (regenerable from the DB) ---
 *.xlsx
 *.log
+# Chart output (regenerable via wc26_viz.py); per-match CSVs stay tracked
+results/*.html
+results/*.png
 
 # --- Acquired HTML (regenerable via Firecrawl ACQUIRE, S7a) ---
 results/raw/

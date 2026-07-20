@@ -15,6 +15,7 @@ import sqlite3
 import logging
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH  = os.path.join(BASE_DIR, "worldcup26.db")
@@ -88,6 +89,40 @@ CONF_COLORS = {
     "CONCACAF": "#d62728",
     "OFC":      "#bcbd22",
 }
+
+# --- Chart 3: LinkedIn dark finishing-efficiency (folded in from wc26_viz_linkedin.py) ---
+# Encodes four variables: player (label), shots (x), goals (y), shots-on-goal (bubble area),
+# conversion rate (colour). Exports a 1200x630 PNG (LinkedIn 1.91:1). `shots_on_goal` is the
+# FBref SoT column — confirmed against PRAGMA table_info(player_stats).
+N_LABELS = 5   # annotate the top-N scorers only (avoid label clutter)
+
+# Dark palette that pops against LinkedIn's white/grey feed
+BG, INK, MUTE, GRID = "#0e1117", "#e8eaed", "#9aa0a8", "#262b33"
+
+LINKEDIN_QUERY = """
+WITH tot AS (
+    SELECT ps.player_id,
+           SUM(ps.shots)         AS shots,
+           SUM(ps.shots_on_goal) AS sot,
+           SUM(ps.goals)         AS goals
+    FROM player_stats ps
+    GROUP BY ps.player_id
+)
+SELECT p.name, p.team_id, tot.shots, tot.sot, tot.goals
+FROM tot
+JOIN players p ON tot.player_id = p.player_id
+WHERE tot.goals >= 3 AND tot.shots > 0
+ORDER BY tot.goals DESC, tot.shots ASC
+"""
+
+# Explicit tag directions for key players (ax, ay), matched by substring on the name.
+# ax < 0 = tag to the LEFT of the bubble, ax > 0 = to the RIGHT. Others fall back to auto.
+LABEL_DIR = [
+    ("Bellingham", (-60, -40)),   # tag points top-left
+    ("Mbapp",       (60, -34)),   # tag points top-right
+    ("Haaland",     (58, -40)),   # tag points top-right
+    ("Messi",      (-58, -40)),   # tag points top-left
+]
 
 
 def load_money_data():
@@ -341,6 +376,99 @@ def efficiency_scatter(df):
     return fig
 
 
+def load_linkedin_data():
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        df = pd.read_sql(LINKEDIN_QUERY, conn)   # query FIRST, conn SECOND
+    finally:
+        if conn:
+            conn.close()
+    df["conversion"]     = 100.0 * df["goals"] / df["shots"]
+    df["shots_per_goal"] = df["shots"] / df["goals"]
+    logging.info(f"linkedin_efficiency: loaded {len(df)} players (goals >= 3).")
+    return df
+
+
+def _label_offsets(sub):
+    """Leader-line offsets that separate near-identical points (e.g. Bellingham/Haaland).
+    Key players get an explicit direction (LABEL_DIR); the rest push outward from the
+    horizontal midpoint, alternating above/below by x-rank."""
+    x_mid = (sub["shots"].min() + sub["shots"].max()) / 2
+    order = sub.sort_values("shots").index.tolist()
+    offs = {}
+    for i, idx in enumerate(order):
+        name = str(sub.loc[idx, "name"])
+        override = next((off for key, off in LABEL_DIR if key in name), None)
+        if override:
+            offs[idx] = override
+            continue
+        ax = -55 if sub.loc[idx, "shots"] >= x_mid else 55
+        ay = -42 if i % 2 == 0 else 46
+        offs[idx] = (ax, ay)
+    return offs
+
+
+def finishing_efficiency_linkedin(df):
+    """Dark LinkedIn scatter: shots (x) vs goals (y), bubble area = shots-on-goal,
+    colour gradient = conversion rate (goals/shot) — the clinical dimension."""
+    labels = df.nlargest(N_LABELS, "goals")
+    offs   = _label_offsets(labels)
+
+    # bubble area from shots-on-goal
+    smax = max(df["sot"].max(), 1)
+
+    fig = go.Figure(go.Scatter(
+        x=df["shots"], y=df["goals"], mode="markers",
+        marker=dict(
+            size=df["sot"], sizemode="area",
+            sizeref=2.0 * smax / (56.0 ** 2), sizemin=6,
+            color=df["conversion"], colorscale="Plasma",
+            cmin=float(df["conversion"].quantile(0.05)),
+            cmax=float(df["conversion"].quantile(0.95)),
+            showscale=True,
+            colorbar=dict(title=dict(text="Conversion %<br>(goals / shot)",
+                                     font=dict(size=14, color=INK)),
+                          tickfont=dict(size=13, color=INK), thickness=16, len=0.7, x=1.01),
+            line=dict(width=1, color=BG), opacity=0.92,
+        ),
+        customdata=df[["name", "team_id", "sot", "shots_per_goal", "conversion"]].values,
+        hovertemplate=("<b>%{customdata[0]}</b> (%{customdata[1]})<br>"
+                       "Goals %{y} · Shots %{x} · On target %{customdata[2]}<br>"
+                       "%{customdata[3]:.1f} shots/goal · %{customdata[4]:.0f}% conversion<extra></extra>"),
+    ))
+
+    for idx, row in labels.iterrows():
+        ax, ay = offs[idx]
+        fig.add_annotation(
+            x=row["shots"], y=row["goals"], ax=ax, ay=ay,
+            text=f"<b>{row['name']}</b>", showarrow=True, arrowhead=2,
+            arrowcolor=MUTE, arrowsize=0.8, arrowwidth=1.1,
+            font=dict(size=16, color=INK), align="center",
+        )
+
+    fig.update_layout(
+        template="plotly_dark",
+        title=dict(
+            text=("<b>Volume vs precision — WC26's top scorers</b><br>"
+                  f"<span style='font-size:16px;color:{MUTE}'>The Golden Boot leaders were the least "
+                  "clinical: Mbappé needed 4.1 shots per goal, Bellingham just 2.7</span>"),
+            font=dict(size=29, color=INK), x=0.045, y=0.94),
+        paper_bgcolor=BG, plot_bgcolor=BG,
+        font=dict(family="Arial, sans-serif", color=INK),
+        xaxis=dict(title=dict(text="Shots", font=dict(size=19)),
+                   tickfont=dict(size=15), gridcolor=GRID, zeroline=False),
+        yaxis=dict(title=dict(text="Goals", font=dict(size=19)),
+                   tickfont=dict(size=15), gridcolor=GRID, zeroline=False, dtick=1),
+        margin=dict(l=70, r=40, t=115, b=80),
+        showlegend=False,
+    )
+    fig.add_annotation(text="Data: FBref · 2026 World Cup (104 matches)",
+                       xref="paper", yref="paper", x=0.045, y=-0.13, showarrow=False,
+                       font=dict(size=12, color=MUTE), xanchor="left")
+    return fig
+
+
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
 
@@ -368,10 +496,27 @@ def main():
         logging.warning(f"finishing_efficiency: PNG export skipped ({e}).")
         png_note = "(PNG skipped — kaleido not installed)"
 
+    # Chart 3 — LinkedIn dark finishing-efficiency (volume vs precision, 104-match)
+    lin_df   = load_linkedin_data()
+    lin_fig  = finishing_efficiency_linkedin(lin_df)
+    lin_html = os.path.join(OUT_DIR, "efficiency_linkedin.html")
+    lin_fig.write_html(lin_html)
+    logging.info(f"linkedin_efficiency: {len(lin_df)} players -> {lin_html}.")
+
+    lin_png = os.path.join(OUT_DIR, "efficiency_linkedin.png")
+    try:
+        lin_fig.write_image(lin_png, width=1200, height=630, scale=2)   # LinkedIn 1.91:1
+        lin_note = lin_png
+    except Exception as e:
+        logging.warning(f"linkedin_efficiency: PNG export skipped ({e}).")
+        lin_note = "(PNG skipped — kaleido not installed)"
+
     print("Done — charts written:")
     print(f"  {money_path}")
     print(f"  {eff_html}")
     print(f"  {png_note}")
+    print(f"  {lin_html}")
+    print(f"  {lin_note}")
 
 
 if __name__ == "__main__":
