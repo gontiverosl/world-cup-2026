@@ -17,11 +17,15 @@ Guidance for Claude Code working in this repository.
 
 **Handoff:** Cowork drafts repo files → session outputs → Germán places and commits from Code. Repo-writing automations run as Claude Code (`claude -p`), never as Cowork.
 
+⚠️ **Since 2026-07-28 this repo is WSL2-native (ext4) and is not mountable as a Windows folder.** Cowork's "read only" row is therefore theoretical here — it must be pointed at `\\wsl$\Ubuntu\...` to read anything. In practice repo work is Claude Code's, and Cowork contributes drafts.
+
 ## Project
 
-World Cup 2026 (WC26) — a live SQLite database of the FIFA World Cup 2026 (Jun 11 – Jul 19, 2026), built and grown session by session. Phase 4 data-visualization capstone. Target: LinkedIn posts built with Python, SQL, FastAPI, pandas, Plotly, and Tableau Public. The DB grows daily as match results come in.
+World Cup 2026 (WC26) — a live SQLite database of the FIFA World Cup 2026 (Jun 11 – Jul 19, 2026), built and grown session by session. **Phase 4 build** — the active public showcase and data-engineering pipeline for technical content. Target: LinkedIn posts built with Python, SQL, FastAPI, pandas, Plotly, and Tableau Public.
 
-**State after S7b (2026-07-20):** schema at v1.1.0 (11 all-NULL career-NT columns dropped from `players`; S6 froze v1.0.0 2026-07-08). Tournament complete — **Spain champions**; all 104 matches played and loaded (104/104 with stats). Results layer: `wc26_update.py` owns acquire→verify, `results.sql` is generated, ACQUIRE runs on the Firecrawl API (Cloudflare cleared via the direct API path; the MCP path 403s). The stale-`player_id` attribution bug (from the S6 26-cap `players` renumber) was fixed by a full stats reload; VERIFY now also enforces team-membership + goals-reconcile invariants. Three charts ship from `wc26_viz.py` (money-vs-goals, finishing-efficiency, LinkedIn dark).
+**State (2026-07-28).** Schema at v1.1.0 (11 all-NULL career-NT columns dropped from `players`; S6 froze v1.0.0 2026-07-08). **Tournament complete — Spain champions; 104/104 matches played and loaded with stats.** Results layer: `wc26_update.py` owns acquire→verify, `results.sql` is generated, ACQUIRE runs on the Firecrawl API (Cloudflare cleared via the direct API path; the MCP path 403s). The stale-`player_id` attribution bug (from the S6 26-cap `players` renumber) was fixed by a full stats reload; VERIFY now also enforces team-membership + goals-reconcile invariants. Three charts ship from `wc26_viz.py`. All S7b work (backfill + schema v1.1.0) is merged to `main` via PR #2.
+
+**Phase note:** wc26 graduated Phase 3 (Learning) → Phase 4 (Building) on 2026-07-27. Claude Code builds here now — see [Working mode](#working-mode) for what survived from the learning phase.
 
 Project hub: `building/world-cup-2026/WC26 Main.md` in brain — status, roadmap, cross-project links. **This file is the truth for schema and conventions; the hub is the truth for status and roadmap. Never duplicate one into the other.**
 
@@ -73,16 +77,19 @@ Shared base — keep identical across all repos:
 ## WC26-specific rules
 
 **Two-file data model:**
+
 - `worldcup26_seed.sql` = pure structural baseline — schema + reference data + NULL score placeholders. Never scores or stats. Seed edits only for structural corrections (wrong bracket position, wrong date, schema change).
 - `worldcup26_results.sql` = **generated artifact** carrying all dynamic data; exactly four statement types: `UPDATE matches` (goals/pk/corners/possession/attendance/referee post-match; team_home/away for knockout brackets pre-match), `INSERT OR IGNORE INTO player_stats`, `INSERT OR IGNORE INTO goalkeeper_stats`, and one `UPDATE metadata`. `teams` and `players` never appear here.
 - **The live DB is the source of truth; results.sql is derived from it** (S7a, 2026-07-14 — it is no longer hand-appended). Every dynamic change: apply to the live DB, then run `/update-results` to regenerate + verify. Rebuild = seed then results; rebuilding intentionally wipes and replays all dynamic data.
 
 **Query rules:**
-- `goals_home`/`goals_away` are NULL until played — standings and stats queries filter `WHERE goals_home IS NOT NULL`.
+
+- `goals_home`/`goals_away` are NULL until played — standings and stats queries filter `WHERE goals_home IS NOT NULL`. (Tournament is complete, so this now excludes nothing — keep it anyway; the seed still carries placeholders and a rebuild replays them.)
 - `matches` stores `team_id` refs, never country names — JOIN `teams` for display.
 
 **Source of truth:**
-- Canonical source: https://fbref.com — Summary tab → `player_stats`, Goalkeeper Stats tab → `goalkeeper_stats`, schedule page → results. **Never INSERT or UPDATE from memory** — verify on FBref first, including whether a match has been played.
+
+- Canonical source: <https://fbref.com> — Summary tab → `player_stats`, Goalkeeper Stats tab → `goalkeeper_stats`, schedule page → results. **Never INSERT or UPDATE from memory** — verify on FBref first, including whether a match has been played.
 
 ## Acquisition (FBref × Cloudflare)
 
@@ -96,14 +103,19 @@ Shared base — keep identical across all repos:
 ## Data integrity invariants (never violate)
 
 **Squad cap:** every `team_id` has exactly 26 `players` rows AND `shirt_number` forms a complete, gapless, non-duplicated 1–26 set:
+
 ```sql
 SELECT team_id, COUNT(*) AS n, COUNT(DISTINCT shirt_number) AS distinct_n
 FROM players GROUP BY team_id
 HAVING n != 26 OR distinct_n != 26
 ```
+
 must return zero rows. Row count alone is insufficient (a non-squad player can occupy a real slot). Never trust a source to have enforced this — FBref squad pages have returned 27–56 rows per squad. Check every player-adding fetch against the cap.
 
+⚠️ **Known accepted exception — do not "fix" it blind.** The KSA roster has a deferred gap: **match 15 / Al-Amri (`fd0affe3`) is missing from `players`**, allowlisted as `KNOWN_GOAL_GAPS={15}` in `wc26_verify.py`. **`wc26_verify.py` is the authority on which gaps are accepted** — if the cap query returns a row, check the allowlist before treating it as a defect. Any *new* violation is real.
+
 **Verification scales to change scale — do not over-apply:**
+
 - Schema changes, bulk backfills, anything touching table structure → full rebuild-and-verify (scratch DB, row counts, invariant checks) is mandatory.
 - Single targeted fixes (one row, one or two columns) → a scoped `SELECT ... WHERE ...` confirming the change. A full rebuild for a 1-row fix costs time for no added safety.
 
@@ -136,8 +148,12 @@ Fills `player_stats`/`goalkeeper_stats` and owns `worldcup26_results.sql`. **`wc
 - **Identity resolution — never join on names.** Players resolve via `players.fbref_id`; matches via `matches.fbref_match_id` (URL hex, set directly on the live DB when a match is resolved). Name joins broke on accent drift. A missing crosswalk row = load skipped + logged, never a wrong id.
 - **Idempotency:** loader is `INSERT OR REPLACE` (FBref revises stats post-match; stat_id churn is harmless — nothing references it, and VERIFY excludes it from digests). The results.sql stat mirror is `INSERT OR IGNORE`.
 - **Match-level atomicity:** a page yielding fewer than two summary/keeper tables is a **match failure** — skip the whole match, log it. Never half-load; one team's stats loaded alone reads as "the other team didn't play".
-- **VERIFY's two checks are different in kind:** live vs scratch rebuild must be **exact** (row digests, not just counts — counts miss value drift). The 2026-07-13 baseline (2,263 / 149 / 100 played) is a **monotonic floor** — counts never decrease — never an equality target; it goes stale the moment a match loads. After the final (Jul 19) the floor becomes the fixed expected final counts.
-- **`requests` against `api.firecrawl.dev` is allowed** and does not violate the rule below — that rule is about hitting fbref.com directly. Firecrawl performs the FBref fetch; `fbref_acquire.py` only talks to Firecrawl's API. If a fetch 403s, the sanctioned fallback is a manual browser-save into `results/raw/` — never a `requests` workaround against fbref.com.
+- **VERIFY's two checks are different in kind:** live vs scratch rebuild must be **exact** (row digests, not just counts — counts miss value drift). The second check is the count floor — see below.
+- **`requests` against `api.firecrawl.dev` is allowed** and does not violate the rule above — that rule is about hitting fbref.com directly. Firecrawl performs the FBref fetch; `fbref_acquire.py` only talks to Firecrawl's API. If a fetch 403s, the sanctioned fallback is a manual browser-save into `results/raw/` — never a `requests` workaround against fbref.com.
+
+**Count floor — should be fixed, is still monotonic.** The 2026-07-13 baseline (2,263 / 149 / 100 played) was a *monotonic floor* while the tournament ran: counts could only grow. **The tournament ended 2026-07-19 at 104/104**, so the floor should now be a **fixed equality target** — a count that moves in either direction is a defect, not progress.
+
+⚠️ **Not applied — confirmed 2026-07-28.** `wc26_verify.py` still carries `FLOOR = {"player_stats": 2263, "goalkeeper_stats": 149, "matches_played": 100}` and `check_floor()` still only flags `count < floor`. The live final counts are **3,283 / 215 / 104**, so the floor sits ~1,000 rows stale: a regression that silently dropped a thousand `player_stats` rows would still pass VERIFY. Converting it to equality against the final counts is open work.
 
 ## Prohibited (never do)
 
@@ -148,37 +164,40 @@ Fills `player_stats`/`goalkeeper_stats` and owns `worldcup26_results.sql`. **`wc
 - No `RANK()` in human-facing output — use `DENSE_RANK()`
 - No editing `worldcup26.db` schema directly — change the seed and rebuild
 - No hallucinated match results — verify on FBref before any UPDATE or INSERT. If you wouldn't trust the number, verify before touching the query.
+- No hand-editing `worldcup26_results.sql` — it is generated
 
-## Learning protocol (drills & sessions)
+## Working mode
 
-This is a **learning project**. Claude's job is to teach, not to build.
+wc26 graduated out of the learning phase on 2026-07-27 (Phase 3 → Phase 4). **Claude Code builds, tests, and ships here** under the conventions above — the former "spec it, never write it" protocol no longer applies.
 
-- **Never write drill code.** Spec → German writes cold → he runs it → Claude reviews.
-- **Step by step, line by line** when explaining or reviewing — no full-solution dumps.
-- **Never run the drill yourself.** Do not execute scripts on his behalf to prove they work.
-- **Never mark a drill done.** He marks his own progress in the Learning Tracker after writing and running it himself.
-- **Only exception:** scaffolding that isn't the drill target (e.g., a results/ folder or seed CSV).
-- **Cowork staging rule:** code Claude writes in Cowork counts as 🌱 Exposure — he observed it, not produced it. Reproduction requires a cold write in a Claude Code session. Never award Reproduction from a Cowork-built script.
+Two rules carried over, because they are about how Germán's skill is *recorded*, not about who may write code:
+
+- **Cowork staging rule.** Code Claude writes in a Cowork session counts as 🌱 Exposure in the Learning Tracker — he observed it, not produced it. Reproduction requires a cold write in a Claude Code session. Never award Reproduction from a Cowork-built script.
+- **Never mark a drill done.** If a task is framed as a drill, Germán writes it cold and updates the Learning Tracker himself. Claude reviews; Claude does not self-certify his progress.
+
+When reviewing his code, stay step by step, line by line — no full-solution dumps. That habit outlived the phase because it is what makes review useful.
 
 ## Skills
 
-Domain knowledge — always read before writing code or queries:
+Domain knowledge as folder-style Agent Skills — `.claude/skills/<name>/SKILL.md` with `name`/`description` frontmatter, loaded on demand when the task matches:
 
-@.claude/skills/python-hardening.md
-@.claude/skills/worldcup-sql-report.md
+- `python-hardening` — Python/SQLite hardening conventions
+- `worldcup-sql-report` — SQL reporting patterns for this schema
+
+⚠️ **Migration pending.** These currently live as flat files (`python-hardening.md`, `worldcup-sql-report.md`) loaded via always-on `@`-refs, which costs their full context on every session regardless of task. The vault converted to on-demand folder skills on 2026-07-09; this repo has not. Convert to `skills/<name>/SKILL.md` with frontmatter and drop the `@`-refs.
 
 ## Git workflow
 
 - **Policy:** public GitHub remote; `worldcup26.db` IS tracked (live data); push at session end — registered in brain `Repos.md`.
 - `git diff` first, always. Stage specific files — never `git add .`. Commit prefixed `s<N>:` / `wip:`. Never `git push --force`. `.gitignore` covers `*.log`, `__pycache__/`.
 - **A session is not done until git is clean.** `wip:` commits are encouraged mid-flow — a messy paper trail beats no paper trail. `/wrap <prefix>` collapses diff → stage → commit → push.
-- `/wrap` ends by **printing the session's drift summary** — Germán or a Cowork session logs it in brain `Repos.md` (Code never writes to the vault). The Sunday Reflection checks this repo's `git status` + last-commit age as the backstop.
+- `/wrap` ends by **printing the session's drift summary** — Germán or a Cowork session logs it in brain `Repos.md` (Code never writes to the vault). **That handoff is the only backstop.** There is no automated safety net: the `wc26-eod-git-check` scheduled task and the Sunday Reflection are both disabled as of 2026-07-28. If `/wrap` doesn't print it and someone doesn't log it, the drift is invisible.
 
 ## File layout
 
 ```
-world-cup-2026/
-├── worldcup26.db            — SQLite database (live, grows daily, tracked in git)
+world-cup-2026/                 — ~/repos/world-cup-2026 (WSL2 ext4 since 2026-07-28)
+├── worldcup26.db            — SQLite database (live, tracked in git)
 ├── worldcup26_seed.sql      — pure structural baseline (schema + reference data + NULL placeholders)
 ├── worldcup26_results.sql   — GENERATED artifact (never hand-edit) — regenerated from live DB
 ├── wc26_update.py           — ⭐ the UPD node: acquire→parse→load→metadata→regenerate→verify
@@ -187,9 +206,9 @@ world-cup-2026/
 ├── fbref_load.py            — LOAD: CSVs → player_stats + goalkeeper_stats
 ├── wc26_regenerate.py       — REGENERATE: live DB → worldcup26_results.sql (pure serializer)
 ├── wc26_verify.py           — VERIFY: scratch rebuild from seed+results, diffed against live
-├── fbref_fetch.py           — dead reference (requests → fbref.com → 403; kept to document why)
 ├── wc26_viz.py              — Plotly viz (money-vs-goals, finishing-efficiency, LinkedIn dark charts)
 ├── CLAUDE.md                — this file
+├── README.md                — repo front door / map
 ├── .env                     — FIRECRAWL_API_KEY (gitignored — public repo)
 ├── archive/                 — superseded scripts, kept to document what broke and why
 │   ├── generate_inserts.py  — dead (append-only, non-idempotent) → wc26_regenerate.py
@@ -198,9 +217,12 @@ world-cup-2026/
 │   ├── fbref_urls.py        — dead (static URL registry, never imported) → URLs passed to /update-results
 │   ├── fbref_map_matches.py — dead (stale 94-match slug map) → direct fbref_match_id UPDATEs
 │   └── wc26_standings.py    — dead (standalone) → group-standings skill
+├── drills/                  — drill working files
 ├── results/                 — per-match CSVs; results/raw/ = acquired HTML (gitignored)
 ├── .claude/
 │   ├── commands/            — slash commands (/update-results, /wrap live here)
-│   └── skills/              — domain knowledge files
+│   └── skills/              — domain knowledge (see Skills — conversion pending)
 └── [session files]          — wc26_report.py, wc26_api.py (planned)
 ```
+
+⚠️ **Verify this tree against `ls -a` before trusting it.** `fbref_fetch.py` was listed here as a dead reference but is not present in the working tree; `drills/` was present but unlisted. Both corrected 2026-07-28 from a directory listing, not from a live check.
