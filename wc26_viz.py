@@ -329,7 +329,7 @@ def efficiency_scatter(df):
             "shots": "Shots — tournament total",
             "goals": "Goals — tournament total",
         },
-        title="Shots vs goals — finishing efficiency (through Round of 16)",
+        title="Shots vs goals — finishing efficiency",
         height=600,
     )
 
@@ -512,13 +512,23 @@ def finishing_efficiency_linkedin(df):
             align="center",
         )
 
+    # Subtitle names Mbappé and Bellingham by name — pull their shots_per_goal straight
+    # from the data (same substring match as LABEL_DIR) so the copy can't drift from it.
+    mbappe_spg = df.loc[
+        df["name"].str.contains("Mbapp", na=False), "shots_per_goal"
+    ].iloc[0]
+    bellingham_spg = df.loc[
+        df["name"].str.contains("Bellingham", na=False), "shots_per_goal"
+    ].iloc[0]
+
     fig.update_layout(
         template="plotly_dark",
         title=dict(
             text=(
                 "<b>Volume vs precision — WC26's top scorers</b><br>"
                 f"<span style='font-size:16px;color:{MUTE}'>The Golden Boot leaders were the least "
-                "clinical: Mbappé needed 4.1 shots per goal, Bellingham just 2.7</span>"
+                f"clinical: Mbappé needed {mbappe_spg:.1f} shots per goal, Bellingham just "
+                f"{bellingham_spg:.1f}</span>"
             ),
             font=dict(size=29, color=INK),
             x=0.045,
