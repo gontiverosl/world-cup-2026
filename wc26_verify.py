@@ -6,11 +6,12 @@ and diffs it against the live DB. Catches both lockstep failure modes: stats loa
 into live but never mirrored to results.sql, and results.sql UPDATEs never applied live.
 
 Two distinct checks, deliberately different in kind:
-  1. EQUALITY  — live vs scratch rebuild. Must be EXACT. Row counts alone miss value
-                 drift, so every dynamic row is digested and compared.
-  2. FLOOR     — the 2026-07-13 baseline is a MONOTONIC FLOOR (counts never decrease),
-                 never an equality target: it goes stale the moment a match loads.
-                 After the final (Jul 19) it becomes the fixed expected final counts.
+  1. EQUALITY      — live vs scratch rebuild. Must be EXACT. Row counts alone miss
+                      value drift, so every dynamic row is digested and compared.
+  2. COUNT_TARGETS — the tournament ended 2026-07-19 at 104/104; FINAL_COUNTS is now
+                      a fixed EQUALITY target, not a monotonic floor. A count that
+                      moves in EITHER direction is a defect, not progress — the
+                      pre-2026-07-19 floor (counts only ever grow) is retired.
 
 Mismatch = loud failure + non-zero exit. Never trust the file on a mismatch.
 
@@ -32,8 +33,9 @@ SEED_SQL = os.path.join(BASE_DIR, "worldcup26_seed.sql")
 RESULTS_SQL = os.path.join(BASE_DIR, "worldcup26_results.sql")
 LOG_PATH = os.path.join(BASE_DIR, "worldcup26.log")
 
-# Monotonic floor — baseline snapshot 2026-07-13. Counts may exceed these, never fall below.
-FLOOR = {"player_stats": 2263, "goalkeeper_stats": 149, "matches_played": 100}
+# Fixed equality target — tournament final counts, measured 2026-08-03 (recorded in
+# brain WC26 Main §Current status). The tournament is over; these no longer move.
+FINAL_COUNTS = {"player_stats": 3283, "goalkeeper_stats": 215, "matches_played": 104}
 
 # stat_id is excluded everywhere: it's AUTOINCREMENT and churns under INSERT OR REPLACE.
 # Comparing it would report false mismatches on a correct rebuild.
@@ -169,9 +171,14 @@ def compare(live, scratch):
     return [name for name, live_hash in live.items() if scratch.get(name) != live_hash]
 
 
-def check_floor(counts):
-    """Returns list of (name, actual, floor) for any count that fell below the baseline."""
-    return [(n, counts[n], f) for n, f in FLOOR.items() if counts[n] < f]
+def check_counts(counts):
+    """Returns list of (name, actual, expected) for any count that isn't exactly the
+    fixed final target — a move in EITHER direction is a defect."""
+    return [
+        (n, counts[n], expected)
+        for n, expected in FINAL_COUNTS.items()
+        if counts[n] != expected
+    ]
 
 
 def check_truth(db_path):
@@ -207,7 +214,7 @@ def main():
     scratch_digests, _ = snapshot(scratch_path)
 
     mismatches = compare(live_digests, scratch_digests)
-    below_floor = check_floor(live_counts)
+    count_mismatches = check_counts(live_counts)
 
     membership, recon_rows = check_truth(DB_PATH)
     recon_blocking = [r for r in recon_rows if r[0] not in KNOWN_GOAL_GAPS]
@@ -219,11 +226,11 @@ def main():
         status = "MISMATCH" if name in mismatches else "ok"
         print(f"  {name:18} {status}")
 
-    print("\n--- VERIFY: monotonic floor (counts never decrease) ---")
-    for name, floor in FLOOR.items():
+    print("\n--- VERIFY: final counts (fixed equality target, tournament over) ---")
+    for name, expected in FINAL_COUNTS.items():
         actual = live_counts[name]
-        status = "BELOW FLOOR" if actual < floor else "ok"
-        print(f"  {name:18} live={actual:<6} floor={floor:<6} {status}")
+        status = "ok" if actual == expected else "MISMATCH"
+        print(f"  {name:18} live={actual:<6} expected={expected:<6} {status}")
 
     print("\n--- VERIFY: attribution integrity (truth, not reproducibility) ---")
     for name in INTEGRITY_QUERIES:
@@ -237,11 +244,13 @@ def main():
             f"    known gap (allowlisted): match {fno} score={score} stat_goals={sg} own_goals={og}"
         )
 
-    if mismatches or below_floor or membership_bad or recon_blocking:
+    if mismatches or count_mismatches or membership_bad or recon_blocking:
         for name in mismatches:
             logging.error(f"verify: {name} differs between live and scratch rebuild.")
-        for name, actual, floor in below_floor:
-            logging.error(f"verify: {name}={actual} below floor {floor}.")
+        for name, actual, expected in count_mismatches:
+            logging.error(
+                f"verify: {name}={actual} != expected final count {expected}."
+            )
         for name, rows in membership_bad.items():
             logging.error(
                 f"verify: {name} — {len(rows)} stat row(s) belong to a non-match team."
@@ -254,7 +263,7 @@ def main():
         sys.exit(1)
 
     logging.info(
-        "verify: live == scratch rebuild, counts at/above floor, attribution integrity ok."
+        "verify: live == scratch rebuild, counts == final targets, attribution integrity ok."
     )
     print("\nVERIFY PASSED — seed + results rebuilds live exactly.")
 
