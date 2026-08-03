@@ -182,8 +182,6 @@ Domain knowledge as folder-style Agent Skills — `.claude/skills/<name>/SKILL.m
 - `python-hardening` — Python/SQLite hardening conventions
 - `worldcup-sql-report` — SQL reporting patterns for this schema
 
-⚠️ **Migration pending.** These currently live as flat files (`python-hardening.md`, `worldcup-sql-report.md`) loaded via always-on `@`-refs, which costs their full context on every session regardless of task. The vault converted to on-demand folder skills on 2026-07-09; this repo has not. Convert to `skills/<name>/SKILL.md` with frontmatter and drop the `@`-refs.
-
 ## Git workflow
 
 Full standard: brain `Repos.md` → **Git standard** (adopted 2026-07-29). Summary that binds here:

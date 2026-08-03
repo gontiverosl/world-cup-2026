@@ -1,3 +1,8 @@
+---
+name: worldcup-sql-report
+description: SQL reporting patterns and schema quick-reference for worldcup26.db — NULL-handling rules, seed/results/live-DB rules, and query patterns for leaderboards, group standings, and LEFT JOIN counts. Load when writing or reviewing a query against this schema.
+---
+
 # WC26 SQL Report Patterns
 
 Domain knowledge for worldcup26.db queries. Read alongside CLAUDE.md.
@@ -196,8 +201,10 @@ If you wouldn't publish it as the official Group A table, it's not done.
 
 *Updated 2026-07-08 (same day, second pass) — DBeaver inspection caught that `fbref_match_id`/`fbref_team_id` existed as columns but were mostly/entirely NULL; backfilled `matches.fbref_match_id` to 94/96 (2 R16 matches from Jul 7 not yet linked on FBref's fixtures page, left NULL rather than guessed) and `teams.fbref_team_id` to 48/48, both via a single Firecrawl `links`-format fetch each plus deterministic local regex — no LLM extraction. Added `players.goalkeeper_flag`, derived from `position` at seed time.*
 
-*Updated 2026-07-15 (S7a) — `records_imported` redefined from a per-run delta to a SNAPSHOT total (`player_stats` + `goalkeeper_stats` rows present); the delta definition stopped meaning anything once `worldcup26_results.sql` became a wholesale-regenerated artifact. Metadata ownership moved from the `wc26-daily-update` Cowork task (retired 2026-07-15) to `wc26_update.py`, which writes the live DB — `wc26_regenerate.py` only serializes. Note `worldcup26_seed.sql`'s metadata comments still describe the old delta semantics and the retired task: known-stale, left alone under the seed freeze, due for the post-tournament pass.*
+*Updated 2026-07-15 (S7a) — `records_imported` redefined from a per-run delta to a SNAPSHOT total (`player_stats` + `goalkeeper_stats` rows present); the delta definition stopped meaning anything once `worldcup26_results.sql` became a wholesale-regenerated artifact. Metadata ownership moved from the `wc26-daily-update` Cowork task (retired 2026-07-15) to `wc26_update.py`, which writes the live DB — `wc26_regenerate.py` only serializes. Note `worldcup26_seed.sql`'s metadata comments still described the old delta semantics and the retired task at the time; fixed 2026-08-03 under the post-tournament pass.*
 
 *Updated 2026-07-08 (third pass) — dropped `players.height_cm` and `weight_kg`: confirmed absent from every FBref squad/roster page checked this session (zero occurrences across two full team fetches), same unreliable-bio-box treatment `footed` already got. `players.league` (same "pending: player page" tag) stays — its backfill is a separate, still-open thread, paused pending the players 26-cap contamination fix, not settled by this drop.*
 
 *Updated 2026-07-20 (schema v1.1.0) — dropped the 11 all-NULL career-NT columns from `players` (`matches_played`, `matches_started`, `minutes_played`, `goals`, `assists`, `pk`, `pk_att`, `shots`, `shots_on_target`, `yellow_cards`, `red_cards`): never populated (seed `INSERT INTO players` never listed them), no live reader, and every stat is WC26-scoped and derivable via `GROUP BY` on `player_stats`. Same-named columns in `player_stats`/`goalkeeper_stats` are untouched. Minor bump `schema_version` 1.0.0 → 1.1.0, no ADR.*
+
+*Converted 2026-08-03 from a flat always-on `@`-ref (`.claude/skills/worldcup-sql-report.md`) to a folder-style Agent Skill (`.claude/skills/worldcup-sql-report/SKILL.md`), loaded on demand instead of every session. Content otherwise unchanged.*

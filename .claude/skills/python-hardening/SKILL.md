@@ -1,3 +1,8 @@
+---
+name: python-hardening
+description: Python/SQLite hardening conventions and templates for this repo's scripts and API endpoints — connection handling, function separation, CSV read/write patterns, and a burned-in bugs table. Load when writing or reviewing a script, loader, or FastAPI endpoint.
+---
+
 # Python Hardening Patterns
 
 Every script and API endpoint in this repo follows these templates exactly.
