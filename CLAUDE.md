@@ -188,10 +188,16 @@ Domain knowledge as folder-style Agent Skills — `.claude/skills/<name>/SKILL.m
 
 ## Git workflow
 
+Full standard: brain `Repos.md` → **Git standard** (adopted 2026-07-29). Summary that binds here:
+
 - **Policy:** public GitHub remote; `worldcup26.db` IS tracked (live data); push at session end — registered in brain `Repos.md`.
-- `git diff` first, always. Stage specific files — never `git add .`. Commit prefixed `s<N>:` / `wip:`. Never `git push --force`. `.gitignore` covers `*.log`, `__pycache__/`.
-- **A session is not done until git is clean.** `wip:` commits are encouraged mid-flow — a messy paper trail beats no paper trail. `/wrap <prefix>` collapses diff → stage → commit → push.
-- `/wrap` ends by **printing the session's drift summary** — Germán or a Cowork session logs it in brain `Repos.md` (Code never writes to the vault). **That handoff is the only backstop.** There is no automated safety net: the `wc26-eod-git-check` scheduled task and the Sunday Reflection are both disabled as of 2026-07-28. If `/wrap` doesn't print it and someone doesn't log it, the drift is invisible.
+- `git diff` first, always. Stage specific files — never `git add .`. Never force-push.
+- **Commit format:** `<type>(<scope>): <subject>` — closed set of seven types (`feat` · `fix` · `data` · `schema` · `docs` · `chore` · `wip`). Scope carries the sprint where sprints exist (`data(s9): ...`); omit it otherwise. The retired `s<N>:` prefix is no longer used. If a commit doesn't fit one type, it's two commits.
+- **`data`, `schema` and `fix` require a body carrying the numbers** — row counts, table names, what changed. Earned 2026-07-28 when the ledger dropped `aa2c1fb`, the commit that performed the knockout backfill, while keeping three hygiene commits. The commit that changes the data is the one the ledger exists to remember.
+- **Branches — trunk-based.** Commit to `main` directly (solo repo; a branch buys nothing and costs the topology). Branch only when the PR is wanted as public record or a schema-level revert point matters. **A merged branch dies in the same breath as the merge** — delete-on-merge is enabled in GitHub settings; `/wrap` runs `git fetch --prune`.
+- **`.pre-commit-config.yaml` is armed** (`pre-commit install` run) — whitespace/EOF/YAML/merge-conflict/large-file checks (with a `*.db` exclusion for the tracked `worldcup26.db`) + `ruff-check --fix` then `ruff-format`. `--no-verify` bypasses it; that's a deliberate act, not a shortcut.
+- **A session is not done until git is clean.** `wip:` commits are encouraged mid-flow — a messy paper trail beats no paper trail. `/wrap <prefix>` collapses diff → stage → commit → push, runs `git fetch --prune`, and prints `git branch -vv`.
+- `/wrap` ends by **printing the session's drift summary plus `git branch -vv`** — Germán or a Cowork session logs it in brain `Repos.md` (Code never writes to the vault). **That handoff is the only backstop.** There is no automated safety net: the `wc26-eod-git-check` scheduled task and the Sunday Reflection are both disabled as of 2026-07-28. The branch print exists because `/wrap` is commit-scoped and missed graph-scoped drift before: wc26 ran clean `/wrap`s through S7 and S8 and still ended with three branches, HEAD unmerged, and local `main` 8 behind — see brain `Repos.md` for the 2026-07-29 branch-tidy resolution. If `/wrap` doesn't print the summary and someone doesn't log it, the drift is invisible.
 
 ## File layout
 
