@@ -1,4 +1,5 @@
 """ARCHIVED 2026-07-20 (S7b) — superseded by the FBref pipeline (fbref_load.py + wc26_update.py). Do not run; kept for provenance."""
+
 import csv
 import logging
 import os
@@ -12,6 +13,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 
 # ── 1. File discovery ──────────────────────────────────────────────────────────
+
 
 def find_result_csvs(results_dir):
     """Return sorted list of .csv paths in results_dir. Empty list if dir missing."""
@@ -29,22 +31,26 @@ def find_result_csvs(results_dir):
 
 # ── 2. CSV reading ─────────────────────────────────────────────────────────────
 
+
 def load_csv(path):
     """Read a results CSV. Returns list of dicts with match_id, goals_home, goals_away."""
     rows = []
     with open(path, newline="") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            rows.append({
-                "match_id":   int(row["match_id"]),
-                "goals_home": int(row["goals_home"]),
-                "goals_away": int(row["goals_away"]),
-            })
+            rows.append(
+                {
+                    "match_id": int(row["match_id"]),
+                    "goals_home": int(row["goals_home"]),
+                    "goals_away": int(row["goals_away"]),
+                }
+            )
     logging.info("Loaded %d row(s) from %s", len(rows), os.path.basename(path))
     return rows
 
 
 # ── 3. DB write ────────────────────────────────────────────────────────────────
+
 
 def update_match(conn, match_id, goals_home, goals_away):
     """UPDATE a single match result. Returns True if a row was affected."""
@@ -65,6 +71,7 @@ def update_match(conn, match_id, goals_home, goals_away):
 
 # ── 4. File processor ──────────────────────────────────────────────────────────
 
+
 def process_file(conn, path):
     """Load one CSV and push each result to the DB. Returns (updated, skipped) counts."""
     rows = load_csv(path)
@@ -79,6 +86,7 @@ def process_file(conn, path):
 
 
 # ── 5. Orchestrator ────────────────────────────────────────────────────────────
+
 
 def main():
     paths = find_result_csvs(RESULTS_DIR)
@@ -98,7 +106,9 @@ def main():
 
         logging.info(
             "Done — %d match(es) updated, %d skipped across %d file(s)",
-            total_updated, total_skipped, len(paths),
+            total_updated,
+            total_skipped,
+            len(paths),
         )
     finally:
         if conn:

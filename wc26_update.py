@@ -17,6 +17,7 @@ Usage:
     python3 wc26_update.py                       # regen + verify only
     python3 wc26_update.py <url-or-hex> ...      # acquire those, then load + regen + verify
 """
+
 import os
 import sys
 import logging
@@ -34,7 +35,7 @@ LOG_PATH = os.path.join(BASE_DIR, "worldcup26.log")
 logging.basicConfig(
     filename=LOG_PATH,
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
 # A WC26 match has exactly two teams, so a valid page yields two summary tables and
@@ -73,8 +74,10 @@ def check_atomicity(match_hex):
     """Guard the whole-match rule before anything touches the DB."""
     html_path = os.path.join(RAW_DIR, f"{match_hex}.html")
     player_tables, keeper_tables = fbref_parse.read_table(html_path)
-    if (len(player_tables) < EXPECTED_TABLES_PER_MATCH
-            or len(keeper_tables) < EXPECTED_TABLES_PER_MATCH):
+    if (
+        len(player_tables) < EXPECTED_TABLES_PER_MATCH
+        or len(keeper_tables) < EXPECTED_TABLES_PER_MATCH
+    ):
         logging.error(
             f"{match_hex}: found {len(player_tables)} summary / {len(keeper_tables)} keeper "
             f"tables, expected {EXPECTED_TABLES_PER_MATCH} each — match skipped, not half-loaded."
@@ -146,11 +149,15 @@ def load_pending():
             print("SKIPPED (incomplete tables — see log)")
             failed += 1
             continue
-        if not run([sys.executable, os.path.join(BASE_DIR, "fbref_parse.py"), match_hex]):
+        if not run(
+            [sys.executable, os.path.join(BASE_DIR, "fbref_parse.py"), match_hex]
+        ):
             print("PARSE FAILED")
             failed += 1
             continue
-        if not run([sys.executable, os.path.join(BASE_DIR, "fbref_load.py"), match_hex]):
+        if not run(
+            [sys.executable, os.path.join(BASE_DIR, "fbref_load.py"), match_hex]
+        ):
             print("LOAD FAILED")
             failed += 1
             continue
@@ -169,8 +176,10 @@ def main():
     loaded, failed = load_pending()
 
     last_sync, last_matchday, records = write_metadata(DB_PATH)
-    print(f"METADATA — last_sync={last_sync}, last_matchday={last_matchday}, "
-          f"records_imported={records}")
+    print(
+        f"METADATA — last_sync={last_sync}, last_matchday={last_matchday}, "
+        f"records_imported={records}"
+    )
 
     print("REGENERATE —", end=" ", flush=True)
     if not run([sys.executable, os.path.join(BASE_DIR, "wc26_regenerate.py")]):
@@ -187,7 +196,9 @@ def main():
     ok_verify = verify.returncode == 0
 
     print(f"\nDone — {loaded} match(es) loaded, {failed} failed.")
-    logging.info(f"wc26_update: {loaded} loaded, {failed} failed, verify_ok={ok_verify}")
+    logging.info(
+        f"wc26_update: {loaded} loaded, {failed} failed, verify_ok={ok_verify}"
+    )
     if not ok_verify or failed:
         sys.exit(1)
 

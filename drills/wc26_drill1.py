@@ -5,6 +5,7 @@ import pandas as pd
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "worldcup26.db")
 
+
 def main():
     conn = None
     try:
@@ -17,6 +18,7 @@ def main():
     finally:
         if conn:
             conn.close()
+
 
 if __name__ == "__main__":
     main()

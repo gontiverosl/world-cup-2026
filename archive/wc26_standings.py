@@ -1,4 +1,5 @@
 """ARCHIVED 2026-07-20 (S7b) — superseded by the group-standings skill (.claude/commands/group-standings.md, inline SQL). Do not run; kept for provenance."""
+
 import sqlite3
 import pandas as pd
 import os
@@ -52,28 +53,40 @@ def compute_standings(df_matches):
             h_w, h_d, h_l = 0, 0, 1
             a_w, a_d, a_l = 1, 0, 0
 
-        records.append({
-            "group": row["group_name"],
-            "team_id": row["team_home"],
-            "country": row["home_country"],
-            "played": 1,
-            "w": h_w, "d": h_d, "l": h_l,
-            "gf": gh, "ga": ga,
-            "pts": h_pts,
-        })
-        records.append({
-            "group": row["group_name"],
-            "team_id": row["team_away"],
-            "country": row["away_country"],
-            "played": 1,
-            "w": a_w, "d": a_d, "l": a_l,
-            "gf": ga, "ga": gh,
-            "pts": a_pts,
-        })
+        records.append(
+            {
+                "group": row["group_name"],
+                "team_id": row["team_home"],
+                "country": row["home_country"],
+                "played": 1,
+                "w": h_w,
+                "d": h_d,
+                "l": h_l,
+                "gf": gh,
+                "ga": ga,
+                "pts": h_pts,
+            }
+        )
+        records.append(
+            {
+                "group": row["group_name"],
+                "team_id": row["team_away"],
+                "country": row["away_country"],
+                "played": 1,
+                "w": a_w,
+                "d": a_d,
+                "l": a_l,
+                "gf": ga,
+                "ga": gh,
+                "pts": a_pts,
+            }
+        )
 
     df = pd.DataFrame(records)
     df_standings = (
-        df.groupby(["group", "team_id", "country"])[["played", "w", "d", "l", "gf", "ga", "pts"]]
+        df.groupby(["group", "team_id", "country"])[
+            ["played", "w", "d", "l", "gf", "ga", "pts"]
+        ]
         .sum()
         .reset_index()
     )
@@ -90,7 +103,9 @@ def print_standings(df_standings):
         print(f"\n{'=' * 52}")
         print(f"  GROUP {group}")
         print(f"{'=' * 52}")
-        print(f"  {'Team':<22} {'P':>2} {'W':>2} {'D':>2} {'L':>2} {'GF':>3} {'GA':>3} {'GD':>4} {'Pts':>4}")
+        print(
+            f"  {'Team':<22} {'P':>2} {'W':>2} {'D':>2} {'L':>2} {'GF':>3} {'GA':>3} {'GD':>4} {'Pts':>4}"
+        )
         print(f"  {'-' * 48}")
         for _, row in df_standings[df_standings["group"] == group].iterrows():
             print(

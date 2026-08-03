@@ -1,9 +1,9 @@
-/* 
-Spec: Golden boot leaderboard using player_stats. 
-Two CTEs: 
-(1) aggregate total goals per player_id using SUM() + GROUP BY, 
+/*
+Spec: Golden boot leaderboard using player_stats.
+Two CTEs:
+(1) aggregate total goals per player_id using SUM() + GROUP BY,
 (2) outer query applies DENSE_RANK() OVER (ORDER BY total_goals DESC).
-JOIN to players for name, to teams for country. 
+JOIN to players for name, to teams for country.
 Filter: only rows where goals > 0.
 */
 

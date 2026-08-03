@@ -1,9 +1,9 @@
-/* 
-Spec: Write a group standings query for worldcup26.db — specifically Group A. 
-Three CTEs chained: 
-(1) a results CTE that unpacks each match into two team rows (home + away), 
-(2) a totals CTE that sums points/GD/GF per team, 
-(3) an outer query that applies DENSE_RANK() OVER (ORDER BY pts DESC, gd DESC, gf DESC). 
+/*
+Spec: Write a group standings query for worldcup26.db — specifically Group A.
+Three CTEs chained:
+(1) a results CTE that unpacks each match into two team rows (home + away),
+(2) a totals CTE that sums points/GD/GF per team,
+(3) an outer query that applies DENSE_RANK() OVER (ORDER BY pts DESC, gd DESC, gf DESC).
 Filter WHERE goals_home IS NOT NULL. JOIN to teams for country. No SUM() OVER (PARTITION BY) inside a CTE.
 */
 
@@ -13,11 +13,11 @@ WITH results AS (
         goals_home AS gf,
         goals_away AS ga,
         group_name
-    FROM matches 
+    FROM matches
     WHERE group_name = 'A' AND goals_home IS NOT NULL
     UNION ALL
-    SELECT 
-        team_away AS team_id, 
+    SELECT
+        team_away AS team_id,
         goals_away AS gf,
         goals_home AS ga,
         group_name
@@ -25,7 +25,7 @@ WITH results AS (
     WHERE group_name = 'A' AND goals_home IS NOT NULL
 ),
 totals AS (
-    SELECT    
+    SELECT
         r.team_id,
         t.country,
         SUM(r.gf) AS gf_total,
@@ -36,8 +36,8 @@ totals AS (
             END) AS pts,
         SUM(r.gf - r.ga) AS gd,
         r.group_name
-    FROM results r JOIN teams t ON t.team_id = r.team_id   
-    GROUP BY r.team_id, t.country, r.group_name     
+    FROM results r JOIN teams t ON t.team_id = r.team_id
+    GROUP BY r.team_id, t.country, r.group_name
 )
 SELECT
     team_id,

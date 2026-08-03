@@ -9,14 +9,34 @@ from io import StringIO
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_PATH = os.path.join(BASE_DIR, "worldcup26.log")
 
-PLAYER_COLS = ["Min", "Gls", "Ast", "PK", "PKatt", "Sh", "SoT", "CrdY", "CrdR", "Fls", "Fld", "Off", "Crs", "TklW", "Int", "OG", "PKwon", "PKcon"]
+PLAYER_COLS = [
+    "Min",
+    "Gls",
+    "Ast",
+    "PK",
+    "PKatt",
+    "Sh",
+    "SoT",
+    "CrdY",
+    "CrdR",
+    "Fls",
+    "Fld",
+    "Off",
+    "Crs",
+    "TklW",
+    "Int",
+    "OG",
+    "PKwon",
+    "PKcon",
+]
 KEEPER_COLS = ["Min", "SoTA", "GA", "Saves"]
 
 logging.basicConfig(
     filename=LOG_PATH,
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
+
 
 def read_table(html_path):
     with open(html_path, "r", encoding="utf-8") as f:
@@ -25,6 +45,7 @@ def read_table(html_path):
     player_tables = soup.find_all("table", id=re.compile(r"^stats_[0-9a-f]+_summary$"))
     keeper_tables = soup.find_all("table", id=re.compile(r"^keeper_stats_[0-9a-f]+$"))
     return player_tables, keeper_tables
+
 
 def parse_table(table, team_id, match_id, numeric_cols):
     # Extract fbref_id from data-append-csv attribute before pd.read_html loses the HTML
@@ -38,11 +59,14 @@ def parse_table(table, team_id, match_id, numeric_cols):
     df.columns = df.columns.get_level_values(-1)
     df = df[df["Min"] != "Min"]
     df = df[~df["Player"].str.contains("Players", na=False)].copy()
-    df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric, errors="coerce").fillna(0).astype(int)
-    df["fbref_id"] = df["Player"].map(id_map)   # stable join key — no name drift
+    df[numeric_cols] = (
+        df[numeric_cols].apply(pd.to_numeric, errors="coerce").fillna(0).astype(int)
+    )
+    df["fbref_id"] = df["Player"].map(id_map)  # stable join key — no name drift
     df["team_id"] = team_id
     df["match_id"] = match_id
     return df
+
 
 def main():
     if len(sys.argv) < 2:
@@ -50,7 +74,7 @@ def main():
         sys.exit(1)
 
     match_hex = sys.argv[1]
-    html_path   = os.path.join(BASE_DIR, "results", "raw", f"{match_hex}.html")
+    html_path = os.path.join(BASE_DIR, "results", "raw", f"{match_hex}.html")
     player_path = os.path.join(BASE_DIR, "results", f"{match_hex}_players.csv")
     keeper_path = os.path.join(BASE_DIR, "results", f"{match_hex}_keepers.csv")
 
@@ -77,6 +101,7 @@ def main():
     keeper_df = pd.concat(keepers, ignore_index=True)
     keeper_df.to_csv(keeper_path, index=False)
     logging.info(f"{match_hex}: {len(keeper_df)} keeper rows written.")
+
 
 if __name__ == "__main__":
     main()

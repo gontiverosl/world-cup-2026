@@ -30,18 +30,24 @@ INSERT_KEEPER = """
 logging.basicConfig(
     filename=LOG_PATH,
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
+
 
 def resolve_match_id(conn, match_hex):
     """Look up the integer match_id from the FBref match hex stored in matches.fbref_match_id."""
     cursor = conn.cursor()
-    cursor.execute("SELECT match_id FROM matches WHERE fbref_match_id = ?", (match_hex,))
+    cursor.execute(
+        "SELECT match_id FROM matches WHERE fbref_match_id = ?", (match_hex,)
+    )
     row = cursor.fetchone()
     if row is None:
-        logging.error(f"No match_id found for fbref_match_id={match_hex} — populate matches.fbref_match_id first.")
+        logging.error(
+            f"No match_id found for fbref_match_id={match_hex} — populate matches.fbref_match_id first."
+        )
         return None
     return row[0]
+
 
 def resolve_player_id(conn, fbref_id):
     """Look up player_id by fbref_id — stable across name changes and accent drift."""
@@ -53,6 +59,7 @@ def resolve_player_id(conn, fbref_id):
         return None
     return row[0]
 
+
 def load_players(conn, df, match_id):
     cursor = conn.cursor()
     inserted = 0
@@ -61,15 +68,31 @@ def load_players(conn, df, match_id):
         if pid is None:
             continue
         values = (
-            pid, match_id,
-            row["Min"], row["Gls"], row["Ast"], row["PK"], row["PKatt"],
-            row["Sh"], row["SoT"], row["CrdY"], row["CrdR"],
-            row["Fls"], row["Fld"], row["Off"], row["Crs"],
-            row["TklW"], row["Int"], row["OG"], row["PKwon"], row["PKcon"]
+            pid,
+            match_id,
+            row["Min"],
+            row["Gls"],
+            row["Ast"],
+            row["PK"],
+            row["PKatt"],
+            row["Sh"],
+            row["SoT"],
+            row["CrdY"],
+            row["CrdR"],
+            row["Fls"],
+            row["Fld"],
+            row["Off"],
+            row["Crs"],
+            row["TklW"],
+            row["Int"],
+            row["OG"],
+            row["PKwon"],
+            row["PKcon"],
         )
         cursor.execute(INSERT_PLAYER, values)
         inserted += 1
     logging.info(f"{inserted} player_stats rows inserted for match {match_id}.")
+
 
 def load_keepers(conn, df, match_id):
     cursor = conn.cursor()
@@ -83,6 +106,7 @@ def load_keepers(conn, df, match_id):
         inserted += 1
     logging.info(f"{inserted} goalkeeper_stats rows inserted for match {match_id}.")
 
+
 def main():
     if len(sys.argv) < 2:
         logging.error("Usage: python3 fbref_load.py <match_hex>")
@@ -90,7 +114,7 @@ def main():
 
     match_hex = sys.argv[1]
     player_path = os.path.join(BASE_DIR, "results", f"{match_hex}_players.csv")
-    keeper_path  = os.path.join(BASE_DIR, "results", f"{match_hex}_keepers.csv")
+    keeper_path = os.path.join(BASE_DIR, "results", f"{match_hex}_keepers.csv")
 
     conn = None
     try:
@@ -110,6 +134,7 @@ def main():
     finally:
         if conn:
             conn.close()
+
 
 if __name__ == "__main__":
     main()

@@ -15,6 +15,7 @@ Usage:
 Expects HTML files at results/raw/{hex}.html (fetched separately via Chrome).
 Skips any match where player_stats already has rows (idempotent).
 """
+
 import os
 import sys
 import sqlite3
@@ -22,15 +23,16 @@ import logging
 import subprocess
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH  = os.path.join(BASE_DIR, "worldcup26.db")
+DB_PATH = os.path.join(BASE_DIR, "worldcup26.db")
 LOG_PATH = os.path.join(BASE_DIR, "worldcup26.log")
-RAW_DIR  = os.path.join(BASE_DIR, "results", "raw")
+RAW_DIR = os.path.join(BASE_DIR, "results", "raw")
 
 logging.basicConfig(
     filename=LOG_PATH,
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
+
 
 def get_pending_matches(conn):
     """Return list of match_hexes that have HTML on disk but no player_stats rows yet."""
@@ -48,12 +50,14 @@ def get_pending_matches(conn):
     # Only include those with HTML already on disk
     return [h for h in hexes if os.path.exists(os.path.join(RAW_DIR, f"{h}.html"))]
 
+
 def run(cmd):
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
         logging.error(f"Command failed: {' '.join(cmd)}\n{result.stderr}")
         return False
     return True
+
 
 def main():
     conn = None
@@ -76,7 +80,9 @@ def main():
     for hex_id in pending:
         print(f"  processing {hex_id}...", end=" ", flush=True)
 
-        ok_parse = run([sys.executable, os.path.join(BASE_DIR, "fbref_parse.py"), hex_id])
+        ok_parse = run(
+            [sys.executable, os.path.join(BASE_DIR, "fbref_parse.py"), hex_id]
+        )
         if not ok_parse:
             print("PARSE FAILED")
             failed += 1
@@ -93,6 +99,7 @@ def main():
 
     print(f"\nDone — {loaded} loaded, {failed} failed.")
     logging.info(f"fbref_batch: {loaded} loaded, {failed} failed.")
+
 
 if __name__ == "__main__":
     main()

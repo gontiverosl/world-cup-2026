@@ -14,6 +14,7 @@ data (wc26_update.py) owns writing it to the live DB first; this only serializes
 Usage:
     python3 wc26_regenerate.py [--out PATH]
 """
+
 import os
 import sys
 import logging
@@ -28,33 +29,58 @@ LOG_PATH = os.path.join(BASE_DIR, "worldcup26.log")
 logging.basicConfig(
     filename=LOG_PATH,
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
 # stat_id excluded — AUTOINCREMENT, the DB assigns it on rebuild
 PLAYER_COLS = [
-    "player_id", "match_id",
-    "minutes_played", "goals", "assists", "pk_made", "pk_att",
-    "shots", "shots_on_goal", "yellow_cards", "red_cards",
-    "fouls", "fouls_drawn", "offsides", "crosses", "tackles_won",
-    "interceptions", "own_goals", "pk_won", "pk_conceded",
+    "player_id",
+    "match_id",
+    "minutes_played",
+    "goals",
+    "assists",
+    "pk_made",
+    "pk_att",
+    "shots",
+    "shots_on_goal",
+    "yellow_cards",
+    "red_cards",
+    "fouls",
+    "fouls_drawn",
+    "offsides",
+    "crosses",
+    "tackles_won",
+    "interceptions",
+    "own_goals",
+    "pk_won",
+    "pk_conceded",
 ]
 
 KEEPER_COLS = [
-    "player_id", "match_id",
-    "minutes_played", "shots_on_target_against", "goals_against", "saves",
+    "player_id",
+    "match_id",
+    "minutes_played",
+    "shots_on_target_against",
+    "goals_against",
+    "saves",
 ]
 
 # Dynamic match columns, fixed order. team_home/team_away are emitted for knockout
 # rows ONLY — group-stage teams are seed-owned and must not be restated here.
 MATCH_TEXT_COLS = ("team_home", "team_away", "referee")
 MATCH_DYNAMIC_COLS = [
-    "team_home", "team_away",
-    "goals_home", "goals_away",
-    "pk_home", "pk_away",
-    "corners_home", "corners_away",
-    "possession_home", "possession_away",
-    "attendance", "referee",
+    "team_home",
+    "team_away",
+    "goals_home",
+    "goals_away",
+    "pk_home",
+    "pk_away",
+    "corners_home",
+    "corners_away",
+    "possession_home",
+    "possession_away",
+    "attendance",
+    "referee",
 ]
 
 # Selection rule: NOT "played". A results file that only carried played matches
@@ -106,7 +132,9 @@ def drop_orphans(df, table):
     never emit a row that would rebuild as an orphan."""
     n_null = df["player_id"].isna().sum()
     if n_null:
-        logging.warning(f"regenerate: {n_null} {table} rows with NULL player_id — skipped.")
+        logging.warning(
+            f"regenerate: {n_null} {table} rows with NULL player_id — skipped."
+        )
         df = df[df["player_id"].notna()].copy()
     return df
 

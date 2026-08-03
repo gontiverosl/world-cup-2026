@@ -17,6 +17,7 @@ Mismatch = loud failure + non-zero exit. Never trust the file on a mismatch.
 Usage:
     python3 wc26_verify.py [--results PATH] [--scratch PATH]
 """
+
 import os
 import sys
 import hashlib
@@ -116,7 +117,7 @@ KNOWN_GOAL_GAPS = {15}
 logging.basicConfig(
     filename=LOG_PATH,
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
 
@@ -129,7 +130,9 @@ def rebuild_scratch(scratch_path, seed_sql, results_sql):
         with open(sql_file, "r", encoding="utf-8") as f:
             result = subprocess.run(
                 ["sqlite3", scratch_path],
-                stdin=f, capture_output=True, text=True,
+                stdin=f,
+                capture_output=True,
+                text=True,
             )
         if result.returncode != 0:
             logging.error(f"verify: rebuild failed on {sql_file}: {result.stderr}")
@@ -152,7 +155,9 @@ def snapshot(db_path):
     try:
         conn = sqlite3.connect(db_path)
         digests = {name: digest(conn, q) for name, q in DIGEST_QUERIES.items()}
-        counts = {name: conn.execute(q).fetchone()[0] for name, q in COUNT_QUERIES.items()}
+        counts = {
+            name: conn.execute(q).fetchone()[0] for name, q in COUNT_QUERIES.items()
+        }
         return digests, counts
     finally:
         if conn:
@@ -175,7 +180,9 @@ def check_truth(db_path):
     conn = None
     try:
         conn = sqlite3.connect(db_path)
-        membership = {name: conn.execute(q).fetchall() for name, q in INTEGRITY_QUERIES.items()}
+        membership = {
+            name: conn.execute(q).fetchall() for name, q in INTEGRITY_QUERIES.items()
+        }
         recon_rows = conn.execute(GOALS_RECONCILE_QUERY).fetchall()
         return membership, recon_rows
     finally:
@@ -226,7 +233,9 @@ def main():
     recon_status = "ok" if not recon_blocking else f"{len(recon_blocking)} UNEXPLAINED"
     print(f"  {'goals_reconcile':24} {recon_status}")
     for fno, score, sg, og in recon_known:
-        print(f"    known gap (allowlisted): match {fno} score={score} stat_goals={sg} own_goals={og}")
+        print(
+            f"    known gap (allowlisted): match {fno} score={score} stat_goals={sg} own_goals={og}"
+        )
 
     if mismatches or below_floor or membership_bad or recon_blocking:
         for name in mismatches:
@@ -234,13 +243,19 @@ def main():
         for name, actual, floor in below_floor:
             logging.error(f"verify: {name}={actual} below floor {floor}.")
         for name, rows in membership_bad.items():
-            logging.error(f"verify: {name} — {len(rows)} stat row(s) belong to a non-match team.")
+            logging.error(
+                f"verify: {name} — {len(rows)} stat row(s) belong to a non-match team."
+            )
         for fno, score, sg, og in recon_blocking:
-            logging.error(f"verify: match {fno} goals do not reconcile: score={score} stat={sg} og={og}.")
+            logging.error(
+                f"verify: match {fno} goals do not reconcile: score={score} stat={sg} og={og}."
+            )
         print("\nVERIFY FAILED — investigate before trusting worldcup26_results.sql.")
         sys.exit(1)
 
-    logging.info("verify: live == scratch rebuild, counts at/above floor, attribution integrity ok.")
+    logging.info(
+        "verify: live == scratch rebuild, counts at/above floor, attribution integrity ok."
+    )
     print("\nVERIFY PASSED — seed + results rebuilds live exactly.")
 
 

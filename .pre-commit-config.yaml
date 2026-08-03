@@ -1,0 +1,17 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0            # latest as of 2025-08-09, verified 2026-07-29
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        exclude: '\.db$'   # worldcup26.db is tracked and exceeds the 500 kB default
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.12          # = ruff 0.15.12 · latest as of 2026-04-24, verified 2026-07-29
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format

@@ -16,7 +16,7 @@ MATCH_URLS = [
     "https://fbref.com/en/matches/72d993fd/Brazil-Morocco-June-13-2026-World-Cup",
     "https://fbref.com/en/matches/4ff2342a/Australia-Turkiye-June-13-2026-World-Cup",
     "https://fbref.com/en/matches/58c3106f/Haiti-Scotland-June-13-2026-World-Cup",
-    "https://fbref.com/en/matches/a2c54ed9/Germany-Curacao-June-14-2026-World-Cup",      # already loaded
+    "https://fbref.com/en/matches/a2c54ed9/Germany-Curacao-June-14-2026-World-Cup",  # already loaded
     "https://fbref.com/en/matches/faa0cb98/Netherlands-Japan-June-14-2026-World-Cup",
     "https://fbref.com/en/matches/f8ee7eef/Cote-dIvoire-Ecuador-June-14-2026-World-Cup",
     "https://fbref.com/en/matches/6df52cfd/Sweden-Tunisia-June-14-2026-World-Cup",
@@ -84,4 +84,4 @@ MATCH_URLS = [
 ]
 
 # Hexes only — for batch operations
-MATCH_HEXES = [u.split('/matches/')[1].split('/')[0] for u in MATCH_URLS]
+MATCH_HEXES = [u.split("/matches/")[1].split("/")[0] for u in MATCH_URLS]

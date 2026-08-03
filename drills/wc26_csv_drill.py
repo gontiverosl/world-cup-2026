@@ -12,8 +12,9 @@ OUTPUT_PATH = os.path.join(BASE_DIR, "results", "top_scorers.csv")
 logging.basicConfig(
     filename=LOG_PATH,
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
+
 
 def export_top_scorers():
     conn = None
@@ -42,6 +43,7 @@ def export_top_scorers():
         if conn:
             conn.close()
 
+
 def load_top_scorers():
     top_scorers = []
     with open(OUTPUT_PATH, "r", newline="") as f:
@@ -51,11 +53,13 @@ def load_top_scorers():
         logging.info(f"{len(top_scorers)} lines loaded.")
     return top_scorers
 
+
 def main():
-    df = export_top_scorers()
+    export_top_scorers()
     top_scorers = load_top_scorers()
     for row in top_scorers:
         print(row["name"], row["intl_goals"])
+
 
 if __name__ == "__main__":
     main()

@@ -12,6 +12,7 @@ That does not violate the repo's "never requests/curl/httpx" rule — that rule 
 about hitting fbref.com directly (403s). Firecrawl performs the FBref fetch; this
 script only talks to Firecrawl's API. No LLM extraction — raw HTML only.
 """
+
 import os
 import sys
 import logging
@@ -29,7 +30,7 @@ TIMEOUT_MS = 60000
 logging.basicConfig(
     filename=LOG_PATH,
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
 
@@ -65,7 +66,7 @@ def fetch_html(url, api_key):
     payload = {
         "url": url,
         "formats": ["html"],
-        "onlyMainContent": False,   # main-content extraction would strip the stat tables
+        "onlyMainContent": False,  # main-content extraction would strip the stat tables
         "proxy": "auto",
         "waitFor": WAIT_MS,
         "timeout": TIMEOUT_MS,
@@ -109,7 +110,7 @@ def main():
     if "--out-dir" in args:
         i = args.index("--out-dir")
         out_dir = args[i + 1]
-        args = args[:i] + args[i + 2:]
+        args = args[:i] + args[i + 2 :]
 
     if not args:
         print("Usage: python3 fbref_acquire.py [--out-dir DIR] <url-or-hex> ...")

@@ -21,34 +21,54 @@ or remove the generated block before re-running.
 Usage (from WSL):
     python3 generate_inserts.py
 """
+
 import os
 import logging
 import sqlite3
 import pandas as pd
 
-BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
-DB_PATH     = os.path.join(BASE_DIR, "worldcup26.db")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "worldcup26.db")
 RESULTS_SQL = os.path.join(BASE_DIR, "worldcup26_results.sql")
-LOG_PATH    = os.path.join(BASE_DIR, "worldcup26.log")
+LOG_PATH = os.path.join(BASE_DIR, "worldcup26.log")
 
 logging.basicConfig(
     filename=LOG_PATH,
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
 # stat_id excluded — AUTOINCREMENT, DB assigns it on rebuild
 PLAYER_COLS = [
-    "player_id", "match_id",
-    "minutes_played", "goals", "assists", "pk_made", "pk_att",
-    "shots", "shots_on_goal", "yellow_cards", "red_cards",
-    "fouls", "fouls_drawn", "offsides", "crosses", "tackles_won",
-    "interceptions", "own_goals", "pk_won", "pk_conceded",
+    "player_id",
+    "match_id",
+    "minutes_played",
+    "goals",
+    "assists",
+    "pk_made",
+    "pk_att",
+    "shots",
+    "shots_on_goal",
+    "yellow_cards",
+    "red_cards",
+    "fouls",
+    "fouls_drawn",
+    "offsides",
+    "crosses",
+    "tackles_won",
+    "interceptions",
+    "own_goals",
+    "pk_won",
+    "pk_conceded",
 ]
 
 KEEPER_COLS = [
-    "player_id", "match_id",
-    "minutes_played", "shots_on_target_against", "goals_against", "saves",
+    "player_id",
+    "match_id",
+    "minutes_played",
+    "shots_on_target_against",
+    "goals_against",
+    "saves",
 ]
 
 
@@ -88,12 +108,16 @@ def main():
     # Warn and drop orphaned rows (player_id NULL = not found in players table)
     null_p = player_df["player_id"].isna().sum()
     if null_p:
-        logging.warning(f"generate_inserts: {null_p} player_stats rows with NULL player_id — skipped.")
+        logging.warning(
+            f"generate_inserts: {null_p} player_stats rows with NULL player_id — skipped."
+        )
         player_df = player_df[player_df["player_id"].notna()].copy()
 
     null_k = keeper_df["player_id"].isna().sum()
     if null_k:
-        logging.warning(f"generate_inserts: {null_k} goalkeeper_stats rows with NULL player_id — skipped.")
+        logging.warning(
+            f"generate_inserts: {null_k} goalkeeper_stats rows with NULL player_id — skipped."
+        )
         keeper_df = keeper_df[keeper_df["player_id"].notna()].copy()
 
     player_lines = rows_to_inserts(player_df, "player_stats", PLAYER_COLS)

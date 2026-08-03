@@ -9,8 +9,9 @@ LOG_PATH = os.path.join(BASE_DIR, "worldcup26.log")
 logging.basicConfig(
     filename=LOG_PATH,
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
+
 
 def main():
     try:
@@ -20,6 +21,7 @@ def main():
                 print(row)
     except Exception as e:
         logging.error(f"An error occurred: {e}")
+
 
 if __name__ == "__main__":
     main()
