@@ -1,25 +1,20 @@
-# world-cup-2026
+# World Cup 2026 — FBref → SQLite data pipeline
 
-A live, self-verifying SQLite database of the **2026 FIFA World Cup** — grown match by match
-from [FBref](https://fbref.com/), rebuilt deterministically from source, and fed into Python +
-Plotly for data-visualization storytelling.
+A deterministic ETL pipeline and relational database covering all **104 matches** of the
+FIFA World Cup 2026 (11 Jun – 19 Jul 2026): squads, results, and per-player and
+per-goalkeeper match statistics, sourced from [FBref](https://fbref.com/en/) and
+rebuildable from source SQL at any time.
 
-**Status:** complete tournament recorded — **104 / 104 matches**, schema `v1.1.0`.
-**Champions:** Spain (1–0 vs Argentina, AET).
+**Status:** tournament complete. Database static at 104/104 matches with stats — 3,283
+player-match rows, 215 goalkeeper rows, 1,037 players with minutes. Schema `v1.1.0`.
 
----
+## Why it exists
 
-## Why this exists
+The interesting problem in a data project is never the domain — it's the architecture.
+Chaotic source in, validated and analysis-ready data out, no manual steps in between.
+Football was the substrate; the pipeline is the point.
 
-A real dataset, grown daily under real constraints, as a data-engineering + visualization
-project. Every design decision — a frozen seed, a generated results file, an automatic rebuild
-check — exists to keep the data trustworthy as it grows, not just correct once.
-
-## Pipeline
-
-FBref is the single source of truth. Match pages are fetched as raw HTML (via the Firecrawl API),
-parsed deterministically, loaded idempotently, and the whole database is provably reconstructable
-from two SQL files.
+## Architecture
 
 ```mermaid
 flowchart TD
@@ -31,74 +26,86 @@ flowchart TD
     SEED[worldcup26_seed.sql<br>schema + frozen facts] -.-> CHECK
     RES -.-> CHECK{VERIFY<br>seed + results == live, exactly}
     DB -.-> CHECK
-    DB --> VIZ[wc26_viz.py<br>SQL + pandas → Plotly] --> OUT[charts / LinkedIn]
+    DB --> VIZ[wc26_viz.py<br>SQL + pandas → Plotly] --> OUT[charts]
 ```
 
-`wc26_update.py` orchestrates ACQUIRE → PARSE → LOAD → REGENERATE → VERIFY as a single command
-(`/update-results <fbref-match-url ...>`). ACQUIRE/PARSE/LOAD run incrementally on new matches;
-REGENERATE and VERIFY always run in full against the complete live database.
+`wc26_update.py` orchestrates ACQUIRE → PARSE → LOAD → REGENERATE → VERIFY as one command.
+It writes nothing to the data tables itself — its only own write is three `metadata` fields
+immediately before REGENERATE.
 
-## Data model
+**The database is written first; `worldcup26_results.sql` is derived from it.** Sequential,
+not sibling outputs. That direction is the pipeline's central rule.
 
-Six tables — `teams`, `players`, `matches`, `player_stats`, `goalkeeper_stats`, `metadata`.
-Stats join to players via the stable `fbref_id` key and to matches via `fbref_match_id`.
-**The full schema, column definitions, and operating rules live in [`CLAUDE.md`](./CLAUDE.md)** —
-this README stays a map, not a mirror.
+Schema is seven tables — `teams` → `players` → `player_stats` / `goalkeeper_stats`, with
+`matches` joining both stat tables and holding FKs to `teams` (home/away) and `stadiums`;
+`metadata` is an unconnected singleton. Column-level truth lives in
+[`CLAUDE.md`](CLAUDE.md); this file doesn't copy it.
 
-## The guarantees (VERIFY)
-
-The database is only trusted when a fresh scratch build from `seed + results` reproduces the live
-DB exactly. On every update, VERIFY asserts:
-
-- **Rebuild equality** — `worldcup26_seed.sql` + `worldcup26_results.sql` reconstruct the live DB byte-for-byte.
-- **Goals reconcile** — for each played match, Σ player goals = the scoreline (allowing for own goals).
-- **Team membership** — every stat row belongs to a player on one of that match's two squads
-  (catches attribution errors that conserved-sum checks miss).
-- **Monotonic floors** — match/stat counts never regress across loads.
-
-Any mismatch is a loud failure, investigated before the file is trusted.
-
-## Layout
+## Repository structure
 
 ```
-worldcup26_seed.sql       schema + frozen reference data
-worldcup26_results.sql    generated artifact — never hand-edited
-worldcup26.db             the live database
-fbref_acquire.py          ACQUIRE — raw HTML via Firecrawl API
-fbref_parse.py            PARSE — deterministic HTML → CSV
-fbref_load.py             LOAD — CSV → DB, idempotent
-wc26_regenerate.py        REGENERATE — DB → results.sql
-wc26_verify.py            VERIFY — rebuild + invariant checks
-wc26_update.py            orchestrator (/update-results)
-wc26_viz.py               Plotly visualizations
-results/                  per-match CSVs (tracked); raw HTML + chart output (generated, gitignored)
+world-cup-2026/
+├── README.md               # what this is, how to run it
+├── CLAUDE.md               # schema truth + operating rules for AI contributors
+├── fbref_acquire.py        # ACQUIRE — Firecrawl API, raw HTML only
+├── fbref_parse.py          # PARSE   — deterministic regex + table ids
+├── fbref_load.py           # LOAD    — INSERT OR REPLACE keyed on fbref_id
+├── wc26_regenerate.py      # REGEN   — writes worldcup26_results.sql wholesale
+├── wc26_verify.py          # VERIFY  — four invariant checks
+├── wc26_update.py          # orchestrator for the five stages above
+├── wc26_viz.py             # SQL + pandas → Plotly
+├── worldcup26_seed.sql     # schema + frozen facts — hand-authored
+├── worldcup26_results.sql  # GENERATED — never hand-edited
+├── worldcup26.db           # the database (tracked deliberately)
+└── results/                # per-match player/keeper stat CSVs
+    └── raw/                # cached FBref HTML (gitignored)
 ```
 
-## Quickstart
+## Quick start
 
 ```bash
-# Rebuild the DB from source-controlled SQL (deterministic)
+# Rebuild the database from source-controlled SQL
 sqlite3 worldcup26.db < worldcup26_seed.sql
 sqlite3 worldcup26.db < worldcup26_results.sql
 
-# Add / refresh a match end to end
-python wc26_update.py <fbref-match-url>        # ACQUIRE→PARSE→LOAD→REGENERATE→VERIFY
+# Confirm the rebuild is faithful
+python3 wc26_verify.py
 
-# Render charts
-pip install plotly kaleido --break-system-packages
-python wc26_viz.py
+# Generate the charts
+python3 wc26_viz.py
 ```
 
-## For AI contributors
+Chart output is gitignored and regenerated on demand. Ingesting a new match needs a
+Firecrawl API key in a gitignored `.env` and runs through the orchestrator.
 
-- **The database is canonical.** FBref match data is the source of truth; when in doubt, query reality.
-- **`worldcup26_results.sql` is generated, never hand-edited** — change data, then let REGENERATE rewrite it.
-- **The rebuild check must pass.** A green VERIFY (seed + results == live) is the bar for any change.
-- **Join on the stable keys** — `fbref_id` (players), `fbref_match_id` (matches) — never raw integer ids,
-  which can shift when tables are renumbered.
-- **Parsing is deterministic** (regex + table ids), **no LLM extraction** — raw HTML in, exact rows out.
+## Verification
 
-## Data source
+`wc26_verify.py` runs four checks; all four must pass.
 
-All match data from [FBref](https://fbref.com/) (Sports Reference). This is a personal
-data-engineering project and is not affiliated with FIFA, FBref, or any federation.
+| Check | What it proves |
+|---|---|
+| **Rebuild equality** | seed + results reconstruct the live database exactly |
+| **Goals reconcile** | Σ attributed goals equals the scoreline, allowing own goals |
+| **Team membership** | every stat row belongs to a player on one of that match's two squads |
+| **Row counts** | counts equal their known final values, in either direction |
+
+Team membership exists because of a real defect: renumbering `players` left the stat tables
+pointing at the wrong people while every per-match sum stayed conserved. A goalkeeper led
+the scoring chart and nothing flagged it. **Conserved totals cannot catch a permutation.**
+
+These prove internal consistency. They do not prove the database agrees with FBref.
+
+## AI Contributor Guide
+
+- Read this file before changing code; don't violate the invariants below.
+- If uncertain, state your assumptions — never silently change behaviour.
+- Generated files stay generated. Regenerate; don't hand-edit.
+- Deterministic beats clever.
+
+**Invariants:**
+
+1. **`worldcup26.db` is canonical.** Everything else is derived from it.
+2. **The parser is deterministic** — regex and table ids only, no LLM extraction anywhere
+   in acquisition or parsing.
+3. **`worldcup26_results.sql` is generated**, rewritten wholesale by `wc26_regenerate.py`.
+4. **The rebuild check must pass.** A change that breaks it isn't finished.

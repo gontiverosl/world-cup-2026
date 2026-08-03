@@ -21,7 +21,7 @@ Guidance for Claude Code working in this repository.
 
 ## Project
 
-World Cup 2026 (WC26) — a live SQLite database of the FIFA World Cup 2026 (Jun 11 – Jul 19, 2026), built and grown session by session. **Phase 4 build** — the active public showcase and data-engineering pipeline for technical content. Target: LinkedIn posts built with Python, SQL, FastAPI, pandas, Plotly, and Tableau Public.
+What this is and why: [`README.md`](README.md). This section carries session-by-session operational state the README doesn't track.
 
 **State (2026-07-28).** Schema at v1.1.0 (11 all-NULL career-NT columns dropped from `players`; S6 froze v1.0.0 2026-07-08). **Tournament complete — Spain champions; 104/104 matches played and loaded with stats.** Results layer: `wc26_update.py` owns acquire→verify, `results.sql` is generated, ACQUIRE runs on the Firecrawl API (Cloudflare cleared via the direct API path; the MCP path 403s). The stale-`player_id` attribution bug (from the S6 26-cap `players` renumber) was fixed by a full stats reload; VERIFY now also enforces team-membership + goals-reconcile invariants. Three charts ship from `wc26_viz.py`. All S7b work (backfill + schema v1.1.0) is merged to `main` via PR #2.
 
@@ -35,7 +35,8 @@ Project hub: `building/world-cup-2026/WC26 Main.md` in brain — status, roadmap
 
 - `teams`: team_id (TEXT PK — 3-letter FIFA code), fbref_team_id (TEXT UNIQUE — FBref squad-page hex), country (TEXT NOT NULL), confederation (TEXT NOT NULL), group_name (TEXT NOT NULL — 'A'–'L'), fifa_ranking (INTEGER), appearances (INTEGER — previous WCs; 0 = first-timer), best_finish (TEXT — NULL for first-timers; 'Champion'/'Runner-up'/'Third place'/'Fourth place'/'Quarterfinals'/'Round of 16'/'Round of 32'/'Group stage'), coach (TEXT), host (INTEGER DEFAULT 0 — 1 = MEX/USA/CAN), base_camp (TEXT — 'city, state, country'), market_value_m (REAL — Transfermarkt pre-tournament snapshot, EUR millions). All static.
 - `players`: player_id (INTEGER PK AUTOINCREMENT), fbref_id (TEXT UNIQUE — FBref player id, stable join key), team_id (TEXT FK → teams), shirt_number (INTEGER), name (TEXT NOT NULL, indexed), position (TEXT NOT NULL — GK/DF/MF/FW; combos like FW-MF), goalkeeper_flag (INTEGER DEFAULT 0 — derived from `position LIKE '%GK%'`, seeded once), birthday (TEXT 'YYYY-MM-DD'), birthplace (TEXT — 'city, state, country'), league (TEXT), club (TEXT). All static.
-- `matches`: match_id (INTEGER PK AUTOINCREMENT), fbref_match_id (TEXT UNIQUE — FBref match hex, pipeline join key), fifa_match_no (INTEGER UNIQUE), team_home (TEXT FK, NULL for unresolved knockout), team_away (TEXT FK, NULL for unresolved knockout), goals_home, goals_away (INTEGER), pk_home, pk_away (INTEGER, NULL unless knockout + tied), corners_home, corners_away (INTEGER), possession_home, possession_away (REAL — % without sign), stage (TEXT NOT NULL — 'group'/'r32'/'r16'/'qf'/'sf'/'third_place'/'final'), group_name (TEXT NOT NULL — 'A'–'L' for group stage, 'knock-out' otherwise), match_date (TEXT ISO), match_time (TEXT 'HH:MM' local), stadium, city (TEXT), attendance (INTEGER), referee (TEXT). Static: ids, teams (group fixed; knockout dynamic), stage, group_name, date/time, stadium, city. Dynamic (via results.sql): goals, pk, corners, possession, attendance, referee.
+- `stadiums`: stadium_id (INTEGER PK), name (TEXT NOT NULL — matches `matches.stadium`), city (TEXT NOT NULL), state (TEXT), country (TEXT NOT NULL — USA/Mexico/Canada), capacity (INTEGER), timezone (TEXT — IANA, e.g. `America/Chicago`), elevation_m (INTEGER), surface_native (TEXT), surface_wc (TEXT — always 'Grass'), roof (TEXT — 'Open'/'Retractable'/'Fixed canopy'/'Partial'/'Canopy'). All static; all 16 WC26 venues. `matches.stadium_id` FKs here — confirmed always in agreement with the free-text `matches.stadium` name (0 mismatches, 0 NULLs, checked 2026-08-03). Not read by any pipeline script — pure reference data.
+- `matches`: match_id (INTEGER PK AUTOINCREMENT), fbref_match_id (TEXT UNIQUE — FBref match hex, pipeline join key), fifa_match_no (INTEGER UNIQUE), team_home (TEXT FK, NULL for unresolved knockout), team_away (TEXT FK, NULL for unresolved knockout), goals_home, goals_away (INTEGER), pk_home, pk_away (INTEGER, NULL unless knockout + tied), corners_home, corners_away (INTEGER), possession_home, possession_away (REAL — % without sign), stage (TEXT NOT NULL — 'group'/'r32'/'r16'/'qf'/'sf'/'third_place'/'final'), group_name (TEXT NOT NULL — 'A'–'L' for group stage, 'knock-out' otherwise), match_date (TEXT ISO), match_time (TEXT 'HH:MM' local), stadium, city (TEXT), stadium_id (INTEGER FK → stadiums), attendance (INTEGER), referee (TEXT). Static: ids, teams (group fixed; knockout dynamic), stage, group_name, date/time, stadium, city, stadium_id. Dynamic (via results.sql): goals, pk, corners, possession, attendance, referee.
 - `player_stats`: stat_id (INTEGER PK AUTOINCREMENT), player_id (FK), match_id (FK, indexed), minutes_played (Min), goals (Gls), assists (Ast), pk_made (G-PK), pk_att (PKatt), shots (Sh), shots_on_goal (SoT), yellow_cards (CrdY), red_cards (CrdR), fouls (Fls), fouls_drawn (Fld), offsides (Off), crosses (Crs), tackles_won (TklW), interceptions (Int), own_goals (OG), pk_won (PKwon), pk_conceded (PKcon) — all INTEGER DEFAULT 0. UNIQUE (player_id, match_id). Column order = FBref Summary tab left-to-right. All dynamic.
 - `goalkeeper_stats`: stat_id (INTEGER PK AUTOINCREMENT), player_id (FK), match_id (FK), minutes_played, shots_on_target_against (SoTA), goals_against (GA), saves — all INTEGER DEFAULT 0. UNIQUE (player_id, match_id). Maps to FBref Goalkeeper Stats tab. save_pct is derived, never stored: `CAST(saves AS REAL) / NULLIF(shots_on_target_against, 0)`. GKs also appear in player_stats. All dynamic.
 - `metadata`: singleton (one row, updated in place — no PK). Field ownership:
@@ -54,11 +55,7 @@ Project hub: `building/world-cup-2026/WC26 Main.md` in brain — status, roadmap
 
 Python 3.14 · pandas · openpyxl · SQLite (stdlib + CLI) · FastAPI (planned: `wc26_api.py`) · Plotly (EDA + export) · Tableau Public (LinkedIn dashboards)
 
-```
-Rebuild DB:  sqlite3 worldcup26.db < worldcup26_seed.sql && sqlite3 worldcup26.db < worldcup26_results.sql
-Run script:  python3 wc26_viz.py
-SQLite CLI:  sqlite3 worldcup26.db
-```
+Rebuild/run commands: [`README.md`](README.md) → Quick start.
 
 ## Conventions (always do)
 
@@ -197,33 +194,21 @@ Full standard: brain `Repos.md` → **Git standard** (adopted 2026-07-29). Summa
 
 ## File layout
 
-```
-world-cup-2026/                 — ~/repos/world-cup-2026 (WSL2 ext4 since 2026-07-28)
-├── worldcup26.db            — SQLite database (live, tracked in git)
-├── worldcup26_seed.sql      — pure structural baseline (schema + reference data + NULL placeholders)
-├── worldcup26_results.sql   — GENERATED artifact (never hand-edit) — regenerated from live DB
-├── wc26_update.py           — ⭐ the UPD node: acquire→parse→load→metadata→regenerate→verify
-├── fbref_acquire.py         — ACQUIRE: Firecrawl API → results/raw/{hex}.html
-├── fbref_parse.py           — PARSE: raw HTML → per-match players/keepers CSVs
-├── fbref_load.py            — LOAD: CSVs → player_stats + goalkeeper_stats
-├── wc26_regenerate.py       — REGENERATE: live DB → worldcup26_results.sql (pure serializer)
-├── wc26_verify.py           — VERIFY: scratch rebuild from seed+results, diffed against live
-├── wc26_viz.py              — Plotly viz (money-vs-goals, finishing-efficiency, LinkedIn dark charts)
-├── CLAUDE.md                — this file
-├── README.md                — repo front door / map
-├── .env                     — FIRECRAWL_API_KEY (gitignored — public repo)
-├── archive/                 — superseded scripts, kept to document what broke and why
-│   ├── generate_inserts.py  — dead (append-only, non-idempotent) → wc26_regenerate.py
-│   ├── fbref_batch.py       — dead (stopped at LOAD) → wc26_update.py
-│   ├── wc26_loader.py       — dead (early CSV loader) → fbref_load.py + wc26_update.py
-│   ├── fbref_urls.py        — dead (static URL registry, never imported) → URLs passed to /update-results
-│   ├── fbref_map_matches.py — dead (stale 94-match slug map) → direct fbref_match_id UPDATEs
-│   └── wc26_standings.py    — dead (standalone) → group-standings skill
-├── results/                 — per-match CSVs; results/raw/ = acquired HTML (gitignored)
-├── .claude/
-│   ├── commands/            — slash commands (/update-results, /wrap live here)
-│   └── skills/              — domain knowledge (see Skills — conversion pending)
-└── [session files]          — wc26_report.py, wc26_api.py (planned)
-```
+Full tree: [`README.md`](README.md) → Repository structure. This section covers what
+that tree omits — internal context a public front door doesn't need.
 
-⚠️ **Verify this tree against `ls -a` before trusting it.** `fbref_fetch.py` was listed here as a dead reference but is not present in the working tree. Corrected 2026-07-28 from a directory listing, not from a live check.
+**`archive/`** — superseded scripts, kept to document what broke and why:
+
+- `generate_inserts.py` — dead (append-only, non-idempotent) → `wc26_regenerate.py`
+- `fbref_batch.py` — dead (stopped at LOAD) → `wc26_update.py`
+- `wc26_loader.py` — dead (early CSV loader) → `fbref_load.py` + `wc26_update.py`
+- `fbref_urls.py` — dead (static URL registry, never imported) → URLs passed to `/update-results`
+- `fbref_map_matches.py` — dead (stale 94-match slug map) → direct `fbref_match_id` UPDATEs
+- `wc26_standings.py` — dead (standalone) → `group-standings` skill
+
+**`.claude/`** — `commands/` (slash commands: `/update-results`, `/wrap`, others) and
+`skills/` (domain knowledge, `.claude/skills/<name>/SKILL.md`, loaded on demand).
+
+⚠️ **Verify any tree or file-layout claim against `ls -a` before trusting it.** This
+section has drifted from the live directory before (corrected 2026-07-28, 2026-08-03) —
+always from a directory listing, never from memory.
