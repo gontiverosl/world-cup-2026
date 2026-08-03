@@ -219,7 +219,6 @@ world-cup-2026/                 — ~/repos/world-cup-2026 (WSL2 ext4 since 2026
 │   ├── fbref_urls.py        — dead (static URL registry, never imported) → URLs passed to /update-results
 │   ├── fbref_map_matches.py — dead (stale 94-match slug map) → direct fbref_match_id UPDATEs
 │   └── wc26_standings.py    — dead (standalone) → group-standings skill
-├── drills/                  — drill working files
 ├── results/                 — per-match CSVs; results/raw/ = acquired HTML (gitignored)
 ├── .claude/
 │   ├── commands/            — slash commands (/update-results, /wrap live here)
@@ -227,4 +226,4 @@ world-cup-2026/                 — ~/repos/world-cup-2026 (WSL2 ext4 since 2026
 └── [session files]          — wc26_report.py, wc26_api.py (planned)
 ```
 
-⚠️ **Verify this tree against `ls -a` before trusting it.** `fbref_fetch.py` was listed here as a dead reference but is not present in the working tree; `drills/` was present but unlisted. Both corrected 2026-07-28 from a directory listing, not from a live check.
+⚠️ **Verify this tree against `ls -a` before trusting it.** `fbref_fetch.py` was listed here as a dead reference but is not present in the working tree. Corrected 2026-07-28 from a directory listing, not from a live check.
