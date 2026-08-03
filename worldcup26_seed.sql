@@ -14,12 +14,13 @@
 --   fbref_id / fbref_match_id /
 --   fbref_team_id                                  NULL = not yet crosswalked to FBref
 --   metadata.last_sync / last_matchday             seed with a real snapshot as of
---                                                  authoring time; owned by wc26-daily-update
+--                                                  authoring time; owned by wc26_update.py
 --                                                  from then on (every run, via results.sql).
 --   metadata.records_imported                      NULL in seed = not tracked before this
 --                                                  session's instrumentation; owned by
---                                                  wc26-daily-update from then on — a
---                                                  PER-RUN DELTA, never a cumulative total.
+--                                                  wc26_update.py from then on — a SNAPSHOT
+--                                                  total (player_stats + goalkeeper_stats rows
+--                                                  present), never a per-run delta.
 --   metadata.schema_version                        Human-authored in this file; bump only on a
 --                                                  deliberate schema-freeze session (e.g. S6).
 --   metadata.api_version                           NULL until wc26_api.py exists (S9); human-
@@ -172,19 +173,20 @@ CREATE TABLE goalkeeper_stats (
 -- Field ownership (see CLAUDE.md for the full table):
 --   schema_version / api_version   — human, seed-authored, on schema/API changes only
 --   last_sync / last_matchday /
---   records_imported               — wc26-daily-update task, every run
+--   records_imported               — wc26_update.py, every run
 -- ============================================================
 CREATE TABLE metadata (
     schema_version   TEXT,      -- semver, e.g. '1.0.0'; human-authored, bump on schema change
     api_version      TEXT,      -- NULL until wc26_api.py ships; human-authored, bump on API change
-    last_sync        TEXT,      -- ISO 8601 timestamp of last wc26-daily-update run
+    last_sync        TEXT,      -- ISO 8601 timestamp of last wc26_update.py run
     last_matchday    TEXT,      -- max match_date among played matches, as of last_sync
-    records_imported INTEGER    -- rows written by the LAST run only — a delta, never cumulative
+    records_imported INTEGER    -- SNAPSHOT: total player_stats + goalkeeper_stats rows present
 );
 
 -- last_sync/last_matchday below are a real snapshot as of authoring time (2026-07-08), not
--- placeholders. records_imported is NULL because no run had instrumented a per-run delta count
--- before this session — 0 or a guessed number here would misrepresent that gap, so NULL it is.
+-- placeholders. records_imported is NULL because no run had instrumented an import-count
+-- metric before this session — 0 or a guessed number here would misrepresent that gap, so
+-- NULL it is.
 INSERT INTO metadata (schema_version, api_version, last_sync, last_matchday, records_imported)
 VALUES ('1.1.0', NULL, '2026-07-08T20:02:14Z', '2026-07-07', NULL);
 
